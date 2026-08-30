@@ -32,6 +32,7 @@ Manage it with `astro dev stop`, `astro dev status`, `astro dev logs`. Build wit
 - **`src/utils/translations.ts` is the single translation source** (nav/common/hero/featured/explore/latest/aboutPreview/footer/sections/meta). Never add inline translation dictionaries in components.
 - **i18n is manual** (no Astro i18n routing): `/zh` and `/nl` prefixes detected via `getLanguageFromPath`; every en page needs zh and nl mirror files. Use `getLocalizedPath`/`findTranslation` from `src/utils/i18n.ts`.
 - **Content**: single collection `entries` (glob loader, `src/content.config.ts`); URL slug = entry folder name; en/cn/nl paired by `translationKey`. `collaboration` field drives the TEAM badge in ProjectCard.
+- **Entry body images** (`![](./file.png)` or raw HTML `<img src="./…">`) are resolved to hashed URLs at build time by the satteri plugin in `astro.config.mjs` (`src/utils/markdown-resolve-images.ts`) — reference them with bare `./` filenames and never add client-side image src fixes.
 - **Home page**: featured projects use a hardcoded `featuredKeys` list (user preference); SYS.LOG excludes `type === "art"` entries (art has no detail pages).
 - **Art pages are VISUAL-FROZEN**: code may be refactored or optimized, but rendered appearance must not change. Art images are pre-optimized with `npm run optimize-art` (lossless webp only when output is >= 50% of the original size; otherwise the original is kept). `src/utils/artImages.ts` is the shared image source for all three `/art` pages.
 

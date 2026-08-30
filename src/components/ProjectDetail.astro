@@ -35,21 +35,6 @@ const cover =
 const coverWidth = optimizedCover?.attributes.width as number | undefined;
 const coverHeight = optimizedCover?.attributes.height as number | undefined;
 
-// Resolve all images in this project folder for fixing raw <img> tags in markdown
-const allImagesRaw = import.meta.glob(
-  "/src/content/entries/**/*.{png,jpg,jpeg,webp}",
-  { eager: true },
-);
-const projectImageMap: Record<string, string> = {};
-for (const [path, mod] of Object.entries(allImagesRaw)) {
-  if (path.includes(`/entries/${projectId}/`)) {
-    const filename = path.split("/").pop()!;
-    const meta = (mod as any).default || mod;
-    const src = typeof meta === "string" ? meta : meta?.src;
-    if (src) projectImageMap[filename] = src;
-  }
-}
-
 const date = project.data.date.toLocaleDateString(
   languageDateLocales[language],
   {
@@ -150,16 +135,8 @@ const translationAvailable = !!translation;
   </div>
 </main>
 
-<div id="image-map-data" style="display:none;" set:html={JSON.stringify(projectImageMap)}></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    // Fix raw <img> tags in markdown that Astro doesn't resolve
-    const mapEl = document.getElementById("image-map-data");
-    const __IMAGES__ = mapEl ? JSON.parse(mapEl.textContent || "{}") : {};
-    document.querySelectorAll<HTMLImageElement>("article img[src^='./']").forEach(img => {
-      const filename = img.getAttribute("src")!.replace("./", "");
-      if (__IMAGES__[filename]) img.src = __IMAGES__[filename];
-    });
     // ── Image click → fullscreen overlay (with click-vs-drag discrimination) ──
     const openOverlay = (src: string) => {
       const overlay = document.createElement("div");
