@@ -26,5 +26,6 @@ export function buildEntryUrl(
   const slug = entry.id.split("/")[0];
   const route = typeToRoute[entry.data.type] ?? entry.data.type;
   const base = language === "en" ? `/${route}` : `/${language}/${route}`;
-  return `${base}/${slug}`;
+  // Trailing slash convention — see getLocalizedPath / astro.config.mjs.
+  return `${base}/${slug}/`;
 }

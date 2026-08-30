@@ -41,6 +41,7 @@ Manage it with `astro dev stop`, `astro dev status`, `astro dev logs`. Build wit
 - Structured data (JSON-LD, `is:inline`): `WebSite` in Layout head; `Person` on both About pages (name RrSuika Studio, alternateName RrS, sameAs GitHub/pixiv); `TechArticle` on detail templates (full ISO-8601 dates — schema.org requires timezone info; `translationOfWork` links the paired article).
 - `sitemap.xml.ts` endpoint excludes art entries (no detail pages). `public/robots.txt` allows all crawlers except AI-training bots, which are disallowed from `/art/`, `/zh/art/` and `/nl/art/` (Googlebot unaffected).
 - Site URL is configured in `astro.config.mjs` — canonical/hreflang/OG depend on it.
+- **Trailing slash is mandatory**: `astro.config.mjs` sets `trailingSlash: "always"`, and every internal URL (canonical, hreflang, sitemap, links) ends with `/`. Cloudflare Pages 308-redirects slashless requests, which made canonicals point at redirects and triggered GSC "Page with redirect" (2026-08-31). Exception: asset URLs and the bare root `/`.
 
 ## Repository hygiene
 

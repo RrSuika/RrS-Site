@@ -4,7 +4,7 @@
 > 接手任何新任务时：**先读本文件 → 再用快速索引（§11）定位文件 → 只读必要的源文件 → 动手。**
 > 与 `CLAUDE.md` 的分工：CLAUDE.md 是**规则与政策**（必须遵守的约束），本文件是**架构事实与原因**（"现在怎么组织的、为什么、去哪改"）。`AGENTS.md` 只讲开发服务器的工作方式。
 >
-> - 最后更新：2026-08-17 v1.5（首页精选 ZOEM 居中 + featuredKeys 顺序权威化；档案卡新增 SKILLS/INTERESTS/SOFTWARE 行并左右平衡；ACCESS FULL DOSSIER 与名字齐平；**en/zh/nl 三语全站文案优化**（见 §12 规则 14-16）；软件图标 public/icons）
+> - 最后更新：2026-08-31 v1.6（全站 URL 尾斜杠约定：`trailingSlash: "always"` + 所有链接/sitemap 带尾斜杠，修复 GSC"网页会自动重定向"告警，见 §9 决策 16）
 > - 维护规则见 §12：代码若与本文件冲突，**以代码为准**，并更新本文件。
 >
 > **⚠️ v1.2 全量校正（旧段落中未逐行改写的“双语/仅 zh”表述，一律以下面为准）：**
@@ -120,7 +120,7 @@ const translation = findTranslation(entries, entry, "zh" | "en");
 
 5. 详情页模板里存在 `project.data.type === "art" ? <ArtGallery/> : <ProjectDetail/>` 分支，但 art 已被过滤，**该分支实际不可达**（防御性代码）。渲染永远走 `<ProjectDetail project projectId Content translation />`。
 6. 详情页内嵌 **TechArticle JSON-LD**（两张模板里各有一份，不在组件内）：`datePublished`/`dateModified` 都用 `data.date.toISOString()`（完整 ISO-8601 带时区；无独立修改日期，回退发布日期）；`translationOfWork` 嵌套对方语言文章的元数据（有译文时）。
-7. `sitemap.xml.ts`：6 个静态路径 × 2 语言 + 每个非 art 条目 2 个 URL（`/{type}/{slug}` 与 `/zh/{type}/{slug}`），`lastmod` = 条目 `date` 的 YYYY-MM-DD，按字典序排序。
+7. `sitemap.xml.ts`：6 个静态路径 × 3 语言（en/zh/nl）+ 每个非 art 条目按其 `lang` 生成 URL（`/{type}/{slug}/` 或 `/zh|nl/{type}/{slug}/`），`lastmod` = 条目 `date` 的 YYYY-MM-DD，按字典序排序。**所有 URL 带尾斜杠**（§9 决策 17）。
 8. `404.astro`：无语言判定，固定双语混合内容（三个按钮：`/`、`/zh`、`/projects`），`noIndex`。
 
 ### 3.3 新增内容类型 / 页面时需要动的地方
@@ -316,7 +316,7 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 
 ## 8. 配置与部署
 
-- **`astro.config.mjs`**（15 行）：`site: "https://rrsuika-studio.pages.dev"`；`i18n: { locales: ["en","zh"], defaultLocale: "en", routing: { prefixDefaultLocale: false } }`（**声明而已;实际路由全部手写**，Astro i18n routing 未被使用）；无 integrations、无 compressHTML 覆盖、无 redirects。
+- **`astro.config.mjs`**（15 行）：`site: "https://rrsuika-studio.pages.dev"`；`trailingSlash: "always"`（全站 URL 尾斜杠约定，§9 决策 17）；`i18n: { locales: ["en","zh","nl"], defaultLocale: "en", routing: { prefixDefaultLocale: false } }`（**声明而已;实际路由全部手写**，Astro i18n routing 未被使用）；无 integrations、无 compressHTML 覆盖、无 redirects。
 - **`package.json`**：scripts `dev`/`build`/`preview`/`astro`（均标准 Astro）；dependencies 仅 `astro ^7.1.6`、`zod ^4.4.3`；无 devDependencies；`engines: node >= 22.12.0`。
 - **`tsconfig.json`**：`extends "astro/tsconfigs/strict"`，exclude `dist`。
 - **开发**：`npm run dev`（localhost:4321）或根目录 `启动.bat`；按 AGENTS.md 约定，AI 应用 `astro dev --background` 启动、`astro dev stop/status/logs` 管理。
@@ -345,6 +345,7 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 13. **fashion-design 图片双存**：`public/art/fashion-design/` 的 PNG 副本是为保留 alpha 透明通道（`getProjectImage` 特例分支），删除会破坏 art 页透明效果。
 14. **全站 JSON-LD**：WebSite（每页）+ Person（about）+ TechArticle（详情）为 SEO 富结果服务；日期必须完整 ISO-8601 带时区（schema.org 要求）。
 15. **og-card.png 手工生成**：分享卡视觉（终端风格 + 三色条 + 中英标语）由脚本硬编码 SVG 渲染，无构建步骤;改分享卡要改脚本并手动重跑。
+16. **全站 URL 统一尾斜杠（2026-08-31）**：`astro.config.mjs` 设 `trailingSlash: "always"`（canonical/hreflang/og:url 自动带尾斜杠），`getLocalizedPath`/`buildEntryUrl`/`sitemap.xml.ts` 均输出尾斜杠，硬编码链接（404 页按钮、JSON-LD `url`）也带尾斜杠。原因：Cloudflare Pages 对目录型页面把不带斜杠的请求 308 重定向到带斜杠版本；默认 `"ignore"` 会让每个页面的 canonical 指向重定向 URL，Google Search Console 报"网页会自动重定向"并拖累收录。**新增内部链接必须带尾斜杠**（唯一例外：资源文件与首页 `/`）。
 
 ---
 

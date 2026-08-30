@@ -70,8 +70,15 @@ export function getLocalizedPath(
   pathname: string,
   language: Language
 ): string {
-  const cleanPath =
+  let cleanPath =
     pathname.replace(/^\/(?:zh|nl)(?:\/|$)/, "/") || "/";
+
+  // Site-wide convention: every page URL ends with a trailing slash
+  // (Cloudflare Pages 308-redirects the slashless form, which breaks
+  // canonical/hreflang consistency — see astro.config.mjs).
+  if (cleanPath !== "/" && !cleanPath.endsWith("/")) {
+    cleanPath += "/";
+  }
 
   if (language === "en") {
     return cleanPath;
