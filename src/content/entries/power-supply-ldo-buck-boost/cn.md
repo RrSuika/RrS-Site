@@ -1,5 +1,5 @@
 ---
-title: 供电和保护 — 线性与开关电源（LDO / Buck / Boost）
+title: 供电和保护：线性与开关电源（LDO / Buck / Boost）
 date: 2026-08-10
 description: 设计师电源选型指南;LDO线性稳压、Buck/Boost开关转换器及实际选型标准。
 

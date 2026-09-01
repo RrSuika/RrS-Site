@@ -168,7 +168,7 @@ Omgekeerd: bij pull-down laat een gebroken draad de GPIO op laag staan, "altijd 
 
 #### Aarde als referentie is betrouwbaarder
 
-- Het groundvlak is de 0V-referentie voor het hele systeem; het zit overal, met ultralage impedantie, en absorbeert en schermt ruis uitstekend af — veel beter dan de voedingsrail.
+- Het groundvlak is de 0V-referentie voor het hele systeem; het zit overal, met ultralage impedantie, en absorbeert en schermt ruis uitstekend af: veel beter dan de voedingsrail.
 - Statische elektriciteit of ruis van een vingeraanraking wordt veilig naar aarde afgevoerd in plaats van in de gevoelige voedingsrail geïnjecteerd.
 - Bij actief-laag signalering moet ruis het niveau boven VIH (~0.7 × VCC) duwen om geregistreerd te worden. De voedingsrail heeft ontkoppelcondensatoren die ruisinkoppeling bemoeilijken. De ruismarges bij actief-hoog zijn inherent slechter.
 

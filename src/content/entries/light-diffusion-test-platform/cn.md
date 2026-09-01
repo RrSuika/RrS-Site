@@ -139,12 +139,12 @@ translationKey: light-diffusion-test-platform
 
 <div class="variables-grid">
 
-- <strong style="color:var(--accent)">光照强度</strong> — PWM 控制器调节，从微亮到全功率
-- <strong style="color:var(--accent)">材料类型</strong> — PLA、PETG、亚克力、AB环氧、PC扩散板
-- <strong style="color:var(--accent)">材料颜色</strong> — PETG和亚克力的本色、白色、着色版本
-- <strong style="color:var(--accent)">材料厚度</strong> — 单层、叠层、不同板材厚度
-- <strong style="color:var(--accent)">表面处理</strong> — 原始打印面、打磨（80–5000目）、抛光、纹理
-- <strong style="color:var(--accent)">扩散距离</strong> — 通过升降台调节光源与样品之间的间隙
+- <strong style="color:var(--accent)">光照强度</strong>：PWM 控制器调节，从微亮到全功率
+- <strong style="color:var(--accent)">材料类型</strong>：PLA、PETG、亚克力、AB环氧、PC扩散板
+- <strong style="color:var(--accent)">材料颜色</strong>：PETG和亚克力的本色、白色、着色版本
+- <strong style="color:var(--accent)">材料厚度</strong>：单层、叠层、不同板材厚度
+- <strong style="color:var(--accent)">表面处理</strong>：原始打印面、打磨（80–5000目）、抛光、纹理
+- <strong style="color:var(--accent)">扩散距离</strong>：通过升降台调节光源与样品之间的间隙
 
 </div>
 
@@ -154,7 +154,7 @@ translationKey: light-diffusion-test-platform
 
 ![迭代对比](./01-iteration-comparison.png)
 
-|                       | V1 — 单 LED                                       | V2 — LED 灯带                                      | V3 — LED 灯带 + PWM                                             |
+|                       | V1：单 LED                                       | V2：LED 灯带                                      | V3：LED 灯带 + PWM                                             |
 | --------------------- | ------------------------------------------------- | -------------------------------------------------- | --------------------------------------------------------------- |
 | <strong>方法</strong> | 手工焊接                                          | 铜箔胶带                                           | PWM 控制器                                                      |
 | <strong>问题</strong> | <span style="color:#e53935">✕</span> 焊接速度太慢 | <span style="color:#e53935">✕</span> 胶带不适配 2A | <span style="color:var(--terminal-green)">✓</span> 亮度可调     |

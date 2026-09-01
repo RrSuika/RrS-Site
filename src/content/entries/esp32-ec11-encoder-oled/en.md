@@ -35,12 +35,12 @@ translationKey: esp32-ec11-encoder-oled
 
 This is the first stepping stone toward a full motor control rig. Before bolting steppers and drivers onto the bench, I wanted to prove the ESP32 could juggle a few things at once without tripping over itself. So I set out to build a test platform that handles:
 
-1. **Dual EC11 rotary encoder input** — both encoders read simultaneously, with direction detection, incremental counting, and push button debouncing. No missed steps.
-2. **SH1106 OLED display** — both OLEDs share the same I2C bus (0x3C), refreshing angle data at 10 Hz without flicker or bus contention.
-3. **WiFi WebSocket server** — a browser-based dashboard that shows both angles in real time. WebSocket beats polling for this kind of low-latency UI, and I added heartbeat packets so the connection doesn't time out.
-4. **FreeRTOS multi-task architecture** — three tasks pinned to Core 1: Encoder Task at 1000 Hz, Motor Task at 100 Hz, and OLED Task at 10 Hz. Core 0 handles the web server. Mutex on the motor struct keeps shared state consistent.
+1. **Dual EC11 rotary encoder input**: both encoders read simultaneously, with direction detection, incremental counting, and push button debouncing. No missed steps.
+2. **SH1106 OLED display**: both OLEDs share the same I2C bus (0x3C), refreshing angle data at 10 Hz without flicker or bus contention.
+3. **WiFi WebSocket server**: a browser-based dashboard that shows both angles in real time. WebSocket beats polling for this kind of low-latency UI, and I added heartbeat packets so the connection doesn't time out.
+4. **FreeRTOS multi-task architecture**: three tasks pinned to Core 1: Encoder Task at 1000 Hz, Motor Task at 100 Hz, and OLED Task at 10 Hz. Core 0 handles the web server. Mutex on the motor struct keeps shared state consistent.
 
-The goal wasn't to build anything flashy — it was to validate that the software architecture holds up under concurrent load before I add real motors to the mix.
+The goal wasn't to build anything flashy: it was to validate that the software architecture holds up under concurrent load before I add real motors to the mix.
 
 # System Architecture
 
@@ -59,7 +59,7 @@ The goal wasn't to build anything flashy — it was to validate that the softwar
 
 # Pinout
 
-## Module 1 — Encoder + OLED
+## Module 1: Encoder + OLED
 
 | Signal | ESP32 Pin | Function |
 |--------|-----------|----------|
@@ -73,7 +73,7 @@ The goal wasn't to build anything flashy — it was to validate that the softwar
 | BAK    | GPIO26    | Back button |
 | CON    | GPIO27    | Confirm button |
 
-## Module 2 — Encoder + OLED
+## Module 2: Encoder + OLED
 
 | Signal | ESP32 Pin | Function |
 |--------|-----------|----------|
@@ -93,7 +93,7 @@ The goal wasn't to build anything flashy — it was to validate that the softwar
 
 ![Web Display](./02-web-display.png)
 
-The browser connects over WebSocket and displays both encoder angles with zero perceptible lag. The JavaScript reconnect logic handles WiFi glitches gracefully — if the ESP32 drops off the network, the page quietly retries every 2 seconds until it's back.
+The browser connects over WebSocket and displays both encoder angles with zero perceptible lag. The JavaScript reconnect logic handles WiFi glitches gracefully: if the ESP32 drops off the network, the page quietly retries every 2 seconds until it's back.
 
 One small optimization I'm happy with: the Motor Task only sends data when the angle actually changed, and it throttles to a minimum 50ms interval. Without that, every encoder tick would fire a WebSocket frame and you'd flood the browser on fast spins.
 
@@ -101,7 +101,7 @@ One small optimization I'm happy with: the Motor Task only sends data when the a
 
 The OLED shows:
 - Current mode indicator (a little animated `[>]` or `[||]` depending on state)
-- A scrolling animation bar that bounces across the top — pointless but satisfying
+- A scrolling animation bar that bounces across the top: pointless but satisfying
 - Motor 1 and Motor 2 angles in degrees
 
 # Full Code
@@ -438,9 +438,9 @@ void loop() {
 
 Everything checks out:
 
-- Both EC11 encoders track reliably with direction detection — no missed ticks even when I spin them fast.
-- The SH1106 OLED refreshes at 10 Hz without flicker, and the shared I2C bus handles both modules fine. The `display.begin(0x3C, true)` call was the key — passing `true` for reset fixed the "OLED shows only a horizontal line" problem that had me scratching my head for an hour.
+- Both EC11 encoders track reliably with direction detection: no missed ticks even when I spin them fast.
+- The SH1106 OLED refreshes at 10 Hz without flicker, and the shared I2C bus handles both modules fine. The `display.begin(0x3C, true)` call was the key: passing `true` for reset fixed the "OLED shows only a horizontal line" problem that had me scratching my head for an hour.
 - The WebSocket server streams angle data to the browser with a 50ms send throttle. The heartbeat packets keep the connection alive even if nothing changes for a while.
-- FreeRTOS tasks on Core 1 don't starve each other — mutex acquisition times are negligible at these rates.
+- FreeRTOS tasks on Core 1 don't starve each other: mutex acquisition times are negligible at these rates.
 
 This prototype proved the software stack works. Next step: wire up a real DM430 stepper driver and replace those virtual "motor" angle values with actual step pulses.

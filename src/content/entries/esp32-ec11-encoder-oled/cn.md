@@ -59,7 +59,7 @@ translationKey: esp32-ec11-encoder-oled
 
 # 引脚定义
 
-## 模块 1 — 编码器 + OLED
+## 模块 1：编码器 + OLED
 
 | 信号 | ESP32 引脚 | 功能             |
 | ---- | ---------- | ---------------- |
@@ -73,7 +73,7 @@ translationKey: esp32-ec11-encoder-oled
 | BAK  | GPIO26     | 返回按钮         |
 | CON  | GPIO27     | 确认按钮         |
 
-## 模块 2 — 编码器 + OLED
+## 模块 2：编码器 + OLED
 
 | 信号 | ESP32 引脚 | 功能                 |
 | ---- | ---------- | -------------------- |

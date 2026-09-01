@@ -27,7 +27,7 @@ translationKey: esp32-wifi-led-brightness-control
 
 # Overview
 
-The idea here was simple: control an LED from my phone. No Bluetooth, no app — just a web page served by the ESP32 itself, accessible from anything on my home WiFi. I'd get a slider in the browser, and the LED would respond in real time. It turned out to be a nice little exercise in tying together WiFi, HTTP, and PWM — three things that show up in basically every IoT project.
+The idea here was simple: control an LED from my phone. No Bluetooth, no app: just a web page served by the ESP32 itself, accessible from anything on my home WiFi. I'd get a slider in the browser, and the LED would respond in real time. It turned out to be a nice little exercise in tying together WiFi, HTTP, and PWM: three things that show up in basically every IoT project.
 
 # System Architecture
 
@@ -39,7 +39,7 @@ The ESP32 acts as both a WiFi client and a web server.
 - Built-in LED (GPIO 2)
 - USB cable
 
-Started with the built-in LED for simplicity. No breadboard, no external components — just the dev board and a USB cable. The onboard LED is on GPIO 2, which is handy because it's already wired up and you don't have to think about current-limiting resistors.
+Started with the built-in LED for simplicity. No breadboard, no external components: just the dev board and a USB cable. The onboard LED is on GPIO 2, which is handy because it's already wired up and you don't have to think about current-limiting resistors.
 
 # Software
 
@@ -52,7 +52,7 @@ Libraries:
 #include <WebServer.h>
 ```
 
-Both libraries come bundled with the ESP32 Arduino Core, so there's nothing extra to install. `WiFi.h` handles the connection and `WebServer.h` gives you a lightweight HTTP server — perfect for this kind of thing.
+Both libraries come bundled with the ESP32 Arduino Core, so there's nothing extra to install. `WiFi.h` handles the connection and `WebServer.h` gives you a lightweight HTTP server: perfect for this kind of thing.
 
 # Implementation
 
@@ -61,7 +61,7 @@ Both libraries come bundled with the ESP32 Arduino Core, so there's nothing extr
 The ESP32 connects to your local WiFi and serves a control page. <br>
 Devices on the same network can open the assigned IP address, e.g., http://192.168.x.x/.
 
-This is the part I like most about the ESP32 — you can spin up a web server in a handful of lines and suddenly your microcontroller is reachable from any device on the network. No router config, no port forwarding, just a local IP.
+This is the part I like most about the ESP32: you can spin up a web server in a handful of lines and suddenly your microcontroller is reachable from any device on the network. No router config, no port forwarding, just a local IP.
 
 ## PWM Brightness Control
 
@@ -81,9 +81,9 @@ I went with 8-bit PWM (0–255) because it matches the `ledcWrite` range cleanly
 
 # Result
 
-The ESP32 connects, serves the interface, receives HTTP brightness values, and drives the LED via PWM. The whole chain — hardware, network, interface, physical output — works as expected, and it's a solid base for more interactive IoT projects.
+The ESP32 connects, serves the interface, receives HTTP brightness values, and drives the LED via PWM. The whole chain: hardware, network, interface, physical output: works as expected, and it's a solid base for more interactive IoT projects.
 
-This is one of those builds where the payoff-to-effort ratio is really satisfying. In about 160 lines of code you get a working web-controlled light. The same pattern — WiFi + web server + PWM — extends naturally to things like motor speed control, servo positioning, or driving an LED strip through a MOSFET.
+This is one of those builds where the payoff-to-effort ratio is really satisfying. In about 160 lines of code you get a working web-controlled light. The same pattern (WiFi + web server + PWM) extends naturally to things like motor speed control, servo positioning, or driving an LED strip through a MOSFET.
 
 # Full Code
 

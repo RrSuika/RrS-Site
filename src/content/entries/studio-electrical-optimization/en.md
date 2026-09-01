@@ -1,7 +1,7 @@
 ---
 title: Studio Electrical Safety & Optimization
 date: 2026-05-14
-description: Home workshop electrical analysis — 9 risk factors identified, star-topology distribution system implemented.
+description: "Home workshop electrical analysis: 9 risk factors identified, star-topology distribution system implemented."
 
 type: lab
 category: Electrical Engineering
@@ -31,11 +31,11 @@ translationKey: studio-electrical-optimization
 
 # Overview
 
-When I started welding in the same room as my computers, I knew I was asking for trouble. The lights would flicker when the compressor kicked on. Power strips were daisy-chained in ways I'd rather not describe. And somewhere in the back of my mind I knew the setup had problems — I just hadn't sat down to figure out exactly what they were.
+When I started welding in the same room as my computers, I knew I was asking for trouble. The lights would flicker when the compressor kicked on. Power strips were daisy-chained in ways I'd rather not describe. And somewhere in the back of my mind I knew the setup had problems: I just hadn't sat down to figure out exactly what they were.
 
 This project is the result of finally doing that. I mapped out every outlet, every device, every extension cord in my workshop, and what I found wasn't pretty: nine distinct safety risks, from an ungrounded welding machine to a fire hazard I'd been casually ignoring for months.
 
-I'm in **the Netherlands**, so everything here is grounded in **NEN 1010** — the Dutch implementation of European wiring regulations. If you're in a different country, your voltage standards and panel structures will differ, but the principles around topology, circuit separation, and overcurrent protection are universal.
+I'm in **the Netherlands**, so everything here is grounded in **NEN 1010**: the Dutch implementation of European wiring regulations. If you're in a different country, your voltage standards and panel structures will differ, but the principles around topology, circuit separation, and overcurrent protection are universal.
 
 # What I Wanted to Achieve
 
@@ -61,13 +61,13 @@ For context: in Dutch homes, the distribution board (_groepenkast_) lives in the
 This distinction matters more than people realize:
 
 - **1P Breaker:** Cuts the circuit, but the appliance stays connected through the neutral wire (N). There's still a path.
-- **2P / 1P+N Breaker:** Cuts **both** conductors — phase and neutral. Full isolation. If you're working on something downstream, this is what you want.
+- **2P / 1P+N Breaker:** Cuts **both** conductors: phase and neutral. Full isolation. If you're working on something downstream, this is what you want.
 
 ![1P vs 2P Breaker](./4.png)
 
 ## Trip Characteristics
 
-Breakers protect against overload and short circuits, but not all breakers are the same. The common curve types — **B, C, D, K, Z, MA** — differ in how many times the rated current they'll allow through before tripping on a magnetic fault. Equipment with high inrush (motors, welders, compressors) can nuisance-trip a B-curve breaker that's technically "correctly" sized, which is how people end up doing dumb things to bypass protection.
+Breakers protect against overload and short circuits, but not all breakers are the same. The common curve types (**B, C, D, K, Z, MA**) differ in how many times the rated current they'll allow through before tripping on a magnetic fault. Equipment with high inrush (motors, welders, compressors) can nuisance-trip a B-curve breaker that's technically "correctly" sized, which is how people end up doing dumb things to bypass protection.
 
 ![Trip Characteristics](./3.png)
 
@@ -81,7 +81,7 @@ The cross-section of a cable determines how much current that cable can carry sa
 ![Wire Comparison](./6.png)
 
 - **Material:** Copper, aluminum, or the awful CCA (Copper Clad Aluminum) that looks like copper but isn't
-- **Core type:** Solid wire vs. stranded — they behave differently under load
+- **Core type:** Solid wire vs. stranded: they behave differently under load
 - **Length:** Longer run = more resistance = more voltage drop under load
 - **Ambient temperature:** Heat dissipation drops when the cable's in a hot environment
 - **Cable density:** Multiple cables bundled in conduit trap heat against each other
@@ -103,7 +103,7 @@ This is where most of my problems lived:
 
 - **Simultaneous use:** Multiple hungry devices on one 10A/16A group
 - **Long-term heavy load:** Cables heating up hour after hour
-- **Daisy-chaining:** Power strip into power strip into power strip — each connection adds resistance and heat. This is how fires start.
+- **Daisy-chaining:** Power strip into power strip into power strip: each connection adds resistance and heat. This is how fires start.
 - **Poor contacts:** Loose plugs and worn sockets mean high resistance junctions
 - **Trapped heat:** Cable reels left coiled during use (I've definitely done this)
 - **No surge protection:** One voltage spike away from fried electronics
@@ -124,27 +124,27 @@ The welder had no ground connection at all. On a metal-chassis machine drawing 1
 
 ### Inrush Current
 
-The welder pulls 20–30A on startup — more than the existing circuit was designed for. Even if the breaker held (which it sometimes didn't), it wasn't a safe long-term arrangement. **Fix:** Moved the welder to its own dedicated circuit with appropriately rated protection.
+The welder pulls 20–30A on startup: more than the existing circuit was designed for. Even if the breaker held (which it sometimes didn't), it wasn't a safe long-term arrangement. **Fix:** Moved the welder to its own dedicated circuit with appropriately rated protection.
 
 ### Trip Characteristics
 
-For equipment with high starting currents, a standard B-curve breaker will nuisance-trip. You need a C or D curve — same nominal rating, but the magnetic trip threshold is higher, so it tolerates inrush without sacrificing overload protection.
+For equipment with high starting currents, a standard B-curve breaker will nuisance-trip. You need a C or D curve: same nominal rating, but the magnetic trip threshold is higher, so it tolerates inrush without sacrificing overload protection.
 
 ![Daisy-Chaining Risk](./10.png)
 
 ### Eliminating Daisy-Chaining
 
-I had power strips plugged into other power strips. Each junction adds contact resistance, generates heat, and increases the odds of something failing under load. It's a tree topology where every branch is a potential fire. **Fix:** Switched to a star topology — one high-quality 16A power strip as a central distribution point, with everything radiating from it rather than chaining through each other.
+I had power strips plugged into other power strips. Each junction adds contact resistance, generates heat, and increases the odds of something failing under load. It's a tree topology where every branch is a potential fire. **Fix:** Switched to a star topology: one high-quality 16A power strip as a central distribution point, with everything radiating from it rather than chaining through each other.
 
 ### Voltage Dips & EMI
 
-The compressor and angle grinder were on the same circuit as my computer and monitors. Every time a motor started, the voltage would sag and the sensitive electronics would see an EMI spike. Over time, that's how you kill power supplies. **Fix:** Physically separated circuits — heavy machinery on one group, sensitive electronics on another.
+The compressor and angle grinder were on the same circuit as my computer and monitors. Every time a motor started, the voltage would sag and the sensitive electronics would see an EMI spike. Over time, that's how you kill power supplies. **Fix:** Physically separated circuits: heavy machinery on one group, sensitive electronics on another.
 
 ![Travel Adapter Issues](./11.png)
 
 ### Travel Adapters
 
-I had a few travel adapters in the setup — the kind meant for charging a phone in a hotel, useless for workshop equipment. The contact surfaces are tiny, they're not rated for sustained high current, and they get warm in ways that make me nervous. **Fix:** Replaced every single one with proper European Schuko plugs or industrial-grade power strips.
+I had a few travel adapters in the setup: the kind meant for charging a phone in a hotel, useless for workshop equipment. The contact surfaces are tiny, they're not rated for sustained high current, and they get warm in ways that make me nervous. **Fix:** Replaced every single one with proper European Schuko plugs or industrial-grade power strips.
 
 ### Zoning & Circuit Distribution
 
@@ -165,9 +165,9 @@ This sounds silly but it matters: I put up actual labels. "Do not start more tha
 
 # Conclusion
 
-Nine risk factors, some of which had been sitting there for months while I worked around them. The ungrounded welder was the scariest — that one could have actually hurt someone. The daisy-chained power strips were the most likely to cause a real fire.
+Nine risk factors, some of which had been sitting there for months while I worked around them. The ungrounded welder was the scariest: that one could have actually hurt someone. The daisy-chained power strips were the most likely to cause a real fire.
 
-The core insight was that my setup was never designed — it had just accumulated. Another power strip here, an extension cord there, until the topology was a mess of serial connections where every link was a liability. Moving to a star topology with physically separated circuits means a fault in one zone doesn't cascade into the others.
+The core insight was that my setup was never designed: it had just accumulated. Another power strip here, an extension cord there, until the topology was a mess of serial connections where every link was a liability. Moving to a star topology with physically separated circuits means a fault in one zone doesn't cascade into the others.
 
 # Making It Real
 
@@ -175,14 +175,14 @@ The core insight was that my setup was never designed — it had just accumulate
 
 I actually did the physical work:
 
-- **Office Zone:** Computers, monitors, network gear — all on one dedicated circuit, physically isolated from the noisy stuff. No more screen flicker when a motor starts.
+- **Office Zone:** Computers, monitors, network gear: all on one dedicated circuit, physically isolated from the noisy stuff. No more screen flicker when a motor starts.
 - **Work Zone:** Welder, compressor, grinders, and other industrial tools moved to a separate room on separate circuits. Heavy loads are contained where they belong, and the fire risk from overloaded circuits dropped substantially.
 
 # Reflection
 
 I'll be honest: before this, I knew enough about electrical safety to be dangerous. I understood breakers and grounding in theory, but I'd never actually traced every connection in my own workspace and asked "what happens if this fails?"
 
-Doing that exercise — drawing the topology, walking the circuits, actually checking what was plugged into what — changed my relationship with the space. You develop a healthy paranoia. You start noticing the coiled extension cord, the warm plug, the adapter that's not quite seated right. That awareness doesn't go away, and honestly, it shouldn't.
+Doing that exercise: drawing the topology, walking the circuits, actually checking what was plugged into what: changed my relationship with the space. You develop a healthy paranoia. You start noticing the coiled extension cord, the warm plug, the adapter that's not quite seated right. That awareness doesn't go away, and honestly, it shouldn't.
 
 # References
 

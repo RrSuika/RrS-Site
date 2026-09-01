@@ -1,5 +1,5 @@
 ---
-title: 电气隔离与 GPIO 驱动 — MOS管 三极管 继电器 光耦
+title: 电气隔离与 GPIO 驱动：MOS管 三极管 继电器 光耦
 date: 2026-08-10
 description: MCU 驱动大功率负载设计指南;MOSFET 电压控制开关、BJT 与 MOS 对比、继电器隔离、光耦安全隔离与 PWM 调光实践。
 

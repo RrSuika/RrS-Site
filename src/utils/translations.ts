@@ -4,7 +4,7 @@ export const translations = {
   en: {
     meta: {
       description:
-        "RrSuika Studio — the portfolio of a multidisciplinary maker: industrial design, embedded systems, electronics notes and visual art.",
+        "RrSuika Studio, the portfolio of a multidisciplinary maker: industrial design, embedded systems, electronics notes and visual art.",
     },
 
     nav: {
@@ -358,28 +358,28 @@ export const translations = {
           "The goal is simple: take ideas seriously enough to build them, and stay curious enough to keep making new ones...",
         annex: {
           header: "STYLE_GENEALOGY // DESIGN_ORIGINS_RECORD",
-          status: "RECORD_STATUS: UNCLASSIFIED — SHARED_FOR_CURIOSITY",
+          status: "RECORD_STATUS: UNCLASSIFIED // SHARED_FOR_CURIOSITY",
           intro:
             "I loveeeees retro-futurism!! When everything around us gets flattened into minimalism and cold, clinical design, people get quantified and products lose their emotion and personality. Just like people who love Y2K or get drawn into the Backrooms; I'm curious about how style evolved from the Cold War era through the end of the last century. It's a traceable, constantly-mutating aesthetic that keeps reshaping itself with the society and culture around it. That's what fascinates me.",
-          styleIndex: "// STYLE_INDEX — THE MAIN DIALECTS THIS SITE SPEAKS",
+          styleIndex: "// STYLE_INDEX // THE MAIN DIALECTS THIS SITE SPEAKS",
           styles: [
             {
               code: "STYLE_01 // BAUHAUS_&_DE_STIJL",
-              era: "1919 — 1933",
+              era: "1919–1933",
               body:
                 "Primary-color triad as design grammar: the overlapping red/yellow/blue dots in the navbar, the tri-color bars beside the headline. Geometry as a moral framework.",
               refs: "Bauhaus Dessau · Mondrian compositions · Moholy-Nagy typography",
             },
             {
               code: "STYLE_02 // SWISS_INTERNATIONAL",
-              era: "1950s — 60s",
+              era: "1950s–60s",
               body:
-                "Systematic grids, numbered modules, uppercase micro-labels. Copy written like instrument markings — MODULE_01, ENTRY_001, DATA_UPLINK.",
+                "Systematic grids, numbered modules, uppercase micro-labels. Copy written like instrument markings: MODULE_01, ENTRY_001, DATA_UPLINK.",
               refs: "Josef Müller-Brockmann, Grid Systems in Graphic Design",
             },
             {
               code: "STYLE_03 // CASSETTE_FUTURISM",
-              era: "1970s — 80s",
+              era: "1970s–80s",
               body:
                 "Green phosphor, scanlines, magnetic tape, barcodes, boot terminals. The CRT is the site's true material: every screen here is a warmed-up monitor.",
               refs: "Alien (1979) · 2001: A Space Odyssey · Soviet Soyuz panels",
@@ -393,13 +393,13 @@ export const translations = {
             },
             {
               code: "STYLE_05 // CYBERPUNK_TERMINAL",
-              era: "1980s — 90s",
+              era: "1980s–90s",
               body:
-                "Dark screen + green system logs, the hacker-terminal mood. The accidental fifth dialect — it arrived with the dark theme and never left.",
+                "Dark screen + green system logs, the hacker-terminal mood. The accidental fifth dialect: it arrived with the dark theme and never left.",
               refs: "Blade Runner · The Matrix",
             },
           ],
-          worksIndex: "// WORKS_INDEX — VISUAL WORKS ON THE SAME FREQUENCY",
+          worksIndex: "// WORKS_INDEX // VISUAL WORKS ON THE SAME FREQUENCY",
           works: [
             {
               title: "Arknights: Lone Trail",
@@ -415,7 +415,7 @@ export const translations = {
             },
             {
               title: "Fallout series",
-              note: "the atom-punk benchmark — CRT terminals and wasteland optimism",
+              note: "the atom-punk benchmark: CRT terminals and wasteland optimism",
             },
             {
               title: "Alien (1979) · 2001: A Space Odyssey",
@@ -439,7 +439,7 @@ export const translations = {
   zh: {
     meta: {
       description:
-        "RrSuika Studio — 多学科创客作品集：工业设计、嵌入式系统、电子学笔记与视觉艺术。",
+        "RrSuika Studio，多学科创客作品集：工业设计、嵌入式系统、电子学笔记与视觉艺术。",
     },
 
     nav: {
@@ -768,28 +768,28 @@ export const translations = {
           "目标其实很简单：认真对待每一个值得实现的想法，同时保持足够的好奇心，继续创造新的东西",
         annex: {
           header: "风格谱系 // 设计起源档案",
-          status: "档案状态：已解密 — 出于好奇",
+          status: "档案状态：已解密: 出于好奇",
           intro:
             "我超爱复古未来主义！！当身边的一切都被极简和性冷淡风格处理时，人被量化，产品也失去了情感和个性。就像有人喜欢千禧年美学、有人着迷后室一样，我好奇的是从冷战时期一路到上世纪末的风格演变;那是一条可以追溯、不断变化的审美线索，随着当代社会与文化不断生长，令人着迷。",
-          styleIndex: "// STYLE_INDEX — 这个网站参考的设计语言",
+          styleIndex: "// STYLE_INDEX // 这个网站参考的设计语言",
           styles: [
             {
               code: "STYLE_01 // BAUHAUS_&_DE_STIJL",
-              era: "1919 — 1933",
+              era: "1919–1933",
               body:
                 "三原色当作设计语法：导航栏里重叠的红黄蓝圆点、标题旁的三色竖条。这是最早的现代主义设计语言，也是这个网站的视觉起点。",
               refs: "包豪斯德绍 · 蒙德里安构成 · 莫霍利-纳吉的字体实验",
             },
             {
               code: "STYLE_02 // SWISS_INTERNATIONAL",
-              era: "1950s — 60s",
+              era: "1950s–60s",
               body:
                 "系统化的网格、编号模块，还有大写微标签。文案写得像仪表铭牌;MODULE_01、ENTRY_001、DATA_UPLINK。",
               refs: "约瑟夫·米勒-布罗克曼《平面设计中的网格系统》",
             },
             {
               code: "STYLE_03 // CASSETTE_FUTURISM",
-              era: "1970s — 80s",
+              era: "1970s–80s",
               body:
                 "绿色磷光、扫描线、磁带、条形码、开机终端。画面里隐藏起来的 CRT 扫描线质感。",
               refs: "《异形》(1979) · 《2001太空漫游》 · 苏联联盟号控制面板",
@@ -803,13 +803,13 @@ export const translations = {
             },
             {
               code: "STYLE_05 // CYBERPUNK_TERMINAL",
-              era: "1980s — 90s",
+              era: "1980s–90s",
               body:
                 "黑底绿字的系统日志、黑客终端氛围。意外混入的第五种视觉语言，帅到我了",
               refs: "《银翼杀手》 · 《黑客帝国》",
             },
           ],
-          worksIndex: "// WORKS_INDEX — 同频的视觉作品",
+          worksIndex: "// WORKS_INDEX // 同频的视觉作品",
           works: [
             {
               title: "明日方舟：孤星",
@@ -849,7 +849,7 @@ export const translations = {
   nl: {
     meta: {
       description:
-        "RrSuika Studio — portfolio van een multidisciplinaire maker: industrieel ontwerp, embedded systems, notities over elektronica en visuele kunst.",
+        "RrSuika Studio, portfolio van een multidisciplinaire maker: industrieel ontwerp, embedded systems, notities over elektronica en visuele kunst.",
     },
 
     nav: {
@@ -1203,28 +1203,28 @@ export const translations = {
           "Het doel is simpel: ideeën serieus genoeg nemen om ze ook echt te bouwen, en nieuwsgierig genoeg blijven om nieuwe te blijven maken...",
         annex: {
           header: "STYLE_GENEALOGIE // DESIGN_ORIGINS_RECORD",
-          status: "RECORD_STATUS: UNCLASSIFIED — GEDEELD UIT NIEUWSGIERIGHEID",
+          status: "RECORD_STATUS: UNCLASSIFIED // GEDEELD UIT NIEUWSGIERIGHEID",
           intro:
             "Ik ben gewoon gek op retro-futurisme!! Wanneer alles om ons heen wordt platgeslagen tot minimalisme en koud, klinisch design, worden mensen gereduceerd tot cijfers en verliezen producten hun emotie en persoonlijkheid. Net als mensen die van Y2K houden of de Backrooms in getrokken worden, ben ik nieuwsgierig naar hoe stijl zich ontwikkelde van de Koude Oorlog tot het einde van de vorige eeuw. Het is een traceerbare, voortdurend veranderende esthetiek die meebeweegt met de maatschappij en cultuur om zich heen. Dat fascineert me.",
-          styleIndex: "// STYLE_INDEX — DE BELANGRIJKSTE DIALECTEN DIE DEZE SITE SPREEKT",
+          styleIndex: "// STYLE_INDEX // DE BELANGRIJKSTE DIALECTEN DIE DEZE SITE SPREEKT",
           styles: [
             {
               code: "STYLE_01 // BAUHAUS_&_DE_STIJL",
-              era: "1919 — 1933",
+              era: "1919–1933",
               body:
                 "De triade van primaire kleuren als ontwerpgrammatica: de overlappende rode/gele/blauwe stippen in de navbar, de driekleurige balken naast de kop. Geometrie als moreel kader.",
               refs: "Bauhaus Dessau · Mondriaan-composities · Moholy-Nagy typografie",
             },
             {
               code: "STYLE_02 // SWISS_INTERNATIONAL",
-              era: "Jaren 50 — 60",
+              era: "Jaren 50–60",
               body:
-                "Systematische rasters, genummerde modules, micro-labels in hoofdletters. Tekst geschreven als instrumentmarkeringen — MODULE_01, ENTRY_001, DATA_UPLINK.",
+                "Systematische rasters, genummerde modules, micro-labels in hoofdletters. Tekst geschreven als instrumentmarkeringen: MODULE_01, ENTRY_001, DATA_UPLINK.",
               refs: "Josef Müller-Brockmann, Grid Systems in Graphic Design",
             },
             {
               code: "STYLE_03 // CASSETTE_FUTURISM",
-              era: "Jaren 70 — 80",
+              era: "Jaren 70–80",
               body:
                 "Groene fosfor, scanlines, magneetband, streepjescodes, boot-terminals. De CRT is het ware materiaal van de site: elk scherm hier is een opgewarmde monitor.",
               refs: "Alien (1979) · 2001: A Space Odyssey · Sovjet Sojoez-panelen",
@@ -1238,13 +1238,13 @@ export const translations = {
             },
             {
               code: "STYLE_05 // CYBERPUNK_TERMINAL",
-              era: "Jaren 80 — 90",
+              era: "Jaren 80–90",
               body:
-                "Donker scherm + groene systeemlogs, de sfeer van een hackerterminal. Het toevallige vijfde dialect — het kwam met het donkere thema en ging nooit meer weg.",
+                "Donker scherm + groene systeemlogs, de sfeer van een hackerterminal. Het toevallige vijfde dialect: het kwam met het donkere thema en ging nooit meer weg.",
               refs: "Blade Runner · The Matrix",
             },
           ],
-          worksIndex: "// WORKS_INDEX — VISUEEL WERK OP DEZELFDE FREQUENTIE",
+          worksIndex: "// WORKS_INDEX // VISUEEL WERK OP DEZELFDE FREQUENTIE",
           works: [
             {
               title: "Arknights: Lone Trail",
@@ -1260,7 +1260,7 @@ export const translations = {
             },
             {
               title: "Fallout-serie",
-              note: "de atoompunk-benchmark — CRT-terminals en woestenij-optimisme",
+              note: "de atoompunk-benchmark: CRT-terminals en woestenij-optimisme",
             },
             {
               title: "Alien (1979) · 2001: A Space Odyssey",

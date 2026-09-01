@@ -77,7 +77,7 @@ translationKey: esp32-ec11-stepper-motor
 
 # 硬件接线
 
-## 引脚 — 模块 1（编码器 + OLED）
+## 引脚：模块 1（编码器 + OLED）
 
 | 信号 | ESP32 引脚 | 功能             |
 | ---- | ---------- | ---------------- |
@@ -91,7 +91,7 @@ translationKey: esp32-ec11-stepper-motor
 | BAK  | GPIO26     | 返回按钮         |
 | CON  | GPIO27     | 确认按钮         |
 
-## 引脚 — 模块 2（编码器 + OLED）
+## 引脚：模块 2（编码器 + OLED）
 
 | 信号 | ESP32 引脚 | 功能                 |
 | ---- | ---------- | -------------------- |
@@ -105,16 +105,16 @@ translationKey: esp32-ec11-stepper-motor
 | BAK  | GPIO19     | 返回按钮             |
 | CON  | GPIO23     | 确认按钮             |
 
-## 引脚 — DM430 步进驱动器 → ESP32
+## 引脚：DM430 步进驱动器 → ESP32
 
 | DM430 端 | ESP32 引脚 | 功能         |
 | -------- | ---------- | ------------ |
 | PUL+     | GPIO4      | STEP 脉冲    |
 | DIR+     | GPIO5      | 方向信号     |
 | ENA+     | GPIO13     | 使能（可选） |
-| PUL-     | GND        | —            |
-| DIR-     | GND        | —            |
-| ENA-     | GND        | —            |
+| PUL-     | GND        |：           |
+| DIR-     | GND        |：           |
+| ENA-     | GND        |：           |
 
 ## DM430 → 42BL40 步进电机
 
@@ -133,7 +133,7 @@ translationKey: esp32-ec11-stepper-motor
 | OLED ×2 | 3.3V | ESP32      |
 | EC11 ×2 | 3.3V | ESP32      |
 | DM430   | 24V  | 外接电源   |
-| 42BL40  | —    | DM430 输出 |
+| 42BL40  |：   | DM430 输出 |
 
 # 调试过程
 

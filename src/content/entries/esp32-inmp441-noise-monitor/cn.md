@@ -46,7 +46,7 @@ INMP441 → I2S → ESP32 → FFT → WebSocket → 浏览器仪表盘
                           频谱 + dB + 历史数据
 ```
 
-# 引脚 — INMP441 → ESP32
+# 引脚：INMP441 → ESP32
 
 | INMP441 引脚 | ESP32 引脚 | 功能              |
 | ------------ | ---------- | ----------------- |
@@ -76,8 +76,8 @@ INMP441 → I2S → ESP32 → FFT → WebSocket → 浏览器仪表盘
 
 两个文件：
 
-- **Main.ino** — I2S 驱动初始化、音频采集循环、FFT 管线（Hamming 窗、复数幅值转换、对数分桶）、WiFi 服务器、`/data` 和 `/calibrate` 两个 JSON 接口。
-- **webpage.h** — 完整的 HTML/CSS/JS 仪表盘塞进一个 `PROGMEM` 字符串。Chart.js 走 CDN 加载，数据用 `fetch()` 轮询，频谱柱状图直接用 CSS transition 的 div 元素实现。没有框架，没有构建步骤;就是能塞进 ESP32 flash 的纯 HTML。
+- **Main.ino**：I2S 驱动初始化、音频采集循环、FFT 管线（Hamming 窗、复数幅值转换、对数分桶）、WiFi 服务器、`/data` 和 `/calibrate` 两个 JSON 接口。
+- **webpage.h**：完整的 HTML/CSS/JS 仪表盘塞进一个 `PROGMEM` 字符串。Chart.js 走 CDN 加载，数据用 `fetch()` 轮询，频谱柱状图直接用 CSS transition 的 div 元素实现。没有框架，没有构建步骤;就是能塞进 ESP32 flash 的纯 HTML。
 
 # 完整代码
 

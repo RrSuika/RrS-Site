@@ -36,11 +36,11 @@ translationKey: esp32-ec11-stepper-motor
 
 This is where the previous encoder + OLED prototype graduated to actual motion control. I bolted a DM430 stepper driver and a 42BL40 motor onto the bench, wired everything up to the ESP32, and wrote the firmware to make it all work together. The system handles:
 
-1. **Dual EC11 encoder input** — direction detection, incremental counting, push buttons for mode toggling.
-2. **Dual OLED display control** — two SH1106 modules in parallel on the same I2C bus, showing real-time angle, step count, speed, and current mode.
-3. **DM430 stepper motor driver** — STEP/DIR pulse output on GPIO4/5, with the 42BL40 motor running at 1600 microsteps per revolution. Tuned the driver's current and microstep settings through trial and error.
-4. **WiFi WebSocket dashboard** — a real-time control page with auto-reconnect and heartbeat, mirroring what the OLED shows.
-5. **FreeRTOS multi-task architecture** — Encoder Task, Motor Task, and OLED Task all on Core 1 behind a mutex.
+1. **Dual EC11 encoder input**: direction detection, incremental counting, push buttons for mode toggling.
+2. **Dual OLED display control**: two SH1106 modules in parallel on the same I2C bus, showing real-time angle, step count, speed, and current mode.
+3. **DM430 stepper motor driver**: STEP/DIR pulse output on GPIO4/5, with the 42BL40 motor running at 1600 microsteps per revolution. Tuned the driver's current and microstep settings through trial and error.
+4. **WiFi WebSocket dashboard**: a real-time control page with auto-reconnect and heartbeat, mirroring what the OLED shows.
+5. **FreeRTOS multi-task architecture**: Encoder Task, Motor Task, and OLED Task all on Core 1 behind a mutex.
 
 # System Architecture
 
@@ -70,14 +70,14 @@ This is where the previous encoder + OLED prototype graduated to actual motion c
 
 I wanted two fundamentally different ways to interact with the motor, so I built both:
 
-- **MANUAL mode:** Spin the encoder and the motor follows in discrete steps. Each detent on the EC11 moves the motor by 20 steps (configurable). This is direct position control — great for precise jogging and alignment work.
-- **AUTO mode:** The encoder doesn't control position anymore — it controls speed. Twisting the knob changes the step rate from -5000 to +5000 steps/sec, with each encoder increment adjusting by 50 steps/sec. The motor runs continuously. Negative speed = reverse direction. This mode is perfect for sweeping through a motion range or testing speed limits.
+- **MANUAL mode:** Spin the encoder and the motor follows in discrete steps. Each detent on the EC11 moves the motor by 20 steps (configurable). This is direct position control: great for precise jogging and alignment work.
+- **AUTO mode:** The encoder doesn't control position anymore: it controls speed. Twisting the knob changes the step rate from -5000 to +5000 steps/sec, with each encoder increment adjusting by 50 steps/sec. The motor runs continuously. Negative speed = reverse direction. This mode is perfect for sweeping through a motion range or testing speed limits.
 
-Pressing either encoder's push button toggles between modes. When you switch modes, the firmware syncs the target position to the current position so there's no sudden jump — I learned that one the hard way after the motor slammed into an endstop during an early test.
+Pressing either encoder's push button toggles between modes. When you switch modes, the firmware syncs the target position to the current position so there's no sudden jump: I learned that one the hard way after the motor slammed into an endstop during an early test.
 
 # Hardware
 
-## Pinout — Module 1 (Encoder + OLED)
+## Pinout: Module 1 (Encoder + OLED)
 
 | Signal | ESP32 Pin | Function |
 |--------|-----------|----------|
@@ -91,7 +91,7 @@ Pressing either encoder's push button toggles between modes. When you switch mod
 | BAK    | GPIO26    | Back button |
 | CON    | GPIO27    | Confirm button |
 
-## Pinout — Module 2 (Encoder + OLED)
+## Pinout: Module 2 (Encoder + OLED)
 
 | Signal | ESP32 Pin | Function |
 |--------|-----------|----------|
@@ -105,16 +105,16 @@ Pressing either encoder's push button toggles between modes. When you switch mod
 | BAK    | GPIO19    | Back button |
 | CON    | GPIO23    | Confirm button |
 
-## Pinout — DM430 Stepper Driver to ESP32
+## Pinout: DM430 Stepper Driver to ESP32
 
 | DM430 Pin | ESP32 Pin | Function |
 |-----------|-----------|----------|
 | PUL+      | GPIO4     | STEP pulse |
 | DIR+      | GPIO5     | Direction |
 | ENA+      | GPIO13    | Enable (optional) |
-| PUL-      | GND       | — |
-| DIR-      | GND       | — |
-| ENA-      | GND       | — |
+| PUL-      | GND       |: |
+| DIR-      | GND       |: |
+| ENA-      | GND       |: |
 
 ## DM430 to 42BL40 Stepper Motor
 
@@ -133,7 +133,7 @@ Pressing either encoder's push button toggles between modes. When you switch mod
 | OLED x2 | 3.3V    | ESP32   |
 | EC11 x2 | 3.3V    | ESP32   |
 | DM430   | 24V     | External PSU |
-| 42BL40  | —       | DM430 output |
+| 42BL40  |:       | DM430 output |
 
 # Debugging Journey
 
@@ -141,12 +141,12 @@ Getting a stepper motor to spin sounds simple until you're staring at a motionle
 
 | Issue | Root Cause | Solution |
 |-------|-----------|----------|
-| OLED shows only a line | SH1106 init param wrong | `display.begin(0x3C, true)` — the `true` triggers a hardware reset |
+| OLED shows only a line | SH1106 init param wrong | `display.begin(0x3C, true)`: the `true` triggers a hardware reset |
 | Motor not spinning | ENA signal logic inverted | Disconnected ENA entirely; STEP+DIR alone works fine for basic control |
 | DM430 red FLT alarm | PA current setting incorrect | Reconfigured driver DIP switches to match the 42BL40's rated current |
 | Motor too slow | Step count per encoder tick too low | Bumped the speed factor in code from a conservative value to something that actually feels responsive |
 
-The ENA pin was the most frustrating one. The DM430's enable logic depends on how you've wired the optocoupler inputs — pulling ENA+ high didn't enable the driver the way I expected. In the end I just left it disconnected and the driver defaults to enabled, which is fine for this prototype.
+The ENA pin was the most frustrating one. The DM430's enable logic depends on how you've wired the optocoupler inputs: pulling ENA+ high didn't enable the driver the way I expected. In the end I just left it disconnected and the driver defaults to enabled, which is fine for this prototype.
 
 # Full Code
 
@@ -621,12 +621,12 @@ void loop() {
 
 # Result
 
-This one fought me a bit — stepper drivers have their own personality — but everything came together:
+This one fought me a bit: stepper drivers have their own personality: but everything came together:
 
 - Both EC11 encoders feed into the control loop with no dropped counts, and the mode-switching logic (with position sync on transition) prevents the motor from jumping when you toggle between MANUAL and AUTO.
-- Dual OLEDs display angle, step count, speed, and mode — I2C bus sharing works fine at these refresh rates.
+- Dual OLEDs display angle, step count, speed, and mode: I2C bus sharing works fine at these refresh rates.
 - The WebSocket dashboard mirrors the OLED data in real time, with the usual heartbeat and auto-reconnect.
-- The DM430 drives the 42BL40 smoothly at 1600 microsteps/rev. The motor sings a bit at certain speeds but that's just stepper harmonics — nothing a microstep tuning pass can't dial out.
+- The DM430 drives the 42BL40 smoothly at 1600 microsteps/rev. The motor sings a bit at certain speeds but that's just stepper harmonics: nothing a microstep tuning pass can't dial out.
 - FreeRTOS scheduling holds up: the 1000 Hz encoder task, the pulse-generation motor task, and the 10 Hz OLED refresh all coexist on Core 1 without starving each other.
 
 This thing has graduated from "does the software work" to "actual motion control platform." The next round of upgrades I'm planning: a TCA9548A I2C multiplexer so I can run four independent OLEDs without address conflicts, HSV-based lighting control tied to motor position, and eventually closed-loop feedback with an encoder on the motor shaft.

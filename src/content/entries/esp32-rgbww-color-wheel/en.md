@@ -32,9 +32,9 @@ translationKey: esp32-rgbww-color-wheel
 
 This is where the previous two experiments came together. I had the FCOB strip talking to the ESP32, and I knew how to serve a web page over WiFi. The natural next step was a proper colour picker: a real colour wheel you could drag around, with the strip updating in real time.
 
-The web interface ended up being the biggest part of the project. I wanted it to feel polished — dark/light mode toggle, glassmorphism card, animated scene presets, a colour history grid, and a background glow that matched whatever colour the strip was displaying. Building the HSV colour wheel from scratch on a `<canvas>` was probably overkill, but it's way more satisfying to use than three sliders.
+The web interface ended up being the biggest part of the project. I wanted it to feel polished: dark/light mode toggle, glassmorphism card, animated scene presets, a colour history grid, and a background glow that matched whatever colour the strip was displaying. Building the HSV colour wheel from scratch on a `<canvas>` was probably overkill, but it's way more satisfying to use than three sliders.
 
-# Colour Processing — RGB to RGBW
+# Colour Processing: RGB to RGBW
 
 The key challenge with RGBWW strips is extracting the white component:
 
@@ -52,9 +52,9 @@ void updateLED() {
 }
 ```
 
-> **Note:** NeoGrbwFeature uses the channel order **Red, White, Green, Blue** — not R, G, B, W.
+> **Note:** NeoGrbwFeature uses the channel order **Red, White, Green, Blue** (not R, G, B, W).
 
-The white extraction is surprisingly simple once you think about it. Any colour where R, G, and B all have some value — greys, pastels, warm tones — contains a "white" component equal to the smallest of the three channels. Subtract that out, send it to the dedicated warm-white LED, and the remaining RGB values give you the pure hue. Without this step, a colour like `(255, 200, 150)` would look washed out because the RGB LEDs would be trying to produce both the hue and the white component simultaneously — and LEDs aren't great at that. Splitting them gives you noticeably cleaner, more accurate colours.
+The white extraction is surprisingly simple once you think about it. Any colour where R, G, and B all have some value (greys, pastels, warm tones) contains a "white" component equal to the smallest of the three channels. Subtract that out, send it to the dedicated warm-white LED, and the remaining RGB values give you the pure hue. Without this step, a colour like `(255, 200, 150)` would look washed out because the RGB LEDs would be trying to produce both the hue and the white component simultaneously, and LEDs aren't great at that. Splitting them gives you noticeably cleaner, more accurate colours.
 
 The gotcha is the channel order: `NeoGrbwFeature` maps to (Red, White, Green, Blue), which is... not what you'd guess from the name. I wasted a solid 20 minutes on that before reading the library docs properly.
 
@@ -68,7 +68,7 @@ The web page provides:
 - Individual R, G, B sliders for fine control
 - Real-time LED preview
 
-The colour wheel is rendered pixel-by-pixel on a `<canvas>` — a hue ring on the outside for picking the base colour, and a saturation/value triangle in the centre for fine-tuning. Dragging on the ring sets hue; dragging in the triangle sets saturation and value. It's the same interaction model as a proper desktop colour picker, just running in a browser on a microcontroller.
+The colour wheel is rendered pixel-by-pixel on a `<canvas>`: a hue ring on the outside for picking the base colour, and a saturation/value triangle in the centre for fine-tuning. Dragging on the ring sets hue; dragging in the triangle sets saturation and value. It's the same interaction model as a proper desktop colour picker, just running in a browser on a microcontroller.
 
 I also added five animated scene presets (sunset, ocean, sky, forest, neon) that continuously vary the colour using sine-wave modulation. The neon one just cycles through the full hue spectrum at whatever speed you set. Tapping a scene button starts the animation; tapping it again stops it. It's a fun way to demo the strip without having to constantly drag sliders around.
 
@@ -811,4 +811,4 @@ The full HTML/CSS webpage (glassmorphism iOS-style colour picker) is available i
 
 The ESP32 serves a responsive colour control page. Users can select any colour from the wheel or adjust individual channels, and the FCOB strip updates immediately. The RGB→RGBW algorithm produces clean colours with independent warm white control.
 
-This is one of those projects where the result feels disproportionately polished for the amount of hardware involved — it's just an ESP32 and an LED strip, but the web interface makes it feel like a proper product. The colour wheel is satisfying to use, the scenes are fun to demo, and the white extraction means pastels and warm tones actually look right instead of washed out. It's the kind of thing I'll keep coming back to — adding more scenes, maybe MQTT support, maybe Home Assistant integration. But for now, it does exactly what I wanted: pick a colour, see it on the strip, no apps required.
+This is one of those projects where the result feels disproportionately polished for the amount of hardware involved: it's just an ESP32 and an LED strip, but the web interface makes it feel like a proper product. The colour wheel is satisfying to use, the scenes are fun to demo, and the white extraction means pastels and warm tones actually look right instead of washed out. It's the kind of thing I'll keep coming back to: adding more scenes, maybe MQTT support, maybe Home Assistant integration. But for now, it does exactly what I wanted: pick a colour, see it on the strip, no apps required.

@@ -131,7 +131,7 @@ I tested a range of translucent and transparent materials that show up frequentl
 | **AB Epoxy Resin Plate**    | Cast resin             | High transparency, smooth surface, glass alternative                     |
 | **PC Light Diffuser Sheet** | Extruded polycarbonate | Purpose-built for diffusion, prismatic surface texture                   |
 
-Each material went through multiple configurations — different thicknesses, different surface finishes, different distances from the light source — so I could see how material choice actually affects the final visual output.
+Each material went through multiple configurations: different thicknesses, different surface finishes, different distances from the light source: so I could see how material choice actually affects the final visual output.
 
 # Controllable Variables
 
@@ -154,21 +154,21 @@ The platform didn't arrive fully formed. I did three iterations, and each versio
 
 ![Iteration Comparison](./01-iteration-comparison.png)
 
-|                          | V1 — Single LED                                         | V2 — LED Strip                                              | V3 — LED Strip + PWM                                                                     |
+|                          | V1: Single LED                                         | V2: LED Strip                                              | V3: LED Strip + PWM                                                                     |
 | ------------------------ | ------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | <strong>Method</strong>  | Hand-soldered                                           | Copper foil tape                                            | PWM controller                                                                           |
 | <strong>Issues</strong>  | <span style="color:#e53935">✕</span> Soldering too slow | <span style="color:#e53935">✕</span> Tape unsuitable for 2A | <span style="color:var(--terminal-green)">✓</span> Brightness adjustable                 |
 |                          | <span style="color:#e53935">✕</span> Light effect poor  | <span style="color:#e53935">✕</span> No brightness control  | <span style="color:var(--terminal-green)">✓</span> Diffuse reflection from dark surfaces |
 | <strong>Verdict</strong> | <span style="color:#e53935">✕ Discarded</span>          | <span style="color:#e53935">✕ Discarded</span>              | <span style="color:var(--terminal-green)">✓ Final</span>                                 |
 
-### V1: Single LED — Manual Solder
+### V1: Single LED: Manual Solder
 
 I was planning on hand-soldering individual LEDs to the board. It was the obvious first approach, and it was wrong in exactly the ways you'd expect.
 
 - <span style="color:#e53935">**Issue:**</span> Hand-soldering twenty LEDs is tedious and inconsistent. Each joint has slightly different resistance, so each LED glows a tiny bit differently. For a test platform, "tiny bit differently" is fatal.
 - <span style="color:#e53935">**Issue:**</span> A single-point light source creates uneven illumination across the sample. If the light isn't uniform to begin with, you can't tell whether the diffusion pattern you're seeing is from the material or from the source.
 
-### V2: LED Strip — Copper Foil Tape
+### V2: LED Strip, Copper Foil Tape
 
 I swapped the individual LEDs for a uniform LED strip and used copper foil tape for the electrical connections. Better, but new problems.
 
@@ -187,10 +187,10 @@ This is the one that stuck:
 
 The finished design gives me a reliable, repeatable environment for comparing how materials handle light:
 
-- <strong style="color:var(--accent)">Side-by-side material comparison</strong> under identical lighting — no more "I think this one looks better"
-- <strong style="color:var(--accent)">Surface finish evaluation</strong> — how does sanding, polishing, or texturing change the way light moves through?
-- <strong style="color:var(--accent)">Thickness vs transmission analysis</strong> — how much does doubling the sheet thickness actually reduce brightness?
-- <strong style="color:var(--accent)">Controlled brightness sweeps</strong> — see how materials behave across the full dimming range
+- <strong style="color:var(--accent)">Side-by-side material comparison</strong> under identical lighting: no more "I think this one looks better"
+- <strong style="color:var(--accent)">Surface finish evaluation</strong>: how does sanding, polishing, or texturing change the way light moves through?
+- <strong style="color:var(--accent)">Thickness vs transmission analysis</strong>: how much does doubling the sheet thickness actually reduce brightness?
+- <strong style="color:var(--accent)">Controlled brightness sweeps</strong>: see how materials behave across the full dimming range
 - <strong style="color:var(--accent)">Visual documentation</strong> of light distribution patterns I can reference on future projects
 
 ![Final Platform](./03-final-platform-3d.png)
