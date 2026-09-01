@@ -434,6 +434,22 @@ export const translations = {
       status: "SYS_STATUS:",
       online: "ONLINE",
     },
+
+    skillMap: {
+      hubs: [
+        { name: "INDUSTRIAL DESIGN", skills: ["RESEARCH", "SKETCHING", "3D MODELING", "PROTOTYPING", "SOURCING", "CMF"] },
+        { name: "AESTHETICS", skills: [] },
+        { name: "CAD & MODELLING", skills: ["SOLIDWORKS", "BLENDER"] },
+        { name: "3D PRINTING", skills: ["FDM", "SLA", "PLA", "PETG", "ABS", "ASA", "TPU", "RESIN"] },
+        { name: "SOLDERING & WELDING", skills: ["THROUGH-HOLE", "SMD", "MIG"] },
+        { name: "RENDERING", skills: ["KEYSHOT"] },
+        { name: "DIGITAL DRAWING", skills: ["CONCEPT ART", "ILLUSTRATION", "TEACHING ART"] },
+        { name: "IMAGE EDITING", skills: ["PHOTOSHOP", "CLIP STUDIO", "DAVINCI RESOLVE"] },
+        { name: "GRAPHIC DESIGN", skills: ["POSTERS", "VISUAL ART", "ART TRENDS"] },
+        { name: "EMBEDDED SYSTEMS", skills: ["ESP32", "ARDUINO", "SENSORS"] },
+        { name: "ELECTRICAL SYSTEMS", skills: ["BASIC CIRCUITS", "ELECTRICAL THEORY", "LED SYSTEMS"] },
+      ],
+    },
   },
 
   zh: {
@@ -843,6 +859,22 @@ export const translations = {
     system: {
       status: "系统状态:",
       online: "在线",
+    },
+
+    skillMap: {
+      hubs: [
+        { name: "工业产品设计", skills: ["调研", "手绘草图", "三维建模", "原型制作", "采购对接", "CMF"] },
+        { name: "美学", skills: [] },
+        { name: "CAD 建模", skills: ["SolidWorks", "Blender"] },
+        { name: "3D 打印", skills: ["FDM", "SLA", "PLA", "PETG", "ABS", "ASA", "TPU", "树脂"] },
+        { name: "焊接", skills: ["直插焊接", "贴片焊接", "MIG 焊接"] },
+        { name: "渲染", skills: ["KeyShot"] },
+        { name: "数字绘画", skills: ["概念艺术", "插画", "绘画教学"] },
+        { name: "图像处理", skills: ["Photoshop", "Clip Studio", "DaVinci"] },
+        { name: "平面设计", skills: ["海报", "视觉艺术", "艺术趋势"] },
+        { name: "嵌入式系统", skills: ["ESP32", "Arduino", "传感器"] },
+        { name: "电气系统", skills: ["基础电路", "电工理论", "LED 系统"] },
+      ],
     },
   },
 
@@ -1278,6 +1310,22 @@ export const translations = {
     system: {
       status: "SYS_STATUS:",
       online: "ONLINE",
+    },
+
+    skillMap: {
+      hubs: [
+        { name: "INDUSTRIEEL ONTWERP", skills: ["ONDERZOEK", "SCHETSEN", "3D-MODELLEREN", "PROTOTYPEN", "INKOOP", "CMF"] },
+        { name: "ESTHETIEK", skills: [] },
+        { name: "CAD & MODELLEREN", skills: ["SOLIDWORKS", "BLENDER"] },
+        { name: "3D-PRINTEN", skills: ["FDM", "SLA", "PLA", "PETG", "ABS", "ASA", "TPU", "RESIN"] },
+        { name: "SOLDeren & LASSEN", skills: ["THROUGH-HOLE", "SMD", "MIG"] },
+        { name: "RENDERING", skills: ["KEYSHOT"] },
+        { name: "DIGITAAL TEKENEN", skills: ["CONCEPT ART", "ILLUSTRATIE", "TEKENLES"] },
+        { name: "BEELDBEWERKING", skills: ["PHOTOSHOP", "CLIP STUDIO", "DAVINCI"] },
+        { name: "GRAFISCH ONTWERP", skills: ["POSTERS", "VISUELE KUNST", "KUNSTTRENDS"] },
+        { name: "EMBEDDED SYSTEMS", skills: ["ESP32", "ARDUINO", "SENSOREN"] },
+        { name: "ELEKTRISCHE SYSTEMEN", skills: ["BASISSCHAKELINGEN", "ELEKTROTECHNIEK", "LED-SYSTEMEN"] },
+      ],
     },
   },
 } satisfies Record<Language, unknown>;

@@ -5,6 +5,7 @@ import { getTranslations } from "../../../utils/translations";
 
 const lang = getLanguageFromPath(Astro.url.pathname);
 const t = getTranslations(lang);
+const skillMap = t.skillMap;
 
 // 结构化数据 — Person 实体：搜索结果中的身份卡片
 const personSchema = {
@@ -595,241 +596,251 @@ const personSchema = {
         </h2>
       </div>
 
-      <!-- SKILL TREE -->
-
-      <div class="skill-tree">
-        <div class="skill-grid"></div>
-
+      <div class="journey-grid">
+      <!-- SKILL CONSTELLATION — B2 big-force grammar -->
+      <div class="skill-field">
+        <div id="skill-field"></div>
         <div class="skill-tree-label">
-          <span>知识积累</span>
-          <span>时间 →</span>
+          <span>KNOWLEDGE ACCUMULATION</span>
         </div>
-
-        <!-- MAIN DEVELOPMENT PATH -->
-
-        <div class="skill-main-line">
-          <span></span>
-        </div>
-
-        <!-- =================================================
-        LEVEL 01
-        ================================================== -->
-
-        <div class="skill-node skill-origin">
-          <div class="skill-node-dot"></div>
-
-          <div class="skill-node-content">
-            <span class="skill-index"> 01 / 基础 </span>
-
-            <strong> 制作 </strong>
-
-            <small> 学习东西是怎么造出来的 </small>
-          </div>
-        </div>
-
-        <!-- =================================================
-        LEVEL 02
-        ================================================== -->
-
-        <div class="skill-node skill-cad">
-          <div class="skill-node-dot"></div>
-
-          <div class="skill-node-content">
-            <span class="skill-index"> 02 / 形态 </span>
-
-            <strong> CAD </strong>
-
-            <small> 三维建模 · 几何 · 结构 </small>
-          </div>
-        </div>
-
-        <div class="skill-node skill-drawing">
-          <div class="skill-node-dot"></div>
-
-          <div class="skill-node-content">
-            <span class="skill-index"> 02 / 视觉 </span>
-
-            <strong> 绘画 </strong>
-
-            <small> 观察 · 构图 · 形态 </small>
-          </div>
-        </div>
-
-        <!-- =================================================
-        LEVEL 03
-        ================================================== -->
-
-        <div class="skill-node skill-render">
-          <div class="skill-node-dot"></div>
-
-          <div class="skill-node-content">
-            <span class="skill-index"> 03 / 可视化 </span>
-
-            <strong> 三维渲染 </strong>
-
-            <small> 材质 · 光照 · 视觉传达 </small>
-          </div>
-        </div>
-
-        <div class="skill-node skill-print">
-          <div class="skill-node-dot"></div>
-
-          <div class="skill-node-content">
-            <span class="skill-index"> 03 / 制造 </span>
-
-            <strong> 3D打印 </strong>
-
-            <small> 原型 · 迭代 · 增材制造 </small>
-          </div>
-        </div>
-
-        <div class="skill-node skill-graphic">
-          <div class="skill-node-dot"></div>
-
-          <div class="skill-node-content">
-            <span class="skill-index"> 03 / 图形 </span>
-
-            <strong> 平面设计 </strong>
-
-            <small> 字体排印 · 布局 · 视觉系统 </small>
-          </div>
-        </div>
-
-        <!-- =================================================
-        LEVEL 04
-        ================================================== -->
-
-        <div class="skill-node skill-cmf">
-          <div class="skill-node-dot"></div>
-
-          <div class="skill-node-content">
-            <span class="skill-index"> 04 / 材料 </span>
-
-            <strong> CMF </strong>
-
-            <small> 颜色 · 材料 · 表面处理 </small>
-          </div>
-        </div>
-
-        <div class="skill-node skill-prototype">
-          <div class="skill-node-dot"></div>
-
-          <div class="skill-node-content">
-            <span class="skill-index"> 04 / 物件 </span>
-
-            <strong> 原型制作 </strong>
-
-            <small> 从数字几何到物理实体 </small>
-          </div>
-        </div>
-
-        <div class="skill-node skill-character">
-          <div class="skill-node-dot"></div>
-
-          <div class="skill-node-content">
-            <span class="skill-index"> 04 / 艺术 </span>
-
-            <strong> 角色艺术 </strong>
-
-            <small> 解剖 · 表现 · 视觉叙事 </small>
-          </div>
-        </div>
-
-        <div class="skill-node skill-electronics">
-          <div class="skill-node-dot"></div>
-
-          <div class="skill-node-content">
-            <span class="skill-index"> 04 / 系统 </span>
-
-            <strong> 电子学 </strong>
-
-            <small> 电路 · 元件 · 信号 </small>
-          </div>
-        </div>
-
-        <!-- =================================================
-        LEVEL 05
-        ================================================== -->
-
-        <div class="skill-node skill-welding">
-          <div class="skill-node-dot"></div>
-
-          <div class="skill-node-content">
-            <span class="skill-index"> 05 / 制造 </span>
-
-            <strong> 焊接 </strong>
-
-            <small> 金属连接 · 结构 · 制造 </small>
-          </div>
-        </div>
-
-        <div class="skill-node skill-soldering">
-          <div class="skill-node-dot"></div>
-
-          <div class="skill-node-content">
-            <span class="skill-index"> 05 / 硬件 </span>
-
-            <strong> 电子焊接 </strong>
-
-            <small> 电子组装 · 维修 · 改装 </small>
-          </div>
-        </div>
-
-        <div class="skill-node skill-embedded">
-          <div class="skill-node-dot"></div>
-
-          <div class="skill-node-content">
-            <span class="skill-index"> 05 / 计算 </span>
-
-            <strong> 嵌入式系统 </strong>
-
-            <small> 微控制器 · 传感器 · 控制 </small>
-          </div>
-        </div>
-
-        <div class="skill-node skill-materials">
-          <div class="skill-node-dot"></div>
-
-          <div class="skill-node-content">
-            <span class="skill-index"> 05 / 材料 </span>
-
-            <strong> 材料研究 </strong>
-
-            <small> 属性 · 工艺 · 行为 </small>
-          </div>
-        </div>
-
-        <!-- =================================================
-        LEVEL 06
-        ================================================== -->
-
-        <!-- 交换位置：实物 移动到左侧，系统设计 移动到右侧 -->
-
-        <div class="skill-node skill-integration">
-          <div class="skill-node-dot"></div>
-
-          <div class="skill-node-content">
-            <span class="skill-index"> 06 / 实现 </span>
-
-            <strong> 实物 </strong>
-
-            <small> 把概念变成看得见摸得着的东西 </small>
-          </div>
-        </div>
-
-        <!-- BRANCH CONNECTIONS -->
-
-        <div class="skill-branch branch-a"></div>
-        <div class="skill-branch branch-b"></div>
-        <div class="skill-branch branch-c"></div>
-        <div class="skill-branch branch-d"></div>
-        <div class="skill-branch branch-e"></div>
-        <div class="skill-branch branch-f"></div>
-        <div class="skill-branch branch-g"></div>
-        <div class="skill-branch branch-h"></div>
-        <div class="skill-branch branch-i"></div>
-        <div class="skill-branch branch-j"></div>
       </div>
+
+      <script is:inline defer src="https://cdn.jsdelivr.net/npm/echarts@6/dist/echarts.min.js"></script>
+      <script define:vars={{ skillMap }}>
+        (() => {
+          const chartEl = document.getElementById("skill-field");
+          if (!chartEl) return;
+
+          const PAPER = "#d8d8e0";
+          const SKILL_FS = /[一-鿿]/.test((skillMap.hubs[0]?.skills[0] || skillMap.hubs[0]?.name || "")) ? 10.5 : 8.5;
+          const rnd = (i, k) => ((i * 73856093) ^ (k * 19349663)) % 1000 / 1000;
+
+          // hub importance, index-aligned with skillMap.hubs
+          const LINKS = [
+            [0, 1], [1, 5], [1, 6], [1, 7], [1, 8],
+            [0, 2], [0, 3], [0, 9], [2, 3], [3, 4],
+            [9, 10],
+          ];
+
+          const nodes = [];
+          const links = [];
+          const hubs = skillMap.hubs;
+
+          // hub size follows connection count: more links, bigger dot
+          const DEG = new Array(hubs.length).fill(0);
+          // gray ramp: more connections, brighter dot
+          const SHADE = ["", "#6a6a75", "#7e7e8a", "#92929c", "#a6a6b0", "#babac4"];
+          LINKS.forEach(([a, b]) => { DEG[a]++; DEG[b]++; });
+
+          hubs.forEach((hub, di) => {
+            const hid = hub.name;
+            // hub: amber core, label always visible to the right
+            nodes.push({
+              name: hid,
+              value: DEG[di],
+              hub: true,
+              dom: di,
+              symbolSize: 10 + DEG[di] * 2.6,
+              itemStyle: { color: SHADE[DEG[di]] },
+              label: {
+                show: true,
+                position: "right",
+                distance: 8,
+                color: PAPER,
+                fontSize: 10,
+                fontWeight: 700,
+              },
+            });
+            // satellites: long-tail sizes, a couple of mid-weights per hub
+            hub.skills.forEach((sk, i) => {
+              const v = i < 3 ? 14 + rnd(di + 2, i + 4) * 18 : 2 + rnd(di + 5, i + 9) * 9;
+              nodes.push({
+                name: sk,
+                value: Math.round(v),
+                hub: false,
+                dom: di,
+                symbolSize: 2.5 + Math.sqrt(v) * 1.5,
+                itemStyle: { color: "#8a8a96" },
+                label: { show: true, position: "right", distance: 4, color: "#9a9aa6", fontSize: SKILL_FS },
+              });
+              // satellite → its hub
+              links.push({
+                source: sk,
+                target: hid,
+                lineStyle: { width: 0.5 + v * 0.05, color: "#3f3e46", opacity: 0.5 },
+              });
+            });
+          });
+
+          // hub-to-hub backbone
+          LINKS.forEach(([a, b]) => {
+            links.push({
+              source: hubs[a].name,
+              target: hubs[b].name,
+              lineStyle: {
+                width: 1.6 + rnd(a + 2, b + 3) * 2.2,
+                color: "#55535f",
+                opacity: 0.65,
+                curveness: 0.08,
+              },
+            });
+          });
+
+          const option = {
+            animationDuration: 300,
+            tooltip: {
+              backgroundColor: PAPER,
+              borderWidth: 0,
+              textStyle: { color: "#0a0a10", fontSize: 12 },
+              padding: [10, 14],
+              formatter: (p) => (p.dataType === "node" ? p.name : ""),
+            },
+            series: [
+              {
+                type: "graph",
+                layout: "force",
+                force: { repulsion: 110, edgeLength: [18, 64], gravity: 0.12, friction: 0.22, layoutAnimation: true },
+                roam: true,
+                draggable: true,
+                left: 30,
+                right: 40,
+                top: 20,
+                bottom: 20,
+                data: nodes,
+                links,
+                emphasis: {
+                  focus: "adjacency",
+                  lineStyle: { color: PAPER, opacity: 0.9, width: 1.4 },
+                  label: { show: true, color: PAPER, position: "right", fontSize: 10 },
+                },
+                blur: { itemStyle: { opacity: 0.08 }, lineStyle: { opacity: 0.03 } },
+              },
+            ],
+          };
+
+          const play = (g) => {
+            g.clear();
+            g.setOption(option);
+          };
+
+          const boot = () => {
+            if (!window.echarts) return false;
+            const g = echarts.init(chartEl);
+            play(g);
+            // click on empty canvas replays; clicks on nodes are for dragging
+            g.getZr().on("click", (e) => {
+              if (!e.target) { play(g); syncTargets(); }
+            });
+            window.addEventListener("resize", () => g.resize());
+            // gentle drift: every node wanders continuously. Positions are
+            // written straight into the item layouts (no setOption, no force
+            // re-run), so motion is smooth and local — no global jitter.
+            // Labels that would collide push their nodes apart instead.
+            const labelW = (name, fs) => {
+              let w = 0;
+              for (const ch of name) w += /[一-鿿]/.test(ch) ? fs : fs * 0.62;
+              return w;
+            };
+            const sModel = g.getModel().getSeriesByIndex(0);
+            const sData = sModel.getData();
+            const N = sData.count();
+            let targets = [];
+            let dragging = false;
+            const syncTargets = () => {
+              targets = [];
+              for (let i = 0; i < N; i++) {
+                const p = sData.getItemLayout(i);
+                targets.push(p ? [p[0], p[1]] : null);
+              }
+            };
+            const labelRects = () => {
+              const out = [];
+              for (let i = 0; i < N; i++) {
+                const t = targets[i];
+                if (!t) { out.push(null); continue; }
+                const nd = nodes[i];
+                const fs = nd.hub ? 10 : SKILL_FS;
+                const off = nd.symbolSize / 2 + (nd.hub ? 8 : 4);
+                const w = labelW(nd.name, fs) + 6;
+                out.push([t[0] + off, t[1] - fs / 2 - 3, w, fs + 6]);
+              }
+              return out;
+            };
+            // random walk + two passes of label-collision pushes, on targets
+            const wander = () => {
+              for (let i = 0; i < N; i++) {
+                if (!targets[i]) continue;
+                targets[i][0] += (Math.random() - 0.5) * 14;
+                targets[i][1] += (Math.random() - 0.5) * 14;
+              }
+              for (let pass = 0; pass < 4; pass++) {
+                const rects = labelRects();
+                for (let i = 0; i < N; i++) {
+                  if (!rects[i]) continue;
+                  for (let j = i + 1; j < N; j++) {
+                    if (!rects[j]) continue;
+                    const a = rects[i], b = rects[j];
+                    if (a[0] >= b[0] + b[2] || b[0] >= a[0] + a[2]) continue;
+                    if (a[1] >= b[1] + b[3] || b[1] >= a[1] + a[3]) continue;
+                    const cxa = a[0] + a[2] / 2, cxb = b[0] + b[2] / 2;
+                    const cya = a[1] + a[3] / 2, cyb = b[1] + b[3] / 2;
+                    const needX = (a[2] + b[2]) / 2 - Math.abs(cxa - cxb) + 2;
+                    const needY = (a[3] + b[3]) / 2 - Math.abs(cya - cyb) + 2;
+                    // separate along whichever axis needs the smaller move
+                    if (needX <= needY) {
+                      const push = Math.min(16, needX);
+                      const dir = cxa <= cxb ? -1 : 1;
+                      if (nodes[i].hub && !nodes[j].hub) targets[j][0] += dir * push;
+                      else if (nodes[j].hub && !nodes[i].hub) targets[i][0] -= dir * push;
+                      else { targets[i][0] -= (dir * push) / 2; targets[j][0] += (dir * push) / 2; }
+                    } else {
+                      const push = Math.min(16, needY);
+                      const dir = cya <= cyb ? -1 : 1;
+                      if (nodes[i].hub && !nodes[j].hub) targets[j][1] += dir * push;
+                      else if (nodes[j].hub && !nodes[i].hub) targets[i][1] -= dir * push;
+                      else { targets[i][1] -= (dir * push) / 2; targets[j][1] += (dir * push) / 2; }
+                    }
+                  }
+                }
+              }
+            };
+            // ease toward targets every other frame, straight into the layouts
+            let lastFrame = 0;
+            const float = (ts) => {
+              if (ts - lastFrame >= 33) {
+                lastFrame = ts;
+                if (!dragging) {
+                  for (let i = 0; i < N; i++) {
+                    if (!targets[i]) continue;
+                    const p = sData.getItemLayout(i);
+                    if (!p) continue;
+                    p[0] += (targets[i][0] - p[0]) * 0.03;
+                    p[1] += (targets[i][1] - p[1]) * 0.03;
+                    sData.setItemLayout(i, p);
+                  }
+                  g.getZr().refresh();
+                }
+              }
+              requestAnimationFrame(float);
+            };
+            g.getZr().on("mousedown", () => { dragging = true; });
+            g.getZr().on("mouseup", () => { dragging = false; syncTargets(); });
+            setTimeout(() => {
+              syncTargets();
+              setInterval(wander, 2600);
+              requestAnimationFrame(float);
+            }, 1500);
+            return true;
+          };
+
+          if (!boot()) {
+            let tries = 0;
+            const timer = setInterval(() => {
+              if (boot() || ++tries > 200) clearInterval(timer);
+            }, 50);
+          }
+        })();
+      </script>
 
       <div class="journey-copy">
         <p class="lead">
@@ -847,6 +858,7 @@ const personSchema = {
         <p>
           {t.sections.about.journey.fourth}
         </p>
+      </div>
       </div>
     </section>
 
@@ -2647,7 +2659,9 @@ const personSchema = {
   }
 
   .mini-row .data-label {
-    display: block;
+    width: 100%;
+    height: 560px;
+    cursor: grab;
     margin-bottom: 8px;
   }
 
@@ -2705,7 +2719,9 @@ const personSchema = {
   }
 
   .soft-icon {
-    display: block;
+    width: 100%;
+    height: 560px;
+    cursor: grab;
     height: 26px;
     width: auto;
   }
@@ -2773,7 +2789,9 @@ const personSchema = {
   }
 
   .motto-content strong {
-    display: block;
+    width: 100%;
+    height: 560px;
+    cursor: grab;
     margin-bottom: 12px;
     font-size: clamp(20px, 3vw, 32px);
     letter-spacing: var(--tracking-label);
@@ -2948,7 +2966,9 @@ const personSchema = {
   }
 
   .station-state {
-    display: block;
+    width: 100%;
+    height: 560px;
+    cursor: grab;
     min-height: 12px;
     margin-bottom: 8px;
     color: #444;
@@ -3009,7 +3029,9 @@ const personSchema = {
   }
 
   .pipeline-progress-line span {
-    display: block;
+    width: 100%;
+    height: 560px;
+    cursor: grab;
     width: 25%;
     height: 100%;
     background: var(--accent);
@@ -3090,14 +3112,18 @@ const personSchema = {
   }
 
   .cap-button span {
-    display: block;
+    width: 100%;
+    height: 560px;
+    cursor: grab;
     margin-bottom: 20px;
     color: #444;
     font-size: var(--text-scale-5xs);
   }
 
   .cap-button strong {
-    display: block;
+    width: 100%;
+    height: 560px;
+    cursor: grab;
     font-size: var(--text-scale-xs);
     letter-spacing: var(--tracking-micro);
   }
@@ -3154,7 +3180,9 @@ const personSchema = {
   }
 
   #capabilityCanvas {
-    display: block;
+    width: 100%;
+    height: 560px;
+    cursor: grab;
     width: 100%;
     height: 100%;
   }
@@ -3339,7 +3367,9 @@ const personSchema = {
   }
 
   .skill-index {
-    display: block;
+    width: 100%;
+    height: 560px;
+    cursor: grab;
     margin-bottom: 7px;
     color: var(--accent);
     font-size: 7px;
@@ -3347,7 +3377,9 @@ const personSchema = {
   }
 
   .skill-node-content strong {
-    display: block;
+    width: 100%;
+    height: 560px;
+    cursor: grab;
     margin-bottom: 7px;
     color: var(--text-soft);
     font-size: var(--text-scale-2xs);
@@ -3355,7 +3387,9 @@ const personSchema = {
   }
 
   .skill-node-content small {
-    display: block;
+    width: 100%;
+    height: 560px;
+    cursor: grab;
     color: #5f5f64;
     font-size: 8px;
     line-height: 1.6;
@@ -3618,7 +3652,9 @@ const personSchema = {
   }
 
   .research-column span {
-    display: block;
+    width: 100%;
+    height: 560px;
+    cursor: grab;
     margin-bottom: 25px;
     color: var(--accent);
     font-size: var(--text-scale-5xs);
@@ -3626,7 +3662,9 @@ const personSchema = {
   }
 
   .research-column strong {
-    display: block;
+    width: 100%;
+    height: 560px;
+    cursor: grab;
     margin-bottom: 12px;
     font-size: 17px;
   }
@@ -3647,6 +3685,120 @@ const personSchema = {
   /* =====================================================
   08 — FUTURE
   ====================================================== */
+
+  /* ── Skill constellation (L6 Cluster Field grammar) ── */
+  .skill-field {
+    position: relative;
+    margin-bottom: 0;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    background:
+      radial-gradient(
+        circle at 50% 42%,
+        rgba(255, 255, 255, 0.03),
+        transparent 45%
+      ),
+      radial-gradient(
+        circle at 80% 40%,
+        rgba(80, 180, 170, 0.035),
+        transparent 35%
+      ),
+      #08080c;
+  }
+
+  #skill-field {
+    width: 100%;
+    height: 560px;
+    cursor: grab;
+  }
+
+  .journey-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 48px;
+    align-items: center;
+    margin-bottom: 70px;
+  }
+
+  @media (max-width: 900px) {
+    .journey-grid {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+  }
+
+
+  .skill-field .skill-tree-label {
+    position: absolute;
+  }
+
+  .sk-link {
+    stroke: rgba(255, 255, 255, 0.14);
+    stroke-width: 0.9;
+    stroke-dasharray: 2 4;
+  }
+
+  .sk-spoke {
+    stroke: rgba(255, 255, 255, 0.09);
+    stroke-width: 0.5;
+  }
+
+  .sk-hub {
+
+  }
+
+  .sk-dot {
+    fill: #8a8a96;
+  }
+
+  .sk-hub-label,
+  .sk-skill-label {
+    font-family: var(--font-mono);
+  }
+
+  .draw {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: sk-draw 1s ease forwards;
+  }
+
+  .pop {
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: sk-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  .fade {
+    opacity: 0;
+    animation: sk-fade 0.5s ease forwards;
+  }
+
+  @keyframes sk-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes sk-pop {
+    from {
+      opacity: 0;
+      transform: scale(0);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes sk-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 
   .future-section {
     margin-bottom: 100px;
@@ -3717,7 +3869,9 @@ const personSchema = {
   }
 
   .closing-kicker {
-    display: block;
+    width: 100%;
+    height: 560px;
+    cursor: grab;
     margin-bottom: 20px;
     color: var(--accent);
     font-size: var(--text-scale-5xs);

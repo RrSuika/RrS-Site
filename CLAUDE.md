@@ -29,7 +29,7 @@ Manage it with `astro dev stop`, `astro dev status`, `astro dev logs`. Build wit
 ## Architecture conventions
 
 - **`src/utils/routes.ts` is the single source for entry URLs** (`typeToRoute`, `buildEntryUrl`). Note detail routes use singular `note` (`/note/{slug}`), while the listing page is `/notes`. Never create per-component route maps — that bug produced 404s.
-- **`src/utils/translations.ts` is the single translation source** (nav/common/hero/featured/explore/latest/aboutPreview/footer/sections/meta). Never add inline translation dictionaries in components.
+- **`src/utils/translations.ts` is the single translation source** (meta/nav/common/language/card/hero/featured/explore/latest/aboutPreview/footer/sections/system/skillMap). Never add inline translation dictionaries in components. `skillMap.hubs` feeds the about-page skill constellation (labels only — positions/links live in the page script).
 - **i18n is manual** (no Astro i18n routing): `/zh` and `/nl` prefixes detected via `getLanguageFromPath`; every en page needs zh and nl mirror files. Use `getLocalizedPath`/`findTranslation` from `src/utils/i18n.ts`.
 - **Content**: single collection `entries` (glob loader, `src/content.config.ts`); URL slug = entry folder name; en/cn/nl paired by `translationKey`. `collaboration` field drives the TEAM badge in ProjectCard.
 - **Entry body images** (`![](./file.png)` or raw HTML `<img src="./…">`) are resolved to hashed URLs at build time by the satteri plugin in `astro.config.mjs` (`src/utils/markdown-resolve-images.ts`) — reference them with bare `./` filenames and never add client-side image src fixes.
