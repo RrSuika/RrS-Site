@@ -33,7 +33,7 @@ translationKey: isolation-gpio-driver-mosfet-bjt-relay-optocoupler
 
 # Wat een GPIO eigenlijk is
 
-GPIO is de algemene input/output-interface van de MCU; instelbaar als ingang (externe niveaus meten) of uitgang (hoog/laag genereren). Maar in essentie is het een digitale besturingsinterface, geen voeding. Hoog ≈ 3.3V (of 5V), laag ≈ 0V, voor logische 1 en 0. De uitgangsstroom is sterk beperkt; doorgaans rond de 20mA.
+GPIO is de algemene input/output-interface van de MCU; instelbaar als ingang (externe niveaus meten) of uitgang (hoog/laag genereren). Maar in essentie is het een digitale besturingsinterface. Hoog ≈ 3.3V (of 5V), laag ≈ 0V, voor logische 1 en 0. De uitgangsstroom is sterk beperkt; doorgaans rond de 20mA.
 
 Dat is het kernconflict: de GPIO levert 3.3V/20mA, maar je moet een LED-paneel van 12V/2A aansturen. Twee ordes van grootte verschil. Je hebt een "vertaler" nodig; iets dat het zwakke signaal van de MCU overneemt en de hoge stroom van de externe voeding bestuurt. Dat is wat een drivercircuit doet.
 

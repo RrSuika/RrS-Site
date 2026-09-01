@@ -42,11 +42,11 @@ Ik schrijf dit niet op als een gepolijste gids, maar als de echte reis: mislukki
 
 # Wat ik wilde uitzoeken
 
-Ik was niet alleen op zoek naar een goede print. Ik wilde begrijpen _waarom_ ABS zich gedraagt zoals het doet, en of een consumentenprinter zoals de A1 (die niet bepaald als ABS-machine op de markt wordt gezet) het met de juiste opstelling betrouwbaar aankan.
+Ik wilde begrijpen _waarom_ ABS zich gedraagt zoals het doet, en of een consumentenprinter zoals de A1 (die niet bepaald als ABS-machine op de markt wordt gezet) het met de juiste opstelling betrouwbaar aankan.
 
 ABS is aantrekkelijk voor functionele onderdelen omdat het beter tegen hitte kan dan PLA, beter tegen stoten kan dan PETG en lang meegaat. Maar de printomgeving doet er veel meer toe dan alleen de slicer-instellingen. Ik wilde:
 
-- Zien hoe behuizingstemperatuur daadwerkelijk invloed heeft op kromtrekken en hechting (niet alleen erover lezen)
+- Zien hoe behuizingstemperatuur daadwerkelijk invloed heeft op kromtrekken en hechting
 - Uitzoeken welke faalwijzen het vaakst voorkomen
 - Testen of thermische stabiliteit belangrijker is dan de absolute temperatuur
 - Begrijpen welke variabelen echt het verschil maken en aan welke ik mijn tijd aan het verspillen was
@@ -56,7 +56,7 @@ ABS is aantrekkelijk voor functionele onderdelen omdat het beter tegen hitte kan
 
 ## Waarom ABS
 
-ABS is dat materiaal dat iedereen je aanraadt voor „echte" onderdelen: de onderdelen die hitte, stoten en tijd moeten doorstaan. Het is een technische thermoplast, geen hobby-materiaal, en dat zie je terug in zowel zijn sterke punten als zijn lastige karakter.
+ABS is dat materiaal dat iedereen je aanraadt voor „echte" onderdelen: de onderdelen die hitte, stoten en tijd moeten doorstaan. Het is een technische thermoplast, en dat zie je terug in zowel zijn sterke punten als zijn lastige karakter.
 
 Vergeleken met PLA en PETG vraagt het meer van je printer: betere temperatuurbeheersing, minder luchtstroom, meer geduld. Maar als je een beugel nodig hebt die in een hete auto niet zacht wordt, of een functioneel onderdeel dat er over een jaar nog steeds is, is het moeilijk te verslaan.
 
@@ -78,7 +78,7 @@ Het compromis is de hittebestendigheid: beter dan PLA, maar het haalt het niet b
 
 ABS biedt de hittebestendigheid en slagvastheid. Dat is de aantrekkingskracht.
 
-De keerzijde: het trekt krom als de behuizing te koud is, het loopt vast als de hotendkoeling tekortschiet, en over het algemeen straft het je als je beknibbelt op temperatuurbeheersing. Eerlijk gezegd is het een stresstest voor je hele printeropstelling: niet alleen de extruder, maar ook je behuizingsontwerp, je thermisch beheer, alles.
+De keerzijde: het trekt krom als de behuizing te koud is, het loopt vast als de hotendkoeling tekortschiet, en over het algemeen straft het je als je beknibbelt op temperatuurbeheersing. Eerlijk gezegd is het een stresstest voor je hele printeropstelling, van extruder tot behuizingsontwerp en thermisch beheer.
 
 ## Het filament dat ik gebruikte
 
@@ -316,7 +316,7 @@ Instellingen:
 - Brim en tochtschild: Ingeschakeld
 - Materiaalprofiel: Generiek ABS
 
-Ik halveerde de printsnelheid om te zien of langzamere extrusie de hechting en betrouwbaarheid zou verbeteren. Het hielp een beetje, maar loste het onderliggende probleem niet op. Wat er ook mis was, het was niet alleen de snelheid.
+Ik halveerde de printsnelheid om te zien of langzamere extrusie de hechting en betrouwbaarheid zou verbeteren. Het hielp een beetje, maar loste het onderliggende probleem niet op. Wat er ook mis was, de snelheid was maar een deel van het verhaal.
 
 </details>
 
@@ -450,7 +450,7 @@ De sweet spot lijkt een compromis tussen thermische stabiliteit en extrusiebetro
 
 ## Wat ik leerde over verstoppingen
 
-Hier is iets dat me verraste: verstoppingen hadden niet alleen met de behuizingstemperatuur te maken. Ik zag verstoppingen optreden, zelfs wanneer de behuizing rond de 30°C was. Zo simpel ligt het dus niet. Er spelen ook andere factoren mee:
+Hier is iets dat me verraste: de behuizingstemperatuur alleen verklaarde de verstoppingen niet. Ik zag verstoppingen optreden, zelfs wanneer de behuizing rond de 30°C was. Zo simpel ligt het dus niet. Er spelen ook andere factoren mee:
 
 - Hotendtemperatuur
 - Conditie van het filament
@@ -527,7 +527,7 @@ Dit is het praktische spul dat het verschil maakte, in ruwe volgorde van impact:
 - Maak de printplaat zorgvuldiger schoon dan je denkt dat nodig is
 - Houd de koelfan zo laag mogelijk
 - Gebruik een brim: eenvoudiger en vaak effectiever dan een volledig tochtschild
-- Stem de snelheid af op wat het materiaal aankan, niet op wat de printer kan
+- Stem de snelheid af op wat het materiaal aankan
 - Als ABS blijft tegenwerken, is ASA een legitiem alternatief dat het testen waard is
 - Beter filament doet ertoe: oud, slecht opgeslagen ABS vecht met één hand op de rug gebonden
 

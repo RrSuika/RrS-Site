@@ -36,7 +36,7 @@ translationKey: esp32-inmp441-noise-monitor
 
 # Overzicht
 
-Ik wilde een manier om te zien hoe mijn werkplek eigenlijk klinkt: niet zomaar een getal, maar het volledige frequentiebeeld. Dus pakte ik een INMP441 I2S-microfoon, sloot die aan op een ESP32 en schreef ik zelf de FFT-pipeline. Het eindresultaat is een klein apparaatje dat op mijn bureau staat, audio in realtime binnenhaalt, een FFT van 512 punten draait en alles via WiFi naar een browserdashboard streamt. Het toont me het huidige dB-niveau, een staafdiagram van het 64-bins spectrum en een voortschrijdende geschiedenis van 30 minuten geluidsniveaus. Het is verrassend verslavend om naar te kijken: je krijgt echt een gevoel voor welke apparaten het luidst zijn in de kamer.
+Ik wilde een manier om het volledige frequentiebeeld van mijn werkplek te zien. Dus pakte ik een INMP441 I2S-microfoon, sloot die aan op een ESP32 en schreef ik zelf de FFT-pipeline. Het eindresultaat is een klein apparaatje dat op mijn bureau staat, audio in realtime binnenhaalt, een FFT van 512 punten draait en alles via WiFi naar een browserdashboard streamt. Het toont me het huidige dB-niveau, een staafdiagram van het 64-bins spectrum en een voortschrijdende geschiedenis van 30 minuten geluidsniveaus. Het is verrassend verslavend om naar te kijken: je krijgt echt een gevoel voor welke apparaten het luidst zijn in de kamer.
 
 # Systeemarchitectuur
 

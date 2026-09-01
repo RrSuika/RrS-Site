@@ -38,7 +38,7 @@ translationKey: light-diffusion-test-platform
 
 问题是两片在室内光线下看起来一模一样的材料，一旦背光，效果可能天差地别。表面处理、厚度，还有内部结构; 它们全都在影响光的传播路径，而渲染图只能帮你到这儿。到了一定程度，你得肉眼去看。
 
-于是我搭了这个测试装置；从今往后，需要设计发光板时的 CMF 决策，我都可以用固定的流程复刻而不是直觉来支撑。
+于是我搭了这个测试装置；从今往后，需要设计发光板时的 CMF 决策，我都可以用固定的流程来支撑，不再靠直觉。
 
 # 测量因素
 
@@ -57,7 +57,7 @@ translationKey: light-diffusion-test-platform
 - <strong style="color:var(--accent)">可调节亮度</strong>：材料在 10% 亮度和 100% 亮度下的表现完全不同。光源必须能覆盖这个范围。
 - <strong style="color:var(--accent)">环境光控制</strong>：在阳光充足的房间里测光学数据基本是白测。测试环境必须尽量排除外部干扰。
 - <strong style="color:var(--accent)">快速更换样品</strong>：如果换一次材料就得折腾五分钟，你根本不会愿意跑足够多的对比来学到有用的东西。
-- <strong style="color:var(--accent)">可观测输出</strong>：我需要亲眼看到结果，而不只是记录数字。并排对比的视觉效果本身就是一半的价值。
+- <strong style="color:var(--accent)">可观测输出</strong>：我需要亲眼看到结果。并排对比的视觉效果本身就是一半的价值。
 
 # 设计与搭建
 
@@ -135,7 +135,7 @@ translationKey: light-diffusion-test-platform
 
 # 可控变量
 
-搭测试台而不是拿着材料在灯下比划的整个意义就在这里：一次只改一个参数。系统化的 A/B 对比只有在锁定所有其他变量的前提下才成立。
+我搭测试台的整个意义就在这里：一次只改一个参数。系统化的 A/B 对比只有在锁定所有其他变量的前提下才成立。
 
 <div class="variables-grid">
 
@@ -150,7 +150,7 @@ translationKey: light-diffusion-test-platform
 
 # 三版迭代
 
-这个平台不是一次性完成的。我设计了三个版本，每个版本都在修正上一个版本犯下的错误。
+这个平台经过了三个版本。每个版本都在修正上一个版本犯下的错误。
 
 ![迭代对比](./01-iteration-comparison.png)
 
@@ -190,7 +190,7 @@ translationKey: light-diffusion-test-platform
 - <strong style="color:var(--accent)">同条件并排对比</strong>不同材料;不再需要说"我觉得这个看起来好一点"
 - <strong style="color:var(--accent)">表面处理评估</strong>;打磨、抛光、纹理会怎么影响光的传播？
 - <strong style="color:var(--accent)">厚度与透光率的关系</strong>;板材加厚一倍，亮度到底降多少？
-- <strong style="color:var(--accent)">全段亮度扫描</strong>;观察材料从最低到最高亮度的完整表现，而非只在一个点
+- <strong style="color:var(--accent)">全段亮度扫描</strong>;观察材料从最低到最高亮度的完整表现
 - <strong style="color:var(--accent)">光分布模式存档</strong>;以后的项目可以直接引用这些视觉记录
 
 ![最终平台](./03-final-platform-3d.png)

@@ -30,7 +30,7 @@ translationKey: esp32-rgbww-color-wheel
 
 # Overview
 
-This is where the previous two experiments came together. I had the FCOB strip talking to the ESP32, and I knew how to serve a web page over WiFi. The natural next step was a proper colour picker — not just RGB sliders, but a real colour wheel you could drag around, with the strip updating in real time.
+This is where the previous two experiments came together. I had the FCOB strip talking to the ESP32, and I knew how to serve a web page over WiFi. The natural next step was a proper colour picker: a real colour wheel you could drag around, with the strip updating in real time.
 
 The web interface ended up being the biggest part of the project. I wanted it to feel polished — dark/light mode toggle, glassmorphism card, animated scene presets, a colour history grid, and a background glow that matched whatever colour the strip was displaying. Building the HSV colour wheel from scratch on a `<canvas>` was probably overkill, but it's way more satisfying to use than three sliders.
 

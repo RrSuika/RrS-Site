@@ -58,7 +58,7 @@ Verschillende blokken op dezelfde print hebben verschillende spanningen nodig:
 Binnen één product bestaan er dus vaak 5V-, 3.3V-, 1.8V- en andere rails naast elkaar.
 
 Wat ik heb geleerd:
-- Elke trap in het vermogenspad heeft verliezen; beoordeel de efficiëntie trap voor trap, niet alleen die van de laatste.
+- Elke trap in het vermogenspad heeft verliezen; beoordeel de efficiëntie trap voor trap.
 - Plan je spanningsrails zorgvuldig. Gevoelige schakelingen hebben mogelijk extra filtering op hun voeding nodig.
 - Beveiligingscomponenten (zekering, omgekeerde polariteit) zien er eenvoudig uit, maar ze leggen de ondergrens van de veiligheid van je product vast. Bespaar hier nooit op.
 

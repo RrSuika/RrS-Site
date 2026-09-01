@@ -42,21 +42,21 @@ I'm writing this up not as a polished guide, but as the real journey — failure
 
 # What I Wanted to Figure Out
 
-I wasn't just chasing a good print. I wanted to understand _why_ ABS behaves the way it does, and whether a consumer printer like the A1 (which isn't exactly marketed as an ABS machine) could handle it reliably with the right setup.
+I wanted to understand _why_ ABS behaves the way it does, and whether a consumer printer like the A1 (which isn't exactly marketed as an ABS machine) could handle it reliably with the right setup.
 
 ABS is appealing for functional parts because it handles heat better than PLA, takes impacts better than PETG, and lasts. But the printing environment matters way more than slicer settings alone. I wanted to:
 
-- See how enclosure temperature actually affects warping and adhesion (not just read about it)
+- See how enclosure temperature actually affects warping and adhesion
 - Figure out what failure modes pop up most often
 - Test whether thermal stability matters more than absolute temperature
 - Understand which variables actually move the needle vs. which ones I was wasting time on
-- End up with a process I could actually repeat, not just get lucky once
+- End up with a process I could actually repeat
 
 # Material Background
 
 ## Why ABS
 
-ABS is that material everyone tells you to use for "real" parts — the ones that need to survive heat, impacts, and time. It's an engineering thermoplastic, not a hobbyist one, and that shows in both its strengths and its attitude problem.
+ABS is that material everyone tells you to use for "real" parts — the ones that need to survive heat, impacts, and time. It's an engineering thermoplastic, and that shows in both its strengths and its attitude problem.
 
 Compared to PLA and PETG, it demands more from your printer: better temperature control, less airflow, more patience. But when you need a bracket that won't soften in a hot car or a functional part that'll still be holding up a year from now, it's hard to beat.
 
@@ -78,7 +78,7 @@ The tradeoff is heat resistance — it's better than PLA but doesn't touch ABS. 
 
 ABS brings the heat resistance and impact toughness. That's the draw.
 
-The catch: it'll warp if the enclosure is too cold, jam if the hotend cooling is inadequate, and generally punish you for cutting corners on temperature control. It's honestly a stress test for your entire printer setup — not just the extruder, but your enclosure design, your thermal management, everything.
+The catch: it'll warp if the enclosure is too cold, jam if the hotend cooling is inadequate, and generally punish you for cutting corners on temperature control. It's honestly a stress test for your entire printer setup, from the extruder to your enclosure design and thermal management.
 
 ## The Filament I Used
 
@@ -316,7 +316,7 @@ Settings:
 - Brim and draft shield: Enabled
 - Material profile: Generic ABS
 
-I halved the print speed to see if slower extrusion would improve adhesion and reliability. It helped a bit, but didn't solve the underlying issue. Whatever was wrong, it wasn't just speed.
+I halved the print speed to see if slower extrusion would improve adhesion and reliability. It helped a bit, but didn't solve the underlying issue. Whatever was wrong, speed was only part of it.
 
 </details>
 
@@ -450,7 +450,7 @@ The sweet spot seems to be a compromise between thermal stability and extrusion 
 
 ## What I learned about clogging
 
-Here's something that surprised me: clogging wasn't just about enclosure temperature. I saw clogs happen even when the enclosure was around 30°C. So it's not that simple. Other factors matter too:
+Here's something that surprised me: enclosure temperature alone didn't explain the clogging. I saw clogs happen even when the enclosure was around 30°C. So it's not that simple. Other factors matter too:
 
 - Hotend temperature
 - Filament condition
@@ -527,7 +527,7 @@ Here's the practical stuff that moved the needle, in rough order of impact:
 - Clean the build plate more carefully than you think you need to
 - Keep the cooling fan as low as possible
 - Use a brim — it's simpler and often more effective than a full draft shield
-- Tune speed to what the material can handle, not what the printer is capable of
+- Tune speed to what the material can handle
 - If ABS keeps fighting you, ASA is a legitimate alternative worth testing
 - Better filament matters — old, poorly stored ABS is fighting with one hand tied behind its back
 
@@ -560,9 +560,9 @@ The big lesson on methodology: changing three things at once might get you to a 
 
 ## Self Reflection
 
-This project changed how I think about 3D printing. ABS isn't just "hard mode" PLA — it's a completely different animal that exposes weaknesses in your setup that easier materials let you ignore.
+This project changed how I think about 3D printing. ABS is a completely different animal from "hard mode" PLA, exposing weaknesses in your setup that easier materials let you ignore.
 
-I went into this thinking it was about slicer settings and temperatures. I came out realizing it's about system integration: how the material, the enclosure, the extruder mechanics, and the measurement tools all interact. A failure isn't just a ruined print — it's a diagnostic signal. Warping tells you something about thermal gradients. Grinding tells you something about feed path resistance. Each failed test was narrowing down what actually mattered.
+I went into this thinking it was about slicer settings and temperatures. I came out realizing it's about system integration: how the material, the enclosure, the extruder mechanics, and the measurement tools all interact. A failure is a diagnostic signal. Warping tells you something about thermal gradients. Grinding tells you something about feed path resistance. Each failed test was narrowing down what actually mattered.
 
 I also learned that measurement quality matters as much as the thing you're measuring. My initial temperature sensor placement gave me numbers that were basically lying to me. Once I moved the probe closer to the print area, the data actually reflected reality.
 

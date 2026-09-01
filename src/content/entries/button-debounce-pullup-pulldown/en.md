@@ -185,7 +185,7 @@ When multiple devices share a signal line (I²C, 1-Wire, or a button sharing a p
 
 ### When Would You Actually Choose Pull-Down?
 
-Not every design rejects pull-down:
+Some designs actively choose pull-down:
 
 - **Active-high requirement**: some peripheral reset or enable pins are active-high. For logic consistency, design the button to output HIGH when pressed → use pull-down.
 - **Ultra-low-power wake-up pin limits**: some ultra-low-power MCUs only support rising-edge or high-level wake-up. You must use pull-down with the button tied to VCC.

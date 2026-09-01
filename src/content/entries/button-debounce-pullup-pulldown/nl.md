@@ -185,7 +185,7 @@ Wanneer meerdere apparaten een signaallijn delen (I²C, 1-Wire, of een knop die 
 
 ### Wanneer zou je dan wél voor pull-down kiezen?
 
-Niet elk ontwerp wijst pull-down af:
+Sommige ontwerpen kiezen bewust voor pull-down:
 
 - **Actief-hoog vereiste**: sommige reset- of enable-pinnen van randapparatuur zijn actief-hoog. Voor logische consistentie ontwerp je de knop zo dat hij hoog afgeeft wanneer hij wordt ingedrukt → gebruik pull-down.
 - **Beperkingen van ultra-low-power wake-uppinnen**: sommige ultra-low-power MCU's ondersteunen alleen wake-up op stijgende flank of op hoog niveau. Dan moet je pull-down gebruiken met de knop aan VCC.

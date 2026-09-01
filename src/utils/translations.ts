@@ -200,7 +200,7 @@ export const translations = {
           mottoLabel: "PERSONAL_MOTTO",
           motto: "FAKE IT TILL YOU MAKE IT.",
           mottoText:
-            "It's not about pretending to know everything — it's about being willing to step into unfamiliar territory, learn what's needed and keep building until the idea becomes real.",
+            "Being willing to step into unfamiliar territory, learn what's needed and keep building until the idea becomes real.",
         },
         approach: {
           description: "",
@@ -313,7 +313,7 @@ export const translations = {
           third:
             "Today, I am gradually moving toward the technical side again. Electronics, embedded systems, mechanical properties, material testing and fabrication have become increasingly important parts of my learning and personal projects.",
           fourth:
-            "The goal is not to become the specialist who knows every component parameter by heart. I am more interested in understanding how different technologies fit together and how they can become part of a complete, usable product.",
+            "I'd rather understand how different technologies fit together and how they can become part of a complete, usable product than memorise every component parameter.",
         },
         current: {
           header: "CURRENT_RESEARCH // 2026",
@@ -633,7 +633,7 @@ export const translations = {
           header: "个人准则 // 设计理念",
           title: "站在巨人\n的肩膀上",
           text:
-            "设计从来不是闭门造车，重造轮子：研究前人的作品、寻找优秀的参考，敢于接受他人的看法和批判，再把积累下来的知识与想法重新组合成自己的东西",
+            "设计从来都要站在前人的基础上：研究前人的作品、寻找优秀的参考，敢于接受他人的看法和批判，再把积累下来的知识与想法重新组合成自己的东西",
           second:
             "我很享受把不同领域的知识连接起来的过程：一个概念可以来自绘画与视觉设计，造型可以通过 CAD 实现，结构可以用机械知识解决，最后再靠电子系统和制造技术让它真正运行起来",
           mottoLabel: "个人信条",
@@ -720,7 +720,7 @@ export const translations = {
             technology: "下一阶段",
           },
           text:
-            "我的起点并不是工业设计。我最开始接触的是硬件工程，但后来发现自己更希望进入一个能同时容纳技术思维与视觉创造的领域",
+            "我最开始接触的是硬件工程，后来发现自己更希望进入一个能同时容纳技术思维与视觉创造的领域",
           second:
             "工业及产品设计最终成了一个很自然的交汇点：造型、功能、材料、制造与视觉表达，都在同一个设计过程里",
           third:
@@ -761,7 +761,7 @@ export const translations = {
           second:
             "长期来看，我希望自己能越来越完整地把一个想法做到底;从概念与视觉开发，一路到电子、软件、机械结构、采购与制造，最终成为一个成熟的独立设计师",
           third:
-            "与此同时，我也希望继续画画，让视觉创作成为自己的另一种身份，而不是让技术工作完全取代它",
+            "与此同时，我也希望继续画画，让视觉创作作为自己的另一种身份留下来",
         },
 
         closing:

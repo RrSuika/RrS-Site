@@ -178,7 +178,7 @@ From model to metal — the final render and the real thing on the road:
 
 # What I Walked Away With
 
-This was the first project where the end of the process was a customer riding the result, not a grade, not a prototype in a drawer.
+This was the first project where the end of the process was a customer riding the result.
 
 - <strong style="color:var(--accent)">Sheet metal is a different design language</strong>: bend radii, weld seams and powder coat tolerances all constrain the geometry long before aesthetics enter the conversation. Designing in SolidWorks and building in steel are two very different things.
 - <strong style="color:var(--accent)">Design is a language of balance</strong>: every part decision (a hinge, a gas spring, a sheet thickness) weighs cost against service life, workability, lead time and the user's daily experience. The best component on paper is rarely the best component in the product.

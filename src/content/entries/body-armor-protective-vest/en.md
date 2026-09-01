@@ -35,7 +35,7 @@ translationKey: body-armor-protective-vest
 
 Before this project, I'd looked at plate carriers and tactical vests the way most people do — as finished products that just exist. But I had no idea how they were actually put together. What makes one vest cost $200 and another $2,000? How do you sew through half a dozen layers of nylon and Kevlar on anything less than a factory line? What decisions sit behind the placement of every stitch?
 
-So I decided to build one myself. Not a costume piece or an airsoft replica — a real, functional carrier that had to work as a layered protective system. Out of pure curiosity, I wanted to understand the engineering that goes into soft armor, from the material stack-up to the sewing techniques that hold everything together under load.
+So I decided to build one myself: a real, functional carrier that had to work as a layered protective system. Out of pure curiosity, I wanted to understand the engineering that goes into soft armor, from the material stack-up to the sewing techniques that hold everything together under load.
 
 # What I Set Out to Build
 
@@ -52,7 +52,7 @@ Before I touched any fabric, I wrote down what this thing actually needed to do.
 | Breathability          | 3D mesh air channels                   | Heat buildup during extended wear is a real problem             |
 | Total thickness        | ~40mm calibrated stack                 | Protection matters, but if you can't move it's useless          |
 
-The philosophy I landed on was pretty simple: don't try to stop everything at once. That's how you end up with an 80-pound bomb suit that nobody can actually wear for more than ten minutes. Instead, each layer in the stack addresses a specific, realistic threat. Together they cover a practical range of hazards. This is how professional protective equipment actually gets designed — it's a configurable system, not a magic shield.
+The philosophy I landed on was pretty simple: don't try to stop everything at once. That's how you end up with an 80-pound bomb suit that nobody can actually wear for more than ten minutes. Instead, each layer in the stack addresses a specific, realistic threat. Together they cover a practical range of hazards. This is how professional protective equipment actually gets designed: a configurable system.
 
 # Choosing Materials — Each Layer Earns Its Place
 
@@ -83,7 +83,7 @@ The workflow was pretty standard for garment prototyping: estimate fabric needs 
 
 - <strong style="color:var(--accent)">1000D nylon is unforgiving</strong>: A standard home sewing machine will laugh at you — and then jam. I needed heavy-duty needles and constantly adjusted thread tension. For the thickest seam intersections, only an industrial walking-foot machine could punch through consistently. Even then, going slow was the only option.
 - <strong style="color:var(--accent)">Kevlar eats scissors for breakfast</strong>: You cannot cut aramid fabric with regular shears. It frays, it slides, and it dulls blades almost instantly. I went through a learning curve before accepting that serrated aviation snips weren't optional — they were mandatory. I also had to plan seam allowances more generously than I expected, because Kevlar edges unravel if you look at them wrong.
-- <strong style="color:var(--accent)">MOLLE isn't just sewing straight lines</strong>: The PALS grid looks simple — one-inch spacing, parallel rows of webbing. But every single attachment point needs a bartack reinforcement, and if your spacing drifts even a couple of millimeters, certain pouches won't fit. It's a standardized interface, and standards don't tolerate slop.
+- <strong style="color:var(--accent)">MOLLE is more than straight-line sewing</strong>: The PALS grid looks simple — one-inch spacing, parallel rows of webbing. But every single attachment point needs a bartack reinforcement, and if your spacing drifts even a couple of millimeters, certain pouches won't fit. It's a standardized interface, and standards don't tolerate slop.
 - <strong style="color:var(--accent)">Adjustability is its own design problem</strong>: Hook-and-loop panels at the shoulders and cummerbund let the vest adapt to different body shapes and clothing layers. That means you don't need to rebuild the whole thing to adjust the fit — which, if you've ever sewn through six layers of nylon, is a feature you'll deeply appreciate.
 
 ![Process: Fitting and Adjustment](./04-process-fitting.jpeg)
@@ -126,7 +126,7 @@ I wasn't doing ballistic lab testing in my workshop, but I did put the vest thro
 
 # What I Walked Away With
 
-This wasn't about making a product. It was about understanding a category of objects that I'd only ever seen from the outside.
+I made this to understand a category of objects that I'd only ever seen from the outside.
 
 - <strong style="color:var(--accent)">Garment construction is a whole discipline</strong>: Pattern drafting, cutting, assembly, finishing — there's a complete production workflow here that most industrial designers never touch. Working through it from start to finish gave me respect for every seam I now see on any piece of clothing.
 - <strong style="color:var(--accent)">Heavy fabrics demand heavy solutions</strong>: 1000D nylon taught me where the line is between what home equipment can handle and what requires industrial machinery. Spoiler: that line comes fast.

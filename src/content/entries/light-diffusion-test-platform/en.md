@@ -38,7 +38,7 @@ Here's something that happens all the time in product design: you're picking a t
 
 The trouble is two materials that look identical under room light can behave completely differently once they're backlit. Surface finish, thickness, internal structure; they all affect how light moves through the material, and renderings can only get you so far. At a certain point, you have to see it with your own eyes.
 
-So I built a test platform. Not because I wanted to spend weeks on an apparatus, but because every CMF decision I made after that would be backed by data instead of intuition.
+So I built a test platform, so that every CMF decision after that would be backed by data instead of intuition.
 
 # Measurable factors
 
@@ -57,7 +57,7 @@ Beyond the measurement goals, I had a handful of practical requirements that tur
 - <strong style="color:var(--accent)">Adjustable brightness</strong>: Materials look different at 10% brightness vs 100%. The light source needs to cover that range.
 - <strong style="color:var(--accent)">Ambient light control</strong>: Optical measurements in a sunlit room are creating noise. The test environment has to minimize external interference.
 - <strong style="color:var(--accent)">Quick sample swapping</strong>: If changing materials takes five minutes, I won't run enough comparisons to learn anything useful.
-- <strong style="color:var(--accent)">Visual output</strong>: I need to see the results, not just log numbers. Side-by-side visual comparison is half the point.
+- <strong style="color:var(--accent)">Visual output</strong>: I need to see the results. Side-by-side visual comparison is half the point.
 
 # Design & Build
 
@@ -190,7 +190,7 @@ The finished design gives me a reliable, repeatable environment for comparing ho
 - <strong style="color:var(--accent)">Side-by-side material comparison</strong> under identical lighting — no more "I think this one looks better"
 - <strong style="color:var(--accent)">Surface finish evaluation</strong> — how does sanding, polishing, or texturing change the way light moves through?
 - <strong style="color:var(--accent)">Thickness vs transmission analysis</strong> — how much does doubling the sheet thickness actually reduce brightness?
-- <strong style="color:var(--accent)">Controlled brightness sweeps</strong> — see how materials behave across the full dimming range, not just at one setting
+- <strong style="color:var(--accent)">Controlled brightness sweeps</strong> — see how materials behave across the full dimming range
 - <strong style="color:var(--accent)">Visual documentation</strong> of light distribution patterns I can reference on future projects
 
 ![Final Platform](./03-final-platform-3d.png)

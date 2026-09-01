@@ -40,7 +40,7 @@ translationKey: esp32-ec11-encoder-oled
 3. **WiFi WebSocket 服务器**;浏览器端仪表盘实时显示两路角度。这种低延迟 UI 用 WebSocket 比轮询强太多了，我还加了心跳包防止连接超时断开。
 4. **FreeRTOS 多任务架构**;三个任务钉在 Core 1：编码器任务 1000 Hz、电机任务 100 Hz、OLED 任务 10 Hz。Core 0 跑 web server。用互斥锁保护 motor 结构体的共享状态。
 
-目的很纯粹，就是验证这套软件架构在并发负载下能不能稳住，之后再接真正的电机。
+目的是验证这套软件架构在并发负载下能不能稳住，之后再接真正的电机。
 
 # 系统架构
 

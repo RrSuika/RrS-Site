@@ -58,7 +58,7 @@ Different blocks on the same board need different voltages:
 So inside a product you often have 5V, 3.3V, 1.8V, and other rails coexisting.
 
 What I've learned:
-- Every stage in the power path has losses — evaluate efficiency stage by stage, not just the last one.
+- Every stage in the power path has losses — evaluate efficiency stage by stage.
 - Plan your voltage rails thoughtfully. Sensitive circuits may need extra filtering on their supply.
 - Protection devices (fuse, reverse-polarity) look basic but define your product's safety floor. Never cheap out here.
 

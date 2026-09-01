@@ -38,7 +38,7 @@ Dit gebeurt voortdurend in productontwerp: je kiest een doorschijnend materiaal 
 
 Het probleem is dat twee materialen die er onder kamerlicht identiek uitzien, zich totaal anders kunnen gedragen zodra ze van achteren worden belicht. Oppervlakteafwerking, dikte, interne structuur: ze beïnvloeden allemaal hoe licht door het materiaal beweegt, en renders brengen je maar tot zover. Op een gegeven moment moet je het met eigen ogen zien.
 
-Dus bouwde ik een testopstelling. Niet omdat ik weken aan een apparaat wilde besteden, maar omdat elke CMF-beslissing die ik daarna nam, onderbouwd zou zijn met data in plaats van intuïtie.
+Dus bouwde ik een testopstelling, zodat elke CMF-beslissing die ik daarna nam onderbouwd zou zijn met data in plaats van intuïtie.
 
 # Meetbare factoren
 
@@ -57,7 +57,7 @@ Naast de meetdoelen had ik een handvol praktische eisen die net zo belangrijk bl
 - <strong style="color:var(--accent)">Instelbare helderheid</strong>: materialen zien er bij 10% helderheid anders uit dan bij 100%. De lichtbron moet dat bereik kunnen dekken.
 - <strong style="color:var(--accent)">Beheersing van omgevingslicht</strong>: optische metingen in een zonverlichte kamer zijn alleen maar ruis. De testomgeving moet externe interferentie minimaliseren.
 - <strong style="color:var(--accent)">Snel samples wisselen</strong>: als het verwisselen van materiaal vijf minuten kost, ga ik niet genoeg vergelijkingen uitvoeren om iets nuttigs te leren.
-- <strong style="color:var(--accent)">Visuele output</strong>: ik moet de resultaten kunnen zien, niet alleen getallen loggen. Zij-aan-zij visuele vergelijking is de helft van waar het om gaat.
+- <strong style="color:var(--accent)">Visuele output</strong>: ik moet de resultaten kunnen zien. Zij-aan-zij visuele vergelijking is de helft van waar het om gaat.
 
 # Ontwerp & maken
 
@@ -190,7 +190,7 @@ De afgebouwde opstelling geeft me een betrouwbare, reproduceerbare omgeving om t
 - <strong style="color:var(--accent)">Zij-aan-zij materiaalvergelijking</strong> onder identieke belichting: geen "ik denk dat deze er beter uitziet" meer
 - <strong style="color:var(--accent)">Beoordeling van oppervlakteafwerking</strong>: hoe verandert schuren, polijsten of textureren de manier waarop licht erdoorheen beweegt?
 - <strong style="color:var(--accent)">Analyse van dikte versus transmissie</strong>: hoeveel helderheid kost een verdubbeling van de plaatdikte nu echt?
-- <strong style="color:var(--accent)">Gecontroleerde helderheidssweeps</strong>: zie hoe materialen zich gedragen over het volledige dimbereik, niet alleen bij één instelling
+- <strong style="color:var(--accent)">Gecontroleerde helderheidssweeps</strong>: zie hoe materialen zich gedragen over het volledige dimbereik
 - <strong style="color:var(--accent)">Visuele documentatie</strong> van lichtverdelingspatronen waar ik bij toekomstige projecten naar kan terugverwijzen
 
 ![Eindplatform](./03-final-platform-3d.png)

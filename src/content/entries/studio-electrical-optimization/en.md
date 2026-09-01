@@ -39,7 +39,7 @@ I'm in **the Netherlands**, so everything here is grounded in **NEN 1010** — t
 
 # What I Wanted to Achieve
 
-- Actually map out where power flows in my workshop — not just guess
+- Actually map out where power flows in my workshop
 - Find every safety risk I'd been walking past without noticing
 - Identify which devices were the real power hogs
 - Design a solution that was both safe and actually doable (not a theoretical "rewire the house" plan)
@@ -75,7 +75,7 @@ Breakers protect against overload and short circuits, but not all breakers are t
 
 ## Cable Sizing
 
-The cross-section of a cable isn't just a number on the jacket — it determines how much current that cable can carry safely. Things that eat into your margin:
+The cross-section of a cable determines how much current that cable can carry safely. Things that eat into your margin:
 
 ![Hard vs Stranded Wire](./5.png)
 ![Wire Comparison](./6.png)
@@ -120,7 +120,7 @@ I spent an afternoon tracing cables and drawing a proper topology map. It was wo
 
 ### Welding Machine Grounding
 
-The welder wasn't grounded at all. Not "poorly grounded" — just not connected to ground. On a metal-chassis machine drawing 16A, that's a genuinely dangerous situation. **Fix:** I ran a dedicated ground connection back to the main grounding bus in the distribution board.
+The welder had no ground connection at all. On a metal-chassis machine drawing 16A, that's a genuinely dangerous situation. **Fix:** I ran a dedicated ground connection back to the main grounding bus in the distribution board.
 
 ### Inrush Current
 
@@ -144,7 +144,7 @@ The compressor and angle grinder were on the same circuit as my computer and mon
 
 ### Travel Adapters
 
-I had a few travel adapters in the setup — the kind meant for charging a phone in a hotel, not running workshop equipment. The contact surfaces are tiny, they're not rated for sustained high current, and they get warm in ways that make me nervous. **Fix:** Replaced every single one with proper European Schuko plugs or industrial-grade power strips.
+I had a few travel adapters in the setup — the kind meant for charging a phone in a hotel, useless for workshop equipment. The contact surfaces are tiny, they're not rated for sustained high current, and they get warm in ways that make me nervous. **Fix:** Replaced every single one with proper European Schuko plugs or industrial-grade power strips.
 
 ### Zoning & Circuit Distribution
 
@@ -167,13 +167,13 @@ This sounds silly but it matters: I put up actual labels. "Do not start more tha
 
 Nine risk factors, some of which had been sitting there for months while I worked around them. The ungrounded welder was the scariest — that one could have actually hurt someone. The daisy-chained power strips were the most likely to cause a real fire.
 
-The core insight was that my setup was never designed — it had just accumulated. Another power strip here, an extension cord there, until the topology was a mess of serial connections where every link was a liability. Moving to a star topology with physically separated circuits isn't just tidier — it means a fault in one zone doesn't cascade into the others.
+The core insight was that my setup was never designed — it had just accumulated. Another power strip here, an extension cord there, until the topology was a mess of serial connections where every link was a liability. Moving to a star topology with physically separated circuits means a fault in one zone doesn't cascade into the others.
 
 # Making It Real
 
 ![New Work Zone](./16.png)
 
-I actually did the physical work, not just the analysis:
+I actually did the physical work:
 
 - **Office Zone:** Computers, monitors, network gear — all on one dedicated circuit, physically isolated from the noisy stuff. No more screen flicker when a motor starts.
 - **Work Zone:** Welder, compressor, grinders, and other industrial tools moved to a separate room on separate circuits. Heavy loads are contained where they belong, and the fire risk from overloaded circuits dropped substantially.

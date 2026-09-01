@@ -25,7 +25,7 @@ translationKey: body-armor-protective-vest
 
 Vóór dit project keek ik naar plate carriers en tactische vesten zoals de meeste mensen: als afgewerkte producten die er gewoon zijn. Maar ik had geen idee hoe ze eigenlijk in elkaar zitten. Waarom kost het ene vest $200 en het andere $2.000? Hoe naai je door een stuk of zes lagen nylon en Kevlar zonder industriële naaimachine? Welke beslissingen zitten er achter de plaatsing van elke steek?
 
-Dus besloot ik er zelf een te bouwen. Geen kostuumstuk en geen airsoft-replica, maar een echte, functionele drager die moest werken als een gelaagd beschermingssysteem. Puur uit nieuwsgierigheid wilde ik de techniek achter soft armor begrijpen, van de materiaalopbouw tot de naaitechnieken die alles onder belasting bij elkaar houden.
+Dus besloot ik er zelf een te bouwen: een echte, functionele drager die moest werken als een gelaagd beschermingssysteem. Puur uit nieuwsgierigheid wilde ik de techniek achter soft armor begrijpen, van de materiaalopbouw tot de naaitechnieken die alles onder belasting bij elkaar houden.
 
 # Wat ik wilde bouwen
 
@@ -42,7 +42,7 @@ Voordat ik ook maar één stof aanraakte, schreef ik op wat dit ding echt moest 
 | Ademend vermogen          | 3D mesh-luchtkanalen                   | Warmteopbouw bij langdurig dragen is een echt probleem           |
 | Totale dikte              | ~40 mm gekalibreerde laagopbouw        | Bescherming telt, maar als je niet kunt bewegen heb je er niets aan |
 
-De filosofie waarop ik uitkwam was vrij simpel: probeer niet alles tegelijk te stoppen. Zo eindig je met een bompak van 80 pond dat niemand langer dan tien minuten kan dragen. In plaats daarvan richt elke laag in de opbouw zich op een specifieke, realistische dreiging. Samen dekken ze een praktisch scala aan gevaren af. Zo wordt professionele beschermingsuitrusting echt ontworpen: het is een configureerbaar systeem, geen magisch schild.
+De filosofie waarop ik uitkwam was vrij simpel: probeer niet alles tegelijk te stoppen. Zo eindig je met een bompak van 80 pond dat niemand langer dan tien minuten kan dragen. In plaats daarvan richt elke laag in de opbouw zich op een specifieke, realistische dreiging. Samen dekken ze een praktisch scala aan gevaren af. Zo wordt professionele beschermingsuitrusting echt ontworpen: een configureerbaar systeem.
 
 # Materiaalkeuze: elke laag verdient zijn plek
 
@@ -116,7 +116,7 @@ Ik deed geen ballistische labtests in mijn werkplaats, maar ik heb het vest wel 
 
 # Wat ik eruit heb meegenomen
 
-Dit ging niet om het maken van een product. Het ging om het begrijpen van een categorie objecten die ik altijd alleen van buitenaf had gezien.
+Ik maakte dit om een categorie objecten te begrijpen die ik altijd alleen van buitenaf had gezien.
 
 - <strong style="color:var(--accent)">Kledingconstructie is een hele discipline</strong>: patronen tekenen, knippen, assembleren, afwerken: er zit een complete productieworkflow achter waar de meeste industrieel ontwerpers nooit aan raken. Het van begin tot eind doorlopen gaf me respect voor elke naad die ik nu in welk kledingstuk dan ook zie.
 - <strong style="color:var(--accent)">Zware stoffen vragen om zware oplossingen</strong>: 1000D-nylon leerde me waar de grens ligt tussen wat thuisapparatuur aankan en wat industriële machines vereist. Spoiler: die grens komt snel.

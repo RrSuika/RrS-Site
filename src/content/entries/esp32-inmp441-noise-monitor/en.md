@@ -36,7 +36,7 @@ translationKey: esp32-inmp441-noise-monitor
 
 # Overview
 
-I wanted a way to see what my workspace actually sounds like — not just a number, but the full frequency picture. So I grabbed an INMP441 I2S microphone, wired it up to an ESP32, and wrote the FFT pipeline myself. The end result is a little device that sits on my desk, grabs audio in real time, runs a 512-point FFT, and streams everything to a browser dashboard over WiFi. It shows me the current dB level, a 64-bin spectrum bar chart, and a rolling 30-minute history of noise levels. It's surprisingly addictive to watch — you really get a feel for which appliances are the loudest in the room.
+I wanted a way to see what my workspace actually sounds like, the full frequency picture. So I grabbed an INMP441 I2S microphone, wired it up to an ESP32, and wrote the FFT pipeline myself. The end result is a little device that sits on my desk, grabs audio in real time, runs a 512-point FFT, and streams everything to a browser dashboard over WiFi. It shows me the current dB level, a 64-bin spectrum bar chart, and a rolling 30-minute history of noise levels. It's surprisingly addictive to watch — you really get a feel for which appliances are the loudest in the room.
 
 # System Architecture
 

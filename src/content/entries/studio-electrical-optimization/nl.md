@@ -120,7 +120,7 @@ Ik besteedde een middag aan het volgen van kabels en het tekenen van een degelij
 
 ### Aarding van het lasapparaat
 
-Het lasapparaat was helemaal niet geaard. Niet "slecht geaard"; gewoon niet verbonden met aarde. Bij een machine met metalen behuizing die 16A trekt is dat een echt gevaarlijke situatie. **Oplossing:** Ik heb een aparte aardverbinding terug naar de hoofdaardrail in de groepenkast gelegd.
+Het lasapparaat had helemaal geen aardverbinding. Bij een machine met metalen behuizing die 16A trekt is dat een echt gevaarlijke situatie. **Oplossing:** Ik heb een aparte aardverbinding terug naar de hoofdaardrail in de groepenkast gelegd.
 
 ### Inschakelstroom
 
@@ -144,7 +144,7 @@ De compressor en de haakse slijper zaten op dezelfde groep als mijn computer en 
 
 ### Reisadapters
 
-Ik had een paar reisadapters in de opstelling; het soort dat bedoeld is om in een hotel een telefoon op te laden, niet om werkplaatsapparatuur te laten draaien. De contactoppervlakken zijn minuscuul, ze zijn niet geschikt voor aanhoudend hoge stromen en ze worden warm op manieren waar ik zenuwachtig van word. **Oplossing:** Stuk voor stuk vervangen door degelijke Europese Schuko-stekkers of industriële stekkerdozen.
+Ik had een paar reisadapters in de opstelling; het soort dat bedoeld is om in een hotel een telefoon op te laden, ongeschikt voor werkplaatsapparatuur. De contactoppervlakken zijn minuscuul, ze zijn niet geschikt voor aanhoudend hoge stromen en ze worden warm op manieren waar ik zenuwachtig van word. **Oplossing:** Stuk voor stuk vervangen door degelijke Europese Schuko-stekkers of industriële stekkerdozen.
 
 ### Zonering en groepenverdeling
 
@@ -167,13 +167,13 @@ Dit klinkt misschien flauw, maar het maakt uit: ik heb echte labels opgehangen. 
 
 Negen risicofactoren, waarvan sommige er al maanden in zaten terwijl ik eromheen werkte. Het ongeaarde lasapparaat was het engst; dat had daadwerkelijk iemand kunnen verwonden. De doorgeluste stekkerdozen hadden nog de grootste kans om een echte brand te veroorzaken.
 
-Het kerninzicht was dat mijn opstelling nooit ontworpen was; die was gewoon opgehoopt. Hier nog een stekkerdoos, daar een verlengsnoer, totdat de topologie een warboel van seriële verbindingen was waarin elke schakel een risico vormde. Overstappen op een stertopologie met fysiek gescheiden groepen is niet alleen netter; het betekent dat een fout in de ene zone niet overslaat naar de andere.
+Het kerninzicht was dat mijn opstelling nooit ontworpen was; die was gewoon opgehoopt. Hier nog een stekkerdoos, daar een verlengsnoer, totdat de topologie een warboel van seriële verbindingen was waarin elke schakel een risico vormde. Overstappen op een stertopologie met fysiek gescheiden groepen zorgt ervoor dat een fout in de ene zone niet overslaat naar de andere.
 
 # Van analyse naar uitvoering
 
 ![Nieuwe werkzone](./16.png)
 
-Ik heb het fysieke werk ook echt uitgevoerd, niet alleen de analyse:
+Ik heb het fysieke werk ook echt uitgevoerd:
 
 - **Office Zone:** Computers, monitoren en netwerkapparatuur; alles op één eigen groep, fysiek gescheiden van het lawaaiige spul. Geen flikkerende schermen meer wanneer een motor start.
 - **Work Zone:** Lasapparaat, compressor, slijpers en ander industrieel gereedschap verplaatst naar een aparte ruimte op aparte groepen. Zware belastingen zitten waar ze horen en het brandrisico door overbelaste groepen is flink gedaald.

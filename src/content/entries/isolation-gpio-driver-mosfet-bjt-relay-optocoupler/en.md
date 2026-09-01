@@ -33,7 +33,7 @@ translationKey: isolation-gpio-driver-mosfet-bjt-relay-optocoupler
 
 # What GPIO Actually Is
 
-GPIO is the MCU's general-purpose input/output interface — configurable as input (sense external levels) or output (generate HIGH/LOW). But its essence is a digital control interface, not a power supply. HIGH ≈ 3.3V (or 5V), LOW ≈ 0V, representing logic 1 and 0. Its output current is severely limited — typically around 20mA.
+GPIO is the MCU's general-purpose input/output interface — configurable as input (sense external levels) or output (generate HIGH/LOW). But its essence is a digital control interface. HIGH ≈ 3.3V (or 5V), LOW ≈ 0V, representing logic 1 and 0. Its output current is severely limited — typically around 20mA.
 
 That's the core conflict: GPIO outputs 3.3V/20mA, but you need to drive a 12V/2A LED panel. Two orders of magnitude off. You need a "translator" — something that takes the MCU's weak signal and controls the external power supply's high current. That's what a driver circuit does.
 

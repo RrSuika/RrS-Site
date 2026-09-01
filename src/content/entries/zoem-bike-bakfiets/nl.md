@@ -178,7 +178,7 @@ Van model tot metaal: de eindrender en het echte exemplaar op de weg:
 
 # Wat ik hieruit meeneem
 
-Dit was het eerste project waarin het einde van het proces een klant was die op het resultaat reed: geen cijfer, geen prototype in een la.
+Dit was het eerste project waarin het einde van het proces een klant was die op het resultaat reed.
 
 - <strong style="color:var(--accent)">Plaatmetaal is een andere ontwerptaal</strong>: buigradii, lasnaden en poedercoattoleranties beperken de geometrie allemaal al ver voordat esthetiek ter sprake komt. Ontwerpen in SolidWorks en bouwen in staal zijn twee heel verschillende gesprekken.
 - <strong style="color:var(--accent)">Ontwerp is een taal van balans</strong>: elke onderdeelkeuze (een scharnier, een gasveer, een plaatdikte) weegt kosten af tegen levensduur, bewerkbaarheid, levertijd en de dagelijkse ervaring van de gebruiker. Het beste component op papier is zelden het beste component in het product.
