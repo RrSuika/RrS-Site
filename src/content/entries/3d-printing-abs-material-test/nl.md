@@ -544,7 +544,7 @@ Ik overwoog het standaardtandwiel te vervangen door een messing exemplaar, maar 
 
 Een gehard stalen tandwiel lijkt de veiligere keuze. Meer grip, minder thermische geleiding, en het slijt niet op dezelfde manier.
 
-## 9. Vervolgwerk
+## Vervolgwerk
 
 Dingen die ik wil testen wanneer ik eraan toekom:
 
@@ -558,7 +558,7 @@ Dingen die ik wil testen wanneer ik eraan toekom:
 
 De grote les over methodologie: drie dingen tegelijk veranderen brengt je misschien sneller bij een oplossing, maar je weet niet _welk_ ding het heeft opgelost. Volgende ronde wil ik gedisciplineerder zijn in het isoleren van variabelen.
 
-## 10. Zelfreflectie
+## Zelfreflectie
 
 Dit project veranderde hoe ik over 3D-printen denk. ABS is niet zomaar PLA in „hard mode": het is een compleet ander beest dat zwakke plekken in je opstelling blootlegt die makkelijkere materialen je laten negeren.
 
@@ -570,7 +570,7 @@ De eerste tests waren rommelig: ik veranderde meerdere variabelen, raakte gefrus
 
 Al met al ben ik blij dat ik heb doorgezet. Van „ABS is onmogelijk op deze printer" naar een herhaalbaar proces is oprecht bevredigend.
 
-## 11. Filament- en printeropstelling
+## Filament- en printeropstelling
 
 ### Printer
 
@@ -605,7 +605,7 @@ Waar ik op zou mikken: 45–50°C
 
 Boven de 55°C hielp het wel tegen kromtrekking, maar bracht het vaker heat creep en extrusieproblemen met zich mee. Onder de 45°C begon ik hoeken te zien loskomen. Het is een smal venster, maar zodra je het gevonden hebt, is het herhaalbaar.
 
-## 12. Referenties
+## Referenties
 
 1. Bambu Lab Basic Maintenance  
    https://wiki.bambulab.com/en/a1/maintenance/basic-maintenance

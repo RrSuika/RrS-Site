@@ -118,45 +118,45 @@ Ik besteedde een middag aan het volgen van kabels en het tekenen van een degelij
 
 ## Wat ik aantrof en hoe ik het heb opgelost
 
-### 1. Aarding van het lasapparaat
+### Aarding van het lasapparaat
 
 Het lasapparaat was helemaal niet geaard. Niet "slecht geaard"; gewoon niet verbonden met aarde. Bij een machine met metalen behuizing die 16A trekt is dat een echt gevaarlijke situatie. **Oplossing:** Ik heb een aparte aardverbinding terug naar de hoofdaardrail in de groepenkast gelegd.
 
-### 2. Inschakelstroom
+### Inschakelstroom
 
 Het lasapparaat trekt 20–30A bij het opstarten; meer dan waar de bestaande groep voor was ontworpen. Zelfs als de automaat het volhield (wat soms niet lukte), was het geen veilige langetermijnopstelling. **Oplossing:** Het lasapparaat verplaatst naar een eigen aparte groep met een correct gedimensioneerde beveiliging.
 
-### 3. Uitschakelkarakteristieken
+### Uitschakelkarakteristieken
 
 Bij apparatuur met hoge inschakelstromen zal een standaard B-curve-automaat onnodig trippen. Je hebt een C- of D-curve nodig; dezelfde nominale waarde, maar de magnetische uitschakeldrempel ligt hoger, waardoor die inschakelstromen worden verdragen zonder in te leveren op overbelastingsbeveiliging.
 
 ![Risico van doorlussen](./10.png)
 
-### 4. Doorlussen elimineren
+### Doorlussen elimineren
 
 Ik had stekkerdozen in andere stekkerdozen gestoken. Elk koppelpunt voegt contactweerstand toe, genereert warmte en vergroot de kans dat er iets bezwijkt onder belasting. Het is een boomtopologie waarin elke tak een potentiële brand is. **Oplossing:** Overgestapt op een stertopologie; één hoogwaardige 16A-stekkerdoos als centraal verdeelpunt, waar alles op aansluit in plaats van door elkaar heen te lussen.
 
-### 5. Spanningsdips en EMI
+### Spanningsdips en EMI
 
 De compressor en de haakse slijper zaten op dezelfde groep als mijn computer en monitoren. Elke keer dat een motor startte, zakte de spanning in en kregen de gevoelige elektronica de piek te verduren. Zo maak je op den duur voedingen kapot. **Oplossing:** Fysiek gescheiden groepen; zware machines op de ene groep, gevoelige elektronica op de andere.
 
 ![Problemen met reisadapters](./11.png)
 
-### 6. Reisadapters
+### Reisadapters
 
 Ik had een paar reisadapters in de opstelling; het soort dat bedoeld is om in een hotel een telefoon op te laden, niet om werkplaatsapparatuur te laten draaien. De contactoppervlakken zijn minuscuul, ze zijn niet geschikt voor aanhoudend hoge stromen en ze worden warm op manieren waar ik zenuwachtig van word. **Oplossing:** Stuk voor stuk vervangen door degelijke Europese Schuko-stekkers of industriële stekkerdozen.
 
-### 7. Zonering en groepenverdeling
+### Zonering en groepenverdeling
 
 Dit was de grote structurele verandering: de werkplaats opdelen in een "Machining Zone" en een "Office Zone", elk op een eigen groep. Ik heb de bedrading ook opgewaardeerd van 2.5mm² naar 4mm² (en waar mogelijk 6mm²) om de spanningsval onder belasting te verkleinen.
 
 ![Aanbeveling directe aansluiting](./12.png)
 
-### 8. Directe aansluiting
+### Directe aansluiting
 
 Secundaire stekkerdozen brengen extra koppelpunten, extra weerstand en extra faalpunten met zich mee. Kritieke apparatuur zit nu rechtstreeks in het stopcontact. Geen tussenliggende stekkerdozen, geen adapters, gewoon een schoon pad van automaat naar apparaat.
 
-### 9. Preventie en waarschuwingslabels
+### Preventie en waarschuwingslabels
 
 Dit klinkt misschien flauw, maar het maakt uit: ik heb echte labels opgehangen. "Start nooit meer dan één zware machine tegelijk." "Rol verlengsnoeren voor gebruik volledig uit." Wanneer je moe bent en midden in een project zit, zijn visuele herinneringen op de plek van gebruik meer waard dan een veiligheidshandleiding die je toch nooit herleest.
 

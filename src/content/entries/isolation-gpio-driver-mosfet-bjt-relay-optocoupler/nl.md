@@ -37,7 +37,7 @@ GPIO is de algemene input/output-interface van de MCU; instelbaar als ingang (ex
 
 Dat is het kernconflict: de GPIO levert 3.3V/20mA, maar je moet een LED-paneel van 12V/2A aansturen. Twee ordes van grootte verschil. Je hebt een "vertaler" nodig; iets dat het zwakke signaal van de MCU overneemt en de hoge stroom van de externe voeding bestuurt. Dat is wat een drivercircuit doet.
 
-## 1. MOSFET-basis: spanningsgestuurde elektronische schakelaar
+## MOSFET-basis: spanningsgestuurde elektronische schakelaar
 
 MOSFETs zijn hier perfect voor omdat ze spanningsgestuurd zijn: de Gate trekt vrijwel geen continue stroom; je hebt alleen genoeg spanning nodig om hem aan te zetten. De MCU levert het stuursignaal aan de Gate via GPIO/PWM, en de belastingsstroom loopt van de externe voeding door het Drain-Source-pad. Twee volledig gescheiden circuits.
 
@@ -51,11 +51,11 @@ MOSFETs zijn hier perfect voor omdat ze spanningsgestuurd zijn: de Gate trekt vr
 
 Belangrijk inzicht: **het stuursignaal en de belastingsstroom lopen door volledig gescheiden paden**. De GPIO raakt alleen de Gate. Het Drain-Source-kanaal draagt de hoge stroom van de externe voeding. Ze zijn elektrisch geïsoleerd.
 
-## 2. Waarom MCU's belastingen niet direct kunnen aansturen
+## Waarom MCU's belastingen niet direct kunnen aansturen
 
 Een LED-paneel van 12V/24W heeft 2A nodig. Een Arduino-GPIO levert ~20mA; een kloof van 100×. De MOSFET overbrugt die: de MCU levert de stuurspanning, de externe 12V-voeding levert de stroom. Ieder doet zijn eigen werk.
 
-## 3. NMOS versus PMOS
+## NMOS versus PMOS
 
 ### NMOS (low-side schakelaar): aanbevolen
 ```
@@ -87,7 +87,7 @@ GND
 - Vereist extra level shifting of een gate-driver-IC; complexer
 - Niet aanbevolen voor beginners
 
-## 4. PWM-dimmen
+## PWM-dimmen
 
 PWM verlaagt de spanning niet; het schakelt op hoge snelheid tussen volledig aan en volledig uit, en varieert de aan-tijdverhouding (dutycycle) om het gemiddelde vermogen te regelen. Dankzij de traagheid van het menselijk oog lijken LED's continu te branden (niet te flikkeren), zolang de frequentie hoog genoeg is.
 
@@ -96,7 +96,7 @@ PWM verlaagt de spanning niet; het schakelt op hoge snelheid tussen volledig aan
 - Te laag → zichtbaar flikkeren of hoorbaar fluiten
 - Te hoog → de schakelverliezen nemen toe (de MOS brengt meer tijd door in het overgangsgebied)
 
-## 5. Waarom je een vrijloopdiode nodig hebt
+## Waarom je een vrijloopdiode nodig hebt
 
 **Van toepassing op**: motoren, ventilatoren, solenoïdes, relaisspoelen; alles met een gewikkelde spoel.
 
@@ -104,7 +104,7 @@ Wanneer de MOSFET uitschakelt, stort het magnetische veld van de spoel in, wat e
 
 Zuiver resistieve belastingen zoals LED's hebben er meestal geen nodig, maar het kan geen kwaad om er een toe te voegen.
 
-## 6. MOSFET versus BJT (NPN/PNP)
+## MOSFET versus BJT (NPN/PNP)
 
 | Eigenschap         | BJT (NPN/PNP)    | MOSFET         |
 | ---------------- | ---------------- | -------------- |
@@ -117,7 +117,7 @@ Zuiver resistieve belastingen zoals LED's hebben er meestal geen nodig, maar het
 
 BJT's zijn stroomgestuurd: je moet basistroom blijven toevoeren om ze aan te houden. MOSFETs zijn spanningsgestuurd: zodra de Gate-capaciteit is opgeladen, loopt er vrijwel geen stroom meer. In moderne DC-vermogensschakelingen winnen MOSFETs op alle fronten. BJT's komen nog voor in analoge schakelingen (versterking, lineaire regeling) en in enkele hoogspanningsniches, maar voor het aansturen van belastingen vanuit een MCU? Altijd een MOSFET.
 
-## 7. Relais versus MOSFET
+## Relais versus MOSFET
 
 | MOSFET          | Relais               |
 | --------------- | ------------------- |
@@ -131,7 +131,7 @@ BJT's zijn stroomgestuurd: je moet basistroom blijven toevoeren om ze aan te hou
 **Ik gebruik een relais wanneer**: ik 220V AC schakel, een echte fysieke scheiding nodig heb (geen lekstroom) of volledige galvanische isolatie nodig heb.
 **Ik gebruik een MOSFET wanneer**: LED's, motoren, ventilatoren, producten op batterijen; DC-belastingen die snelheid, stilte en PWM-aansturing nodig hebben.
 
-## 8. Optocoupler: wanneer je echte elektrische isolatie nodig hebt
+## Optocoupler: wanneer je echte elektrische isolatie nodig hebt
 
 Een optocoupler geeft signalen door met licht: een interne LED schijnt op een lichtgevoelige ontvanger. Er is geen geleidend pad tussen in- en uitgang; alleen fotonen. Zo kan een 3.3V-MCU veilig 220V-apparatuur aansturen, terwijl aardlussen worden doorbroken en de ruisimmuniteit verbetert.
 

@@ -154,11 +154,11 @@ Kernidee: de weerstand zorgt voor de standaardtoestand en begrenst de stroom, de
 
 ### Waarom pull-up domineert in industrieel ontwerp
 
-#### 1. Ingebouwde MCU-pull-ups zijn gratis
+#### Ingebouwde MCU-pull-ups zijn gratis
 
 De meeste MCU's (STM32, ESP32, Arduino) hebben programmeerbare interne pull-up-weerstanden. Interne pull-downs zijn zeldzamer of zwakker. Schakel de interne pull-up in en je bespaart een weerstand en PCB-ruimte; nul BOM-kosten. Ingenieurs grijpen vanzelf naar de gratis optie, en na verloop van tijd is daaruit een "pull-up-first"-ontwerpcultuur ontstaan.
 
-#### 2. Fail-safe: dit is de belangrijkste
+#### Fail-safe: dit is de belangrijkste
 
 - In een pull-up-circuit geldt: ingedrukt = laag.
 - Als de draad tussen knop en print breekt, een connector loskomt of een soldeerverbinding scheurt, trekt de pull-up de zwevende GPIO meteen terug naar een stevige hoog, "niet ingedrukt".
@@ -166,18 +166,18 @@ De meeste MCU's (STM32, ESP32, Arduino) hebben programmeerbare interne pull-up-w
 
 Omgekeerd: bij pull-down laat een gebroken draad de GPIO op laag staan, "altijd ingedrukt". Het systeem kan continu triggeren, in oneindige lussen terechtkomen of echte veiligheidsrisico's veroorzaken. In industriële apparatuur, auto-elektronica en elk domein waar betrouwbaarheid cruciaal is, is **fail-safe naar ruststand** verplicht.
 
-#### 3. Aarde als referentie is betrouwbaarder
+#### Aarde als referentie is betrouwbaarder
 
 - Het groundvlak is de 0V-referentie voor het hele systeem; het zit overal, met ultralage impedantie, en absorbeert en schermt ruis uitstekend af — veel beter dan de voedingsrail.
 - Statische elektriciteit of ruis van een vingeraanraking wordt veilig naar aarde afgevoerd in plaats van in de gevoelige voedingsrail geïnjecteerd.
 - Bij actief-laag signalering moet ruis het niveau boven VIH (~0.7 × VCC) duwen om geregistreerd te worden. De voedingsrail heeft ontkoppelcondensatoren die ruisinkoppeling bemoeilijken. De ruismarges bij actief-hoog zijn inherent slechter.
 
-#### 4. Vermogen en logica sluiten van nature op elkaar aan
+#### Vermogen en logica sluiten van nature op elkaar aan
 
 - **Rustvermogen**: als de knop niet is ingedrukt, staan beide uiteinden van de pull-up hoog; vrijwel nul vermogen. Ingedrukt = 3.3V/10kΩ = 0.33mA, alleen verbruikt tijdens de actie. Een pull-down-schema levert dezelfde stroom op (VCC via de knop naar de pull-down), dus er is geen statisch vermogensvoordeel in welke richting dan ook.
 - **Logische intuïtie**: veel sequentiële logische schakelingen (resetcircuits, enzovoort) gebruiken actief-laag signalering. Pull-up + knop-naar-aarde geeft van nature "ingedrukt = 0", wat aansluit bij interrupt-triggers en resetlogica; minder mentale overhead bij het schrijven van firmware.
 
-#### 5. Open-drain en buscompatibiliteit
+#### Open-drain en buscompatibiliteit
 
 Wanneer meerdere apparaten een signaallijn delen (I²C, 1-Wire, of een knop die een pin deelt met een statusindicator), is open-drain + pull-up de standaardtopologie. Pull-up past er naadloos in. Pull-down vereist extra niveau-omzetting of een circuitaanpassing.
 

@@ -37,7 +37,7 @@ GPIO is the MCU's general-purpose input/output interface — configurable as inp
 
 That's the core conflict: GPIO outputs 3.3V/20mA, but you need to drive a 12V/2A LED panel. Two orders of magnitude off. You need a "translator" — something that takes the MCU's weak signal and controls the external power supply's high current. That's what a driver circuit does.
 
-## 1. MOSFET Basics — Voltage-Controlled Electronic Switch
+## MOSFET Basics — Voltage-Controlled Electronic Switch
 
 MOSFETs are perfect for this because they're voltage-controlled: the Gate draws essentially zero continuous current — you just need enough voltage to turn it on. The MCU provides the control signal to the Gate via GPIO/PWM, and the load current flows from the external supply through the Drain-Source path. Two completely separate circuits.
 
@@ -51,11 +51,11 @@ MOSFETs are perfect for this because they're voltage-controlled: the Gate draws 
 
 Key insight: **the control signal and the load current travel through entirely separate paths**. The GPIO only touches the Gate. The Drain-Source channel carries the external supply's high current. They're electrically isolated.
 
-## 2. Why MCUs Can't Drive Loads Directly
+## Why MCUs Can't Drive Loads Directly
 
 A 12V/24W LED panel needs 2A. An Arduino GPIO outputs ~20mA — a 100x gap. The MOSFET bridges it: the MCU provides the control voltage, the external 12V supply provides the current. Each does its own job.
 
-## 3. NMOS vs PMOS
+## NMOS vs PMOS
 
 ### NMOS (Low-Side Switch) — Recommended
 ```
@@ -87,7 +87,7 @@ GND
 - Needs extra level shifting or a gate driver IC — more complex
 - Not recommended for beginners
 
-## 4. PWM Dimming
+## PWM Dimming
 
 PWM doesn't reduce voltage — it switches between full-on and full-off at high speed, varying the on-time ratio (duty cycle) to control average power. LEDs appear continuously lit (not flickering) thanks to persistence of vision, as long as the frequency is high enough.
 
@@ -96,7 +96,7 @@ PWM doesn't reduce voltage — it switches between full-on and full-off at high 
 - Too low → visible flicker or audible whine
 - Too high → switching losses increase (the MOSFET spends more time in the transition region)
 
-## 5. Why You Need a Freewheeling Diode
+## Why You Need a Freewheeling Diode
 
 **Applies to**: motors, fans, solenoids, relay coils — anything with a wound inductor.
 
@@ -104,7 +104,7 @@ When the MOSFET turns off, the inductor's magnetic field collapses, generating a
 
 Pure resistive loads like LEDs generally don't need one, but it doesn't hurt to add it.
 
-## 6. MOSFET vs BJT (NPN/PNP)
+## MOSFET vs BJT (NPN/PNP)
 
 | Property         | BJT (NPN/PNP)    | MOSFET         |
 | ---------------- | ---------------- | -------------- |
@@ -117,7 +117,7 @@ Pure resistive loads like LEDs generally don't need one, but it doesn't hurt to 
 
 BJTs are current-controlled: you have to keep feeding base current to stay on. MOSFETs are voltage-controlled: once the Gate capacitance is charged, basically zero current flows. In modern DC power switching, MOSFETs win across the board. BJTs still appear in analog circuits (amplification, linear regulation) and some high-voltage niches, but for driving loads from an MCU? MOSFET every time.
 
-## 7. Relay vs MOSFET
+## Relay vs MOSFET
 
 | MOSFET          | Relay               |
 | --------------- | ------------------- |
@@ -131,7 +131,7 @@ BJTs are current-controlled: you have to keep feeding base current to stay on. M
 **I use a relay when**: switching 220V AC, need true physical disconnect (zero leakage current), or need full galvanic isolation.
 **I use a MOSFET when**: LEDs, motors, fans, battery-powered products — DC loads that need speed, silence, and PWM control.
 
-## 8. Optocoupler — When You Need True Electrical Isolation
+## Optocoupler — When You Need True Electrical Isolation
 
 An optocoupler transmits signals using light: an internal LED shines on a photosensitive receiver. There's no conductive path between input and output — only photons. This lets a 3.3V MCU safely control 220V equipment, while also breaking ground loops and improving noise immunity.
 

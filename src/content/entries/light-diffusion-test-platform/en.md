@@ -77,7 +77,7 @@ The platform is a vertical measurement stand: light source at the bottom, adjust
 - <strong style="color:var(--accent)">Light source</strong>: LED strip, goes from barely glowing to full output.
 - <strong style="color:var(--accent)">Lift stand</strong>: The height adjustment lets me precisely control the distance between the light source and the material.
 - <strong style="color:var(--accent)">Frame</strong>: Laser-cut structural panels, spray-painted matte black and absorbs stray ambient light and kills internal reflections.
-- <strong style="color:var(--accent)">PWM Module</strong>: Use PWM to control the LED strip’s dutycycle to adjust its brightness.
+- <strong style="color:var(--accent)">PWM Controller</strong>: Use PWM to control the LED strip’s dutycycle to adjust its brightness.
 - <strong style="color:var(--accent)">Power delivery</strong>: Oxygen-free copper wire 0.5mm². Rated for 2A with headroom.
 
 ## Fabrication Process
@@ -139,7 +139,7 @@ The whole point of building this thing instead of just holding materials up to a
 
 <div class="variables-grid">
 
-- <strong style="color:var(--accent)">Light Intensity</strong> : PWM-controlled, from barely visible to full blast
+- <strong style="color:var(--accent)">Light Intensity</strong> : set via the PWM controller, from barely visible to full blast
 - <strong style="color:var(--accent)">Material Type</strong> : PLA, PETG, Acrylic, AB Epoxy, PC Diffuser
 - <strong style="color:var(--accent)">Material Color</strong> : Natural, white, and tinted variants of PETG and acrylic
 - <strong style="color:var(--accent)">Material Thickness</strong> : Single layer, stacked layers, different sheet gauges

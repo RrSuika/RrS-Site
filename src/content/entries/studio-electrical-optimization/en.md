@@ -118,45 +118,45 @@ I spent an afternoon tracing cables and drawing a proper topology map. It was wo
 
 ## What I Found and How I Fixed It
 
-### 1. Welding Machine Grounding
+### Welding Machine Grounding
 
 The welder wasn't grounded at all. Not "poorly grounded" — just not connected to ground. On a metal-chassis machine drawing 16A, that's a genuinely dangerous situation. **Fix:** I ran a dedicated ground connection back to the main grounding bus in the distribution board.
 
-### 2. Inrush Current
+### Inrush Current
 
 The welder pulls 20–30A on startup — more than the existing circuit was designed for. Even if the breaker held (which it sometimes didn't), it wasn't a safe long-term arrangement. **Fix:** Moved the welder to its own dedicated circuit with appropriately rated protection.
 
-### 3. Trip Characteristics
+### Trip Characteristics
 
 For equipment with high starting currents, a standard B-curve breaker will nuisance-trip. You need a C or D curve — same nominal rating, but the magnetic trip threshold is higher, so it tolerates inrush without sacrificing overload protection.
 
 ![Daisy-Chaining Risk](./10.png)
 
-### 4. Eliminating Daisy-Chaining
+### Eliminating Daisy-Chaining
 
 I had power strips plugged into other power strips. Each junction adds contact resistance, generates heat, and increases the odds of something failing under load. It's a tree topology where every branch is a potential fire. **Fix:** Switched to a star topology — one high-quality 16A power strip as a central distribution point, with everything radiating from it rather than chaining through each other.
 
-### 5. Voltage Dips & EMI
+### Voltage Dips & EMI
 
 The compressor and angle grinder were on the same circuit as my computer and monitors. Every time a motor started, the voltage would sag and the sensitive electronics would see an EMI spike. Over time, that's how you kill power supplies. **Fix:** Physically separated circuits — heavy machinery on one group, sensitive electronics on another.
 
 ![Travel Adapter Issues](./11.png)
 
-### 6. Travel Adapters
+### Travel Adapters
 
 I had a few travel adapters in the setup — the kind meant for charging a phone in a hotel, not running workshop equipment. The contact surfaces are tiny, they're not rated for sustained high current, and they get warm in ways that make me nervous. **Fix:** Replaced every single one with proper European Schuko plugs or industrial-grade power strips.
 
-### 7. Zoning & Circuit Distribution
+### Zoning & Circuit Distribution
 
 This was the big structural change: dividing the workshop into a "Machining Zone" and an "Office Zone," each on separate circuits. I also upgraded wiring from 2.5mm² to 4mm² (and 6mm² where I could) to reduce voltage drop under load.
 
 ![Direct Connection Recommendation](./12.png)
 
-### 8. Direct Connection
+### Direct Connection
 
 Secondary power strips introduce extra junctions, extra resistance, and extra failure points. Critical equipment now plugs directly into wall sockets. No intermediate strips, no adapters, just a clean path from breaker to device.
 
-### 9. Prevention & Warning Labels
+### Prevention & Warning Labels
 
 This sounds silly but it matters: I put up actual labels. "Do not start more than one heavy machine at once." "Unroll extension cords fully before use." When you're tired and in the middle of a project, visual reminders at the point of use are worth more than a safety manual you'll never re-read.
 

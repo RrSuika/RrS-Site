@@ -36,7 +36,7 @@ translationKey: light-diffusion-test-platform
 
 产品设计里有个场景反复出现：你要给灯罩、扩散板或显示屏盖板选一种半透明材料，然后你基本上是在猜。拿着样品凑到灯光前，眯眼看一看，再拿另一个样品比一比，最后感觉"嗯，这个差不多。"
 
-问题是两片在室内光线下看起来一模一样的材料，一旦背光，效果可能天差地别。表面处理、厚度、内部结构; 它们全都在影响光的传播路径，而渲染图只能帮你到这儿。到了一定程度，你得肉眼去看。
+问题是两片在室内光线下看起来一模一样的材料，一旦背光，效果可能天差地别。表面处理、厚度，还有内部结构; 它们全都在影响光的传播路径，而渲染图只能帮你到这儿。到了一定程度，你得肉眼去看。
 
 于是我搭了这个测试装置；从今往后，需要设计发光板时的 CMF 决策，我都可以用固定的流程复刻而不是直觉来支撑。
 
@@ -77,7 +77,7 @@ translationKey: light-diffusion-test-platform
 - <strong style="color:var(--accent)">光源</strong>：LED 自然光灯带。从几乎不亮到全功率输出。
 - <strong style="color:var(--accent)">样品台</strong>：使用了一个实验室升降台。高度可调让我能精确控制光源和材料之间的距离。
 - <strong style="color:var(--accent)">框架</strong>：激光切割的结构件，喷涂哑光黑。黑色能吸收环境杂光、消除内部反射。
-- <strong style="color:var(--accent)">控制系统</strong>：PWM控制灯带的频闪来控制亮度。
+- <strong style="color:var(--accent)">控制系统</strong>：PWM 控制器调节灯带亮度。
 - <strong style="color:var(--accent)">供电</strong>：无氧铜导线 0.5mm²，额定 2A。
 
 ## 制造流程
@@ -139,7 +139,7 @@ translationKey: light-diffusion-test-platform
 
 <div class="variables-grid">
 
-- <strong style="color:var(--accent)">光照强度</strong> — PWM 调节，从微亮到全功率
+- <strong style="color:var(--accent)">光照强度</strong> — PWM 控制器调节，从微亮到全功率
 - <strong style="color:var(--accent)">材料类型</strong> — PLA、PETG、亚克力、AB环氧、PC扩散板
 - <strong style="color:var(--accent)">材料颜色</strong> — PETG和亚克力的本色、白色、着色版本
 - <strong style="color:var(--accent)">材料厚度</strong> — 单层、叠层、不同板材厚度

@@ -37,7 +37,7 @@ Deze drie vragen hebben me veel herwerk bespaard.
 
 Na een tijdje besefte ik: voedingsontwerp gaat niet over "elektriciteit opwekken". Het gaat erom de juiste spanning, de juiste stroom en het juiste ruisniveau naar elke module te brengen, precies daar waar het nodig is. Als ik nu naar een printplaat kijk, is mijn eerste reflex om de voedingsingang te vinden en het vermogenspad stroomafwaarts te volgen.
 
-## 1. Voedingssystemen zijn ketens van meertrapsomzetting
+## Voedingssystemen zijn ketens van meertrapsomzetting
 
 Een typische voedingsketen in een product ziet er zo uit:
 
@@ -62,7 +62,7 @@ Wat ik heb geleerd:
 - Plan je spanningsrails zorgvuldig. Gevoelige schakelingen hebben mogelijk extra filtering op hun voeding nodig.
 - Beveiligingscomponenten (zekering, omgekeerde polariteit) zien er eenvoudig uit, maar ze leggen de ondergrens van de veiligheid van je product vast. Bespaar hier nooit op.
 
-## 2. LDO-lineaire regelaars: schoon en simpel, maar ze worden heet
+## LDO-lineaire regelaars: schoon en simpel, maar ze worden heet
 
 Een LDO verbrandt overtollige spanning in feite als warmte. De rekensom is duidelijk:
 
@@ -84,7 +84,7 @@ Praktijklessen:
 - Groot spanningsverschil + hoge stroom? Gebruik een switcher. Forceer geen LDO.
 - PCB-koper kan dienen als koellichaam; stort koper onder de tab van de LDO en verbind het met via's. Dat verlaagt de thermische weerstand effectief.
 
-## 3. Buck-schakelomzetters: efficiënt, maar met rimpel
+## Buck-schakelomzetters: efficiënt, maar met rimpel
 
 Een Buck pakt het heel anders aan: in plaats van overtollige spanning te verbranden, schakelt hij een MOSFET op hoge snelheid aan en uit en maakt hij de uitgang glad met een LC-filter. De efficiëntie ligt doorgaans tussen 85%–97%.
 
@@ -97,7 +97,7 @@ Lessen die ik op de harde manier heb geleerd:
 - Houd het spoor van het schakelknooppunt kort en breed om EMI te minimaliseren.
 - Voeg voor gevoelige schakelingen een LDO of een π-filter na de Buck toe om de rimpel te onderdrukken.
 
-## 4. Boost en Buck-Boost
+## Boost en Buck-Boost
 
 - **Boost**: verhoogt de spanning. Eén Li-ion-cel van 3.7V → 5V of 12V. Principe: schakelaar AAN slaat energie op in de spoel; schakelaar UIT geeft die vrij in serie met de ingang, waardoor Vout > Vin wordt.
 - **Buck-Boost**: vangt het geval op waarin Vin boven of onder Vout kan liggen. Een Li-ion-batterij loopt van 4.2V vol tot 2.7V bijna leeg, maar je hebt een stabiele 3.3V nodig; een Buck-Boost schakelt automatisch tussen de modi.
@@ -107,7 +107,7 @@ Praktische aantekeningen:
 - De efficiëntie van Buck-Boost ligt door het extra schakelen doorgaans een paar procentpunten lager dan bij zuivere Buck of Boost.
 - De Boost-uitgang kan niet direct worden kortgesloten; plan je beveiliging vooraf.
 
-## 5. Batterijladen en beveiliging: beide zijn verplicht
+## Batterijladen en beveiliging: beide zijn verplicht
 
 Je kunt een Li-ion-cel absoluut niet opladen door er rechtstreeks 5V op te zetten. Je hebt een laadbeheer-IC nodig.
 
@@ -132,7 +132,7 @@ Ingang 5V → TP4056 → [Li-ion-cel + beveiligingsprint (geïntegreerd)] → Bu
 
 Houd bij het instellen van de laadstroom van de TP4056 rekening met wat je USB-bron aankan en met de thermiek; de standaard 1A kan voor kleine cellen te hoog zijn. De beveiligingsprint MOET direct op de batterij worden aangesloten, niet op afstand op de hoofdprint. Gangbare TP4056-modules op de markt hebben de DW01+8205A meestal al geïntegreerd, wat een handige alles-in-één laad- en beveiligingsoplossing vormt.
 
-## 6. Efficiëntie en thermisch ontwerp: hoge efficiëntie ≠ geen warmte
+## Efficiëntie en thermisch ontwerp: hoge efficiëntie ≠ geen warmte
 
 Een Buck met 95% efficiëntie die 50W levert, dissipeert nog steeds ~2.6W. Genoeg om een MOSFET merkbaar warm te maken.
 
@@ -146,7 +146,7 @@ Mijn ervaring:
 - Thermische simulatie of een opwarmtest is niet optioneel; zorg dat componenten onder de maximale junctietemperatuur blijven bij de slechtst denkbare omgevingstemperatuur.
 - Ventilatieopeningen, thermische interfacematerialen; hier overlappen mechanisch en elektrisch ontwerp elkaar.
 
-## 7. De drie vragen opnieuw bekeken, met een casestudy
+## De drie vragen opnieuw bekeken, met een casestudy
 
 Laat me die drie vragen herhalen; ze werken echt:
 

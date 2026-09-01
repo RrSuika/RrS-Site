@@ -77,7 +77,7 @@ De opstelling is een verticaal meetstatief: lichtbron onderaan, verstelbaar samp
 - <strong style="color:var(--accent)">Lichtbron</strong>: LED-strip, gaat van nauwelijks gloeiend tot volledige output.
 - <strong style="color:var(--accent)">Heftafel</strong>: met de hoogteverstelling kan ik de afstand tussen de lichtbron en het materiaal nauwkeurig regelen.
 - <strong style="color:var(--accent)">Frame</strong>: lasergesneden structuurpanelen, matzwart gespoten, absorbeert strooilicht en elimineert interne reflecties.
-- <strong style="color:var(--accent)">PWM Module</strong>: gebruik PWM om de dutycycle van de LED-strip te regelen en zo de helderheid aan te passen.
+- <strong style="color:var(--accent)">PWM-controller</strong>: gebruik PWM om de dutycycle van de LED-strip te regelen en zo de helderheid aan te passen.
 - <strong style="color:var(--accent)">Voedingsleiding</strong>: zuurstofvrij koperdraad 0.5 mm². Geschikt voor 2 A met marge.
 
 ## Fabricageproces
@@ -139,7 +139,7 @@ Het hele doel van het bouwen van een testopstelling in plaats van dingen gewoon 
 
 <div class="variables-grid">
 
-- <strong style="color:var(--accent)">Lichtintensiteit</strong>: PWM-gestuurd, van nauwelijks zichtbaar tot volle kracht
+- <strong style="color:var(--accent)">Lichtintensiteit</strong>: ingesteld via de PWM-controller, van nauwelijks zichtbaar tot volle kracht
 - <strong style="color:var(--accent)">Materiaaltype</strong>: PLA, PETG, acrylaat, AB-epoxy, PC-diffuser
 - <strong style="color:var(--accent)">Materiaalkleur</strong>: naturel, wit en getinte varianten van PETG en acrylaat
 - <strong style="color:var(--accent)">Materiaaldikte</strong>: enkele laag, gestapelde lagen, verschillende plaatdiktes

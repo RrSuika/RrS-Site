@@ -37,7 +37,7 @@ These three questions have saved me a lot of rework.
 
 After a while I realized: power design isn't about "generating electricity." It's about getting the right voltage, the right current, and the right noise level to each module, exactly where it's needed. When I look at any PCB now, my first instinct is to find the power entry and trace the power path downstream.
 
-## 1. Power Systems Are Multi-Stage Conversion Chains
+## Power Systems Are Multi-Stage Conversion Chains
 
 A typical product power chain looks like this:
 
@@ -62,7 +62,7 @@ What I've learned:
 - Plan your voltage rails thoughtfully. Sensitive circuits may need extra filtering on their supply.
 - Protection devices (fuse, reverse-polarity) look basic but define your product's safety floor. Never cheap out here.
 
-## 2. LDO Linear Regulators — Clean and Simple, But They Get Hot
+## LDO Linear Regulators — Clean and Simple, But They Get Hot
 
 An LDO essentially burns excess voltage as heat. The math is clear:
 
@@ -84,7 +84,7 @@ Practical lessons:
 - Big voltage drop + high current? Use a switcher. Don't force an LDO.
 - PCB copper can serve as a heatsink — pour copper under the LDO tab, stitch with vias. Effectively lowers thermal resistance.
 
-## 3. Buck Switching Converters — Efficient, But With Ripple
+## Buck Switching Converters — Efficient, But With Ripple
 
 A Buck takes a completely different approach: instead of burning excess voltage, it switches a MOSFET on and off at high speed and smooths the output with an LC filter. Efficiency is typically 85%–97%.
 
@@ -97,7 +97,7 @@ Lessons learned the hard way:
 - Keep the switching node trace short and wide to minimize EMI.
 - For sensitive circuits, add an LDO or π filter after the Buck to suppress ripple.
 
-## 4. Boost and Buck-Boost
+## Boost and Buck-Boost
 
 - **Boost**: Steps voltage up. Single Li-ion cell 3.7V → 5V or 12V. Principle: switch ON stores energy in the inductor; switch OFF releases it in series with the input, making Vout > Vin.
 - **Buck-Boost**: Handles the case where Vin might be above or below Vout. A Li-ion battery ranges from 4.2V full to 2.7V near empty, but you need steady 3.3V — Buck-Boost automatically switches between modes.
@@ -107,7 +107,7 @@ Practical notes:
 - Buck-Boost efficiency is typically a few points lower than pure Buck or Boost due to extra switching.
 - Boost output can't be directly shorted — plan your protection ahead of time.
 
-## 5. Battery Charging and Protection — Both Are Mandatory
+## Battery Charging and Protection — Both Are Mandatory
 
 You absolutely cannot charge a Li-ion cell by connecting 5V directly. You need a charge management IC.
 
@@ -132,7 +132,7 @@ Input 5V → TP4056 → [Li-ion cell + Protection board (integrated)] → Buck/B
 
 When setting TP4056 charge current, consider your USB source capability and thermals — the default 1A may be too high for small cells. The protection board MUST connect directly to the battery — not remotely on the main board. Common TP4056 modules on the market usually integrate the DW01+8205A already, forming a convenient all-in-one charge+protection solution.
 
-## 6. Efficiency and Thermal Design — High Efficiency ≠ No Heat
+## Efficiency and Thermal Design — High Efficiency ≠ No Heat
 
 A Buck at 95% efficiency delivering 50W still dissipates ~2.6W. That's enough to make a MOSFET noticeably warm.
 
@@ -146,7 +146,7 @@ My experience:
 - Thermal simulation or temperature-rise testing is not optional — make sure components stay below max junction temp at worst-case ambient.
 - Vent holes, thermal interface materials — this is where mechanical and electrical design overlap.
 
-## 7. The Three Questions Revisited, With a Case Study
+## The Three Questions Revisited, With a Case Study
 
 Let me repeat those three questions — they really work:
 

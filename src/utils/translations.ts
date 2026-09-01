@@ -584,7 +584,7 @@ export const translations = {
         subtitle: "工业设计师 & 创客，现居鹿特丹，把技术思维和视觉创造力结合到一起。",
         description: "我的创作处于设计、工程与视觉艺术之间",
         introText:
-          "我喜欢把一个想法从草图或概念一路推进：找参考、研究材料与结构、推敲造型、建 3D 模型、做原型，最终把它变成一个看得见、摸得着、真正能工作的东西",
+          "我喜欢把一个想法从草图或概念一路推进：找参考、研究材料与结构，推敲造型、建 3D 模型，再做出原型，最终把它变成一个看得见、摸得着、真正能工作的东西",
 
         identity: {
           title: "DESIGNER // MAKER // ARTIST",
@@ -662,7 +662,7 @@ export const translations = {
           refine: {
             title: "迭代",
             description:
-              "不断测试、修改、迭代，直到美学、功能、使用体验与可制造性开始彼此配合",
+              "不断测试、修改，再迭代，直到美学、功能、使用体验与可制造性开始彼此配合",
           },
         },
 
@@ -784,7 +784,7 @@ export const translations = {
               code: "STYLE_02 // SWISS_INTERNATIONAL",
               era: "1950s — 60s",
               body:
-                "系统化的网格、编号模块、大写微标签。文案写得像仪表铭牌;MODULE_01、ENTRY_001、DATA_UPLINK。",
+                "系统化的网格、编号模块，还有大写微标签。文案写得像仪表铭牌;MODULE_01、ENTRY_001、DATA_UPLINK。",
               refs: "约瑟夫·米勒-布罗克曼《平面设计中的网格系统》",
             },
             {

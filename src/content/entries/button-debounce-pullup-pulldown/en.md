@@ -154,11 +154,11 @@ Core idea: the resistor provides the default state and limits current, the butto
 
 ### Why Pull-Up Dominates in Industrial Design
 
-#### 1. Built-In MCU Pull-Ups Are Free
+#### Built-In MCU Pull-Ups Are Free
 
 Most MCUs (STM32, ESP32, Arduino) have programmable internal pull-up resistors. Internal pull-downs are rarer or weaker. Enable the internal pull-up and you save a resistor and PCB space — zero BOM cost. Engineers naturally reach for the free option, and over time this created a "pull-up first" design culture.
 
-#### 2. Fail-Safe — This Is the Critical One
+#### Fail-Safe — This Is the Critical One
 
 - In a pull-up circuit, pressed = LOW.
 - If the wire between button and board breaks, a connector comes loose, or a solder joint cracks, the pull-up immediately yanks the floating GPIO back to a solid HIGH — "not pressed."
@@ -166,18 +166,18 @@ Most MCUs (STM32, ESP32, Arduino) have programmable internal pull-up resistors. 
 
 Flip it around: with pull-down, a broken wire leaves the GPIO LOW — "always pressed." The system might trigger continuously, enter infinite loops, or create actual safety hazards. In industrial equipment, automotive electronics, and any reliability-critical domain, **fail-safe to idle** is mandatory.
 
-#### 3. Ground as Reference Is More Reliable
+#### Ground as Reference Is More Reliable
 
 - The ground plane is the 0V reference for the entire system — widespread, ultra-low impedance, excellent at absorbing and shielding noise, far better than the power rail.
 - Static or noise from a finger touch gets safely shunted to earth rather than injected into the sensitive power rail.
 - With active-low signaling, noise has to push the level above VIH (~0.7 × VCC) to register. The power rail has decoupling caps that make noise coupling harder. Active-high noise margins are inherently worse.
 
-#### 4. Power and Logic Naturally Align
+#### Power and Logic Naturally Align
 
 - **Quiescent power**: when not pressed, both ends of the pull-up are HIGH — virtually zero power. Pressed = 3.3V/10kΩ = 0.33mA, consumed only during the action. A pull-down scheme produces the same current (VCC through button to pull-down), so there's no static power advantage either way.
 - **Logic intuition**: many sequential logic circuits (reset circuits, etc.) use active-low signaling. Pull-up + button-to-ground naturally gives "pressed = 0", matching interrupt triggers and reset logic — less mental overhead when writing firmware.
 
-#### 5. Open-Drain and Bus Compatibility
+#### Open-Drain and Bus Compatibility
 
 When multiple devices share a signal line (I²C, 1-Wire, or a button sharing a pin with a status indicator), open-drain + pull-up is the standard topology. Pull-up slots right in. Pull-down needs extra level translation or circuit rework.
 
