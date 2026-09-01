@@ -25,3 +25,6 @@ pnpm-debug.log*
 
 # skill input files (not part of the website)
 输入/
+
+# claude dev tooling (skill discovery links live here)
+.claude/

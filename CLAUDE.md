@@ -48,3 +48,10 @@ Manage it with `astro dev stop`, `astro dev status`, `astro dev logs`. Build wit
 
 - `输入/` is the AI's input drop-box (user drops materials for the AI to read and turn into site content). Gitignored and untracked — never commit or upload it.
 - Dead files removed in 2026-08 cleanup: legacy `src/content/config.ts`, `ContentList.astro`, empty `retro-ui.css`/`variables.css`.
+
+## AI Skills (2026-09-01)
+
+Two skills are installed for site work — sources in `Skill/`, discovery links in `.claude/skills/` (gitignored, never deployed):
+
+- **lieflat-charts** (`Skill/lieflat-charts/`) — template-driven data-viz / HTML report generation. Load before drawing any chart or report (Mono-fallback palette, template-first rule, chart mode by default).
+- **去AI味 / lieflat-less-ai-tone** (`Skill/去AI味 skill.md`) — whitelist-based removal of AI writing tells for en/zh/nl copy. After editing the source, re-copy it to `.claude/skills/lieflat-less-ai-tone/SKILL.md` to keep the registered copy in sync.
