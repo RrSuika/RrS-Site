@@ -33,10 +33,15 @@ export const translations = {
     card: {
       projectNode: "PRJ_NODE //",
       online: "● ONLINE",
+      wip: "◐ WIP",
       team: "/TEAMWORK/",
       imageStream: "IMAGE_STREAM // ACTIVE",
       category: "CATEGORY:",
       archive: "ARCHIVE:",
+    },
+
+    detail: {
+      wip: "DESIGN FINALIZED — PROCUREMENT & BUILD PENDING",
     },
 
     hero: {
@@ -484,10 +489,15 @@ export const translations = {
     card: {
       projectNode: "项目节点 //",
       online: "● 在线",
+      wip: "◐ 进行中",
       team: "/协作/",
       imageStream: "图像流 // ACTIVE",
       category: "分类:",
       archive: "档案:",
+    },
+
+    detail: {
+      wip: "设计已定稿 —— 采购与搭建进行中",
     },
 
     hero: {
@@ -910,10 +920,15 @@ export const translations = {
     card: {
       projectNode: "PRJ_NODE //",
       online: "● ONLINE",
+      wip: "◐ WIP",
       team: "/TEAMWERK/",
       imageStream: "IMAGE_STREAM // ACTIEF",
       category: "CATEGORIE:",
       archive: "ARCHIEF:",
+    },
+
+    detail: {
+      wip: "ONTWERP AFGEROND — INKOOP & BOUW LOPEN NOG",
     },
 
     hero: {

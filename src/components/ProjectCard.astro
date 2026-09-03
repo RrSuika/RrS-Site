@@ -61,8 +61,8 @@ const type = project.data.type.toUpperCase();
       {type}
     </span>
 
-    <span class="status">
-      {t.card.online}
+    <span class:list={["status", { wip: project.data.wip }]}>
+      {project.data.wip ? t.card.wip : t.card.online}
     </span>
   </div>
 
@@ -240,6 +240,10 @@ const type = project.data.type.toUpperCase();
     color: var(--terminal-green);
 
     font-weight: bold;
+  }
+
+  .status.wip {
+    color: #e0b34c;
   }
 
   .image-wrapper {

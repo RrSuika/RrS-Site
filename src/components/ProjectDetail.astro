@@ -99,6 +99,16 @@ const translationAvailable = !!translation;
     </div>
   </section>
 
+  {
+    project.data.wip && (
+      <section class="wip-notice">
+        <div class="notice-code">SYS_STATUS // {t.card.wip}</div>
+
+        <div class="notice-title">{t.detail.wip}</div>
+      </section>
+    )
+  }
+
   <div class="tags">
     {project.data.tags?.map((tag: string) => <span class="tag">#{tag}</span>)}
   </div>
@@ -389,6 +399,44 @@ const translationAvailable = !!translation;
     border-top: 1px solid var(--border);
 
     margin-bottom: 60px;
+  }
+
+  /*
+  ========================
+  WIP NOTICE
+  ========================
+  */
+
+  .wip-notice {
+    border: 1px dashed #e0b34c;
+
+    background: rgba(224, 179, 76, 0.06);
+
+    padding: 22px 28px;
+
+    margin-bottom: 40px;
+
+    font-family: var(--font-mono);
+  }
+
+  .wip-notice .notice-code {
+    font-size: var(--text-scale-3xs);
+
+    letter-spacing: var(--tracking-wide);
+
+    color: #e0b34c;
+
+    margin-bottom: 8px;
+  }
+
+  .wip-notice .notice-title {
+    font-size: var(--text-scale-body);
+
+    font-weight: 700;
+
+    color: #e0b34c;
+
+    letter-spacing: var(--tracking-label);
   }
 
   /*

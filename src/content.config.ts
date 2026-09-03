@@ -36,6 +36,8 @@ const entries = defineCollection({
 
     featured: z.boolean().optional(),
 
+    wip: z.boolean().optional(),
+
     gallery: z.array(z.object({
       file: z.string(),
       title: z.string(),
