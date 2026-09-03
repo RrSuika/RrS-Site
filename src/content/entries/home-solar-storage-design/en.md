@@ -1,7 +1,7 @@
 ---
 title: Home Low-Load Solar Panel Circuit Design
 date: 2026-09-03
-description: "DIY off-grid solar storage: 600W portable panels, 2×12V LiFePO₄ in series for 24V, 6-port MPPT with built-in bus feeding LED lighting and a pure-sine inverter. Design stage, build in progress."
+description: "DIY off-grid solar storage: 600W portable panels, 2×12V LiFePO₄ in series for 24V, 6-port MPPT with built-in bus feeding LED lighting and a pure-sine inverter. "
 
 type: projects
 category: Electrical Engineering
@@ -35,13 +35,13 @@ The interesting engineering problem here is a voltage-matching constraint: a bat
 
 # Requirements
 
-| Requirement | Target |
-| --- | --- |
-| Night lighting | LED, 50W × 8h = 400Wh per night |
-| Storage | 2 × 12V 100Ah LiFePO₄ in series = 24V (~2.5kWh, expandable) |
-| Solar | 2 × 300W portable semi-flexible panels (low-power stage; rooftop panels are the future upgrade for high loads) |
-| 230V backup | 24V × 100A ≈ 2400W theoretical output (short-time capability, see §04) |
-| Sourcing | Solar panels + battery locally; everything else cross-border |
+| Requirement    | Target                                                                                                         |
+| -------------- | -------------------------------------------------------------------------------------------------------------- |
+| Night lighting | LED, 50W × 8h = 400Wh per night                                                                                |
+| Storage        | 2 × 12V 100Ah LiFePO₄ in series = 24V (~2.5kWh, expandable)                                                    |
+| Solar          | 2 × 300W portable semi-flexible panels (low-power stage; rooftop panels are the future upgrade for high loads) |
+| 230V backup    | 24V × 100A ≈ 2400W theoretical output (short-time capability, see §04)                                         |
+| Sourcing       | Solar panels + battery locally; everything else cross-border                                                   |
 
 # Design Process
 
@@ -63,23 +63,23 @@ The two 12V batteries are wired in **series** for 24V: this keeps the inverter b
 
 ## 03 Key Decisions
 
-| Item | Decision | Why |
-| --- | --- | --- |
-| Battery | 2 × 12V 100Ah LiFePO₄ in series = 24V (100A BMS each, built-in) | Series keeps the inverter branch at 100A class (24V×100A=2400W); same model & batch; confirm BMS supports series |
-| Panels | 2 × 300W semi-flexible in series | Portable-first; series is mandatory for 20V panels; rooftop panels are the future upgrade |
-| Controller | 6-port MPPT (PV / BAT / LOAD) | Load output built in, the busbar lives inside the controller; BAT terminals take max 16mm² |
-| Inverter | Pure-sine inverter (24V input) | 2400W theoretical, short-time |
-| Protection | DC-only non-polarized breakers + isolator switch | Breakers sized to cable ampacity; DC-rated only, AC breakers cannot quench DC arcs |
+| Item       | Decision                                                        | Why                                                                                                              |
+| ---------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Battery    | 2 × 12V 100Ah LiFePO₄ in series = 24V (100A BMS each, built-in) | Series keeps the inverter branch at 100A class (24V×100A=2400W); same model & batch; confirm BMS supports series |
+| Panels     | 2 × 300W semi-flexible in series                                | Portable-first; series is mandatory for 20V panels; rooftop panels are the future upgrade                        |
+| Controller | 6-port MPPT (PV / BAT / LOAD)                                   | Load output built in, the busbar lives inside the controller; BAT terminals take max 16mm²                       |
+| Inverter   | Pure-sine inverter (24V input)                                  | 2400W theoretical, short-time                                                                                    |
+| Protection | DC-only non-polarized breakers + isolator switch                | Breakers sized to cable ampacity; DC-rated only, AC breakers cannot quench DC arcs                               |
 
 ## 04 Efficiency Estimate: the 230V Chain
 
 Every conversion stage takes a cut. Typical efficiencies at this power level:
 
-| Stage | Typical efficiency |
-| --- | --- |
-| MPPT DC-DC conversion | 92–95% |
-| LiFePO₄ charge + discharge round trip | ~95% |
-| Pure-sine inverter DC→AC | 88–93% |
+| Stage                                 | Typical efficiency |
+| ------------------------------------- | ------------------ |
+| MPPT DC-DC conversion                 | 92–95%             |
+| LiFePO₄ charge + discharge round trip | ~95%               |
+| Pure-sine inverter DC→AC              | 88–93%             |
 
 Multiplying the full chain (panel → battery → inverter → 230V):
 
@@ -99,23 +99,23 @@ Expect roughly **77–84% end-to-end** in practice (typically ~80%). For compari
 
 Sourcing strategy: the solar panels and the battery come from Dutch shops (warranty and shipping logic); everything else, MPPT, inverter, breakers, isolator, cables, terminals and accessories, comes from Taobao cross-border. Prices converted at €1 = ¥7.81. The full spec with the wiring list lives in the project folder; this is the condensed version.
 
-| # | Item | Spec | Qty | Est. price | Source |
-| --- | --- | --- | --- | --- | --- |
-| 1 | Solar panel | 300W semi-flexible, ETFE, MC4 leads | 2 | €150–250/pc | Local / Taobao |
-| 2 | MPPT controller | 6-port (PV/BAT/LOAD), BAT terminals max 16mm² | 1 | ≈ €26.9 | Taobao |
-| 3 | Battery | 12V 100Ah LiFePO₄, built-in BMS, low-temp cut-off | 2 | €230–280/pc | NL local |
-| 4 | Inverter | Pure-sine, 24V input, ≥2000W | 1 | €102–192 | Taobao |
-| 5 | DC breaker (PV side) | 20A 2P, non-polarized, ≥250V DC | 1 | €3.8–10.2 | Taobao |
-| 6 | DC breaker (MPPT–battery line) | 100A 2P, non-polarized | 1 | €5.1–12.8 | Taobao |
-| 7 | DC isolator (inverter branch) | 100–125A 2P, non-polarized | 1 | €7.7–19.2 | Taobao |
-| 8 | PV extension cable | MC4 connectors, 1–2m male/female | 2–4 | €1.3–3.8 | Taobao |
-| 9 | DC cable | Pure copper, 2-core 16mm², 5m total | 1 | ≈ €20.1 | Taobao |
-| 10 | Small-load cable | 2.5mm² red + black | 3m each | €0.3–0.5/m | Taobao |
-| 11 | Pin ferrules | Copper VE16-18, 16mm² | 100 pcs | ≈ €1.3 | Taobao |
-| 12 | Copper lugs | SC16-8, closed type, M8 | 20 pcs | ≈ €3.1 | Taobao |
-| 13 | Crimping tool | Hydraulic lug crimper, 4–120mm² | 1 | ≈ €21.5 | Taobao |
-| 14 | Accessories pack | WAGO 221 connectors, heat shrink, zip ties, tape | 1 pack | €2.6–5.1 | Taobao |
-| 15 | Battery case | EVA hard case (fits 100Ah) | 2 | €3.8–10.2/pc | Taobao |
+| #   | Item                           | Spec                                              | Qty     | Est. price   | Source         |
+| --- | ------------------------------ | ------------------------------------------------- | ------- | ------------ | -------------- |
+| 1   | Solar panel                    | 300W semi-flexible, ETFE, MC4 leads               | 2       | €150–250/pc  | Local / Taobao |
+| 2   | MPPT controller                | 6-port (PV/BAT/LOAD), BAT terminals max 16mm²     | 1       | ≈ €26.9      | Taobao         |
+| 3   | Battery                        | 12V 100Ah LiFePO₄, built-in BMS, low-temp cut-off | 2       | €230–280/pc  | NL local       |
+| 4   | Inverter                       | Pure-sine, 24V input, ≥2000W                      | 1       | €102–192     | Taobao         |
+| 5   | DC breaker (PV side)           | 20A 2P, non-polarized, ≥250V DC                   | 1       | €3.8–10.2    | Taobao         |
+| 6   | DC breaker (MPPT–battery line) | 100A 2P, non-polarized                            | 1       | €5.1–12.8    | Taobao         |
+| 7   | DC isolator (inverter branch)  | 100–125A 2P, non-polarized                        | 1       | €7.7–19.2    | Taobao         |
+| 8   | PV extension cable             | MC4 connectors, 1–2m male/female                  | 2–4     | €1.3–3.8     | Taobao         |
+| 9   | DC cable                       | Pure copper, 2-core 16mm², 5m total               | 1       | ≈ €20.1      | Taobao         |
+| 10  | Small-load cable               | 2.5mm² red + black                                | 3m each | €0.3–0.5/m   | Taobao         |
+| 11  | Pin ferrules                   | Copper VE16-18, 16mm²                             | 100 pcs | ≈ €1.3       | Taobao         |
+| 12  | Copper lugs                    | SC16-8, closed type, M8                           | 20 pcs  | ≈ €3.1       | Taobao         |
+| 13  | Crimping tool                  | Hydraulic lug crimper, 4–120mm²                   | 1       | ≈ €21.5      | Taobao         |
+| 14  | Accessories pack               | WAGO 221 connectors, heat shrink, zip ties, tape  | 1 pack  | €2.6–5.1     | Taobao         |
+| 15  | Battery case                   | EVA hard case (fits 100Ah)                        | 2       | €3.8–10.2/pc | Taobao         |
 
 Budget ≈ €1000–1400 all-in. Build phases: (1) order long-lead parts, (2) DC stage: panel, breaker, MPPT, batteries, LED, (3) inverter + isolator, (4) winter field tests, (5) documentation and demo.
 

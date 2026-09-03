@@ -1,7 +1,7 @@
 ---
 title: "Circuitontwerp: zonnepaneelsysteem voor thuis"
 date: 2026-09-03
-description: "DIY off-grid zonne-opslag: 600 W draagbare panelen, 2×12V LiFePO4 in serie voor 24 V, 6-poorts MPPT met interne bus voor LED-verlichting en een zuivere sinus-omvormer. Ontwerpfase, bouw in uitvoering."
+description: "DIY off-grid zonne-opslag: 600 W draagbare panelen, 2×12V LiFePO4 in serie voor 24 V, 6-poorts MPPT met interne bus voor LED-verlichting en een zuivere sinus-omvormer."
 
 type: projects
 category: Elektrotechniek
@@ -35,13 +35,13 @@ Het interessantste technische probleem hier is een spannings-matchingsregel: een
 
 # Eisen
 
-| Eis | Doel |
-| --- | --- |
-| Nachtverlichting | LED, 50W × 8h = 400Wh per nacht |
-| Opslag | 2 × 12V 100Ah LiFePO4 in serie = 24 V (~2,5 kWh, uitbreidbaar) |
-| Zonnepanelen | 2 × 300 W draagbare semi-flexibele panelen (laagvermogen-fase; dakpanelen zijn de latere upgrade voor hoge belasting) |
-| 230 V reserve | 24 V × 100 A ≈ 2400 W theoretisch vermogen (kortstondig, zie §04) |
-| Inkoop | Zonnepanelen + accu lokaal; al het andere uit het buitenland |
+| Eis              | Doel                                                                                                                  |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Nachtverlichting | LED, 50W × 8h = 400Wh per nacht                                                                                       |
+| Opslag           | 2 × 12V 100Ah LiFePO4 in serie = 24 V (~2,5 kWh, uitbreidbaar)                                                        |
+| Zonnepanelen     | 2 × 300 W draagbare semi-flexibele panelen (laagvermogen-fase; dakpanelen zijn de latere upgrade voor hoge belasting) |
+| 230 V reserve    | 24 V × 100 A ≈ 2400 W theoretisch vermogen (kortstondig, zie §04)                                                     |
+| Inkoop           | Zonnepanelen + accu lokaal; al het andere uit het buitenland                                                          |
 
 # Ontwerpproces
 
@@ -63,23 +63,23 @@ De twee 12 V-accu's staan in **serie** voor 24 V: zo blijft de omvormertak in de
 
 ## 03 Kernbeslissingen
 
-| Onderdeel | Beslissing | Waarom |
-| --- | --- | --- |
-| Accu | 2 × 12V 100Ah LiFePO4 in serie = 24 V (100 A BMS elk, ingebouwd) | Serie houdt de omvormertak in de 100 A-klasse (24V×100A=2400W); zelfde model & batch; controleer of de BMS serie ondersteunt |
-| Panelen | 2 × 300 W semi-flex in serie | Draagbaarheid eerst; serie is verplicht voor 20 V-panelen; dakpanelen zijn de latere upgrade |
-| Regelaar | 6-poorts MPPT (PV / BAT / LOAD) | Laaduitgang ingebouwd, de bus zit in de regelaar; BAT-klemmen maximaal 16 mm² |
-| Omvormer | Zuivere sinus-omvormer (24 V-ingang) | 2400 W theoretisch, kortstondig |
-| Beveiliging | DC-specifieke niet-gepolariseerde automaten + isolatieschakelaar | Automaten gedimensioneerd op kabelcapaciteit; alleen DC, AC-automaten kunnen DC-vlambogen niet doven |
+| Onderdeel   | Beslissing                                                       | Waarom                                                                                                                       |
+| ----------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Accu        | 2 × 12V 100Ah LiFePO4 in serie = 24 V (100 A BMS elk, ingebouwd) | Serie houdt de omvormertak in de 100 A-klasse (24V×100A=2400W); zelfde model & batch; controleer of de BMS serie ondersteunt |
+| Panelen     | 2 × 300 W semi-flex in serie                                     | Draagbaarheid eerst; serie is verplicht voor 20 V-panelen; dakpanelen zijn de latere upgrade                                 |
+| Regelaar    | 6-poorts MPPT (PV / BAT / LOAD)                                  | Laaduitgang ingebouwd, de bus zit in de regelaar; BAT-klemmen maximaal 16 mm²                                                |
+| Omvormer    | Zuivere sinus-omvormer (24 V-ingang)                             | 2400 W theoretisch, kortstondig                                                                                              |
+| Beveiliging | DC-specifieke niet-gepolariseerde automaten + isolatieschakelaar | Automaten gedimensioneerd op kabelcapaciteit; alleen DC, AC-automaten kunnen DC-vlambogen niet doven                         |
 
 ## 04 Rendementsschatting: de 230 V-keten
 
 Elke conversiestap neemt een hap uit de energie. Typische rendementen op dit vermogensniveau:
 
-| Stap | Typisch rendement |
-| --- | --- |
-| MPPT DC-DC-conversie | 92–95% |
-| LiFePO4 laad + ontlaad cyclus | ~95% |
-| Zuivere sinus-omvormer DC→AC | 88–93% |
+| Stap                          | Typisch rendement |
+| ----------------------------- | ----------------- |
+| MPPT DC-DC-conversie          | 92–95%            |
+| LiFePO4 laad + ontlaad cyclus | ~95%              |
+| Zuivere sinus-omvormer DC→AC  | 88–93%            |
 
 De hele keten vermenigvuldigd (paneel → accu → omvormer → 230 V):
 
@@ -99,23 +99,23 @@ Reken in de praktijk op **77–84% end-to-end** (typisch ~80%). Ter vergelijking
 
 Inkoopstrategie: de zonnepanelen en de accu komen uit Nederlandse winkels (garantie- en transportlogica); al het andere, MPPT, omvormer, automaten, isolatieschakelaar, kabels, klemmen en toebehoren, via Taobao. Prijzen omgerekend met €1 = ¥7,81. De volledige specificatie met bedradingslijst staat in de projectmap; dit is de compacte versie.
 
-| # | Onderdeel | Specificatie | Aantal | Richtprijs | Bron |
-| --- | --- | --- | --- | --- | --- |
-| 1 | Zonnepaneel | 300 W semi-flex, ETFE, MC4-kabels | 2 | €150–250/st | Lokaal / Taobao |
-| 2 | MPPT-regelaar | 6 poorten (PV/BAT/LOAD), BAT-klemmen max 16 mm² | 1 | ≈ €26,9 | Taobao |
-| 3 | Accu | 12V 100Ah LiFePO4, ingebouwde BMS, lage-temperatuurbeveiliging | 2 | €230–280/st | NL lokaal |
-| 4 | Omvormer | Zuivere sinus, 24 V-ingang, ≥2000 W | 1 | €102–192 | Taobao |
-| 5 | DC-automaat (PV-zijde) | 20 A 2P, niet-gepolariseerd, ≥250 V DC | 1 | €3,8–10,2 | Taobao |
-| 6 | DC-automaat (MPPT–accuverbinding) | 100 A 2P, niet-gepolariseerd | 1 | €5,1–12,8 | Taobao |
-| 7 | DC-isolatieschakelaar (omvormertak) | 100–125 A 2P, niet-gepolariseerd | 1 | €7,7–19,2 | Taobao |
-| 8 | PV-verlengkabel | MC4-aansluitingen, 1–2 m male/female | 2–4 | €1,3–3,8 | Taobao |
-| 9 | DC-kabel | Puur koper, 2-aderig 16 mm², totaal 5 m | 1 | ≈ €20,1 | Taobao |
-| 10 | Kabel kleine lasten | 2,5 mm² rood + zwart | 3 m elk | €0,3–0,5/m | Taobao |
-| 11 | Aderhulzen | Koper VE16-18, 16 mm² | 100 st | ≈ €1,3 | Taobao |
-| 12 | Kabelogen | SC16-8, gesloten type, M8 | 20 st | ≈ €3,1 | Taobao |
-| 13 | Krimptang | Hydraulische kabeloogtang, 4–120 mm² | 1 | ≈ €21,5 | Taobao |
-| 14 | Toebehorenpakket | WAGO 221-connectoren, krimpkous, kabelbinders, tape | 1 pak | €2,6–5,1 | Taobao |
-| 15 | Accukoffer | EVA harde koffer (past 100Ah) | 2 | €3,8–10,2/st | Taobao |
+| #   | Onderdeel                           | Specificatie                                                   | Aantal  | Richtprijs   | Bron            |
+| --- | ----------------------------------- | -------------------------------------------------------------- | ------- | ------------ | --------------- |
+| 1   | Zonnepaneel                         | 300 W semi-flex, ETFE, MC4-kabels                              | 2       | €150–250/st  | Lokaal / Taobao |
+| 2   | MPPT-regelaar                       | 6 poorten (PV/BAT/LOAD), BAT-klemmen max 16 mm²                | 1       | ≈ €26,9      | Taobao          |
+| 3   | Accu                                | 12V 100Ah LiFePO4, ingebouwde BMS, lage-temperatuurbeveiliging | 2       | €230–280/st  | NL lokaal       |
+| 4   | Omvormer                            | Zuivere sinus, 24 V-ingang, ≥2000 W                            | 1       | €102–192     | Taobao          |
+| 5   | DC-automaat (PV-zijde)              | 20 A 2P, niet-gepolariseerd, ≥250 V DC                         | 1       | €3,8–10,2    | Taobao          |
+| 6   | DC-automaat (MPPT–accuverbinding)   | 100 A 2P, niet-gepolariseerd                                   | 1       | €5,1–12,8    | Taobao          |
+| 7   | DC-isolatieschakelaar (omvormertak) | 100–125 A 2P, niet-gepolariseerd                               | 1       | €7,7–19,2    | Taobao          |
+| 8   | PV-verlengkabel                     | MC4-aansluitingen, 1–2 m male/female                           | 2–4     | €1,3–3,8     | Taobao          |
+| 9   | DC-kabel                            | Puur koper, 2-aderig 16 mm², totaal 5 m                        | 1       | ≈ €20,1      | Taobao          |
+| 10  | Kabel kleine lasten                 | 2,5 mm² rood + zwart                                           | 3 m elk | €0,3–0,5/m   | Taobao          |
+| 11  | Aderhulzen                          | Koper VE16-18, 16 mm²                                          | 100 st  | ≈ €1,3       | Taobao          |
+| 12  | Kabelogen                           | SC16-8, gesloten type, M8                                      | 20 st   | ≈ €3,1       | Taobao          |
+| 13  | Krimptang                           | Hydraulische kabeloogtang, 4–120 mm²                           | 1       | ≈ €21,5      | Taobao          |
+| 14  | Toebehorenpakket                    | WAGO 221-connectoren, krimpkous, kabelbinders, tape            | 1 pak   | €2,6–5,1     | Taobao          |
+| 15  | Accukoffer                          | EVA harde koffer (past 100Ah)                                  | 2       | €3,8–10,2/st | Taobao          |
 
 Budget ≈ €1000–1400 totaal. Bouwfases: (1) eerst onderdelen met lange levertijd bestellen, (2) DC-deel: paneel, automaat, MPPT, accu's, LED, (3) omvormer + isolatieschakelaar, (4) wintertests in het veld, (5) documentatie en demo.
 
