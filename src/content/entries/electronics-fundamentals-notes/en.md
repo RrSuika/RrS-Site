@@ -104,6 +104,8 @@ Resistors are passive components whose job is to impede current flow. Two main u
 4. **End caps and leads**: metal caps press-fit onto both ends, tinned copper leads welded to the caps.
 5. **Protective coating and color bands**: insulating lacquer with colored stripes encoding the resistance value and tolerance.
 
+The resistance of a given geometry scales with the material's resistivity ρ. The wiring guide's conductivity table puts copper at 1.7 × 10⁻⁸ Ω·m, carbon steel at 16.9 × 10⁻⁸ Ω·m and titanium at 41.7 × 10⁻⁸ Ω·m. That spread is the same physics that separates carbon-film from metal-film resistors: the film material sets how much spiral is needed for a target value, along with the temperature behavior and noise floor.
+
 ![Resistor Color Bands](./21.png)
 
 ### LED Current Limiting
@@ -121,6 +123,8 @@ LED operates at 3V, draws 13.5mA (0.0135A), using a 5V supply.
 
 - V_drop = V_source - V_LED = 5V - 3V = 2V
 - R = V_drop / I = 2V / 0.0135A = 148.15Ω → **use a 150Ω resistor**
+
+One more check before soldering: the resistor burns P = I² × R = 0.0135² × 150 ≈ 27mW, so a standard ¼W resistor runs at about 11% of its rating. The same answer falls out of P = V × I (2V × 0.0135A = 27mW). At higher currents the power climbs with I², which is why a resistor's wattage rating matters as much as its resistance value.
 
 ### Can an LED Work as a Resistor?
 
@@ -160,6 +164,8 @@ Inductors store energy in a magnetic field when current flows through them. It's
 ![Rectifier Bridge with Inductor 2](./25.png)
 
 In power supply circuits, inductors and capacitors work together as LC filters. After the bridge rectifier converts AC to pulsating DC, the inductor suppresses ripple current and the capacitor smooths the voltage. The resulting DC is much cleaner than filtering with a capacitor alone.
+
+The same ripple physics shows up at system scale in the wiring guide: an inverter pulls a fluctuating DC current from the battery at twice the grid frequency (100Hz), and the battery-cable resistance turns that into ripple voltage on the DC bus, with Victron alarming at 2.25V RMS on a 24V system. Small filter components or fat battery cables, the mechanism is the same: ripple equals fluctuating current times series resistance.
 
 ## Diode
 
@@ -224,3 +230,4 @@ The hands-on skills I'm building: breadboarding circuits, soldering, using a mul
 16. [Bridge Rectifier With Capacitor Filter](https://www.voltagelab.com/bridge-rectifier-with-capacitor-filter/)
 17. [Understanding Carbon Film Resistors](https://www.utmel.com/blog/categories/resistor/understanding-of-carbon-film-resistors)
 18. [Resistor Color Codes: Color Band Meanings](https://www.te.com/en/products/passive-components/resistors/intersection/resistor-color-codes.html)
+19. [Victron Wiring Unlimited](https://www.victronenergy.com/upload/documents/The_Wiring_Unlimited_book/43562-Wiring_Unlimited-pdf-en.pdf)

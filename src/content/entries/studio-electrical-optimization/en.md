@@ -56,6 +56,10 @@ For context: in Dutch homes, the distribution board (_groepenkast_) lives in the
 
 ![Distribution Board Structure](./2.png)
 
+The Dutch grid, in the wiring guide's terminology, is a TN-C-S system: the network delivers the phases plus a combined neutral-earth conductor (PEN), which the meter cupboard splits into neutral and earth, backed by a local earth stake. That split is what the whole groepenkast builds on, and it is also what makes RCD protection possible at all: earth-leakage detection only works in networks where neutral and earth are connected, like TN or TT.
+
+An RCD works by comparing the current in the phase and neutral conductors and opening the circuit within 25–40ms when the difference exceeds 5–30mA, faster than an electric shock can push a heart into ventricular fibrillation. The same device hides behind several names: RCCB, GFCI, GFI, safety switch. One practical side effect: equipment with a small amount of standing earth leakage, like surge-protected power strips and old fridge compressors, can trip an RCD unpredictably. When an RCD trips for no obvious reason, those are the usual suspects.
+
 ## Circuit Breakers: 1P vs. 2P
 
 This distinction matters more than people realize:
@@ -88,6 +92,19 @@ The cross-section of a cable determines how much current that cable can carry sa
 - **Short-circuit current:** The cable has to survive the thermal stress of a fault long enough for the breaker to trip
 
 ![Cable Cross-Section Reference](./7.png)
+
+### The Voltage Drop Math
+
+"longer cable = more voltage drop" The wiring guide's version applied to the 10m circuit runs in this workshop at a 16A load:
+
+| 10m run, full loop             | 2.5mm²       | 4mm²         |
+| ------------------------------ | ------------ | ------------ |
+| R = ρ × l / A                  | 136mΩ        | 85mΩ         |
+| drop at 16A                    | 2.2V (0.95%) | 1.4V (0.59%) |
+| drop at 30A inrush             | 4.1V         | 2.6V         |
+| cable heat at 16A (P = I² × R) | 35W          | 22W          |
+
+The upgrade cut the drop by roughly 38%. At a steady 16A even 2.5mm² stays inside the guide's 2.5% guidance (5.75V at 230V), but motor start currents are exactly the regime where the difference shows up, and every watt of cable heat is a watt not going to the tool.
 
 ## Cord Defects
 
@@ -135,6 +152,8 @@ For equipment with high starting currents, a standard B-curve breaker will nuisa
 ### Eliminating Daisy-Chaining
 
 I had power strips plugged into other power strips. Each junction adds contact resistance, generates heat, and increases the odds of something failing under load. It's a tree topology where every branch is a potential fire. **Fix:** Switched to a star topology: one high-quality 16A power strip as a central distribution point, with everything radiating from it rather than chaining through each other.
+
+The math behind the heat is P = I² × R. The wiring guide's reference values put a good connection (proper lug, tight clamp) at around 0.06mΩ, a 150A fuse at 0.35mΩ and a 500A shunt at 0.10mΩ. A worn or loose contact is a different league: at 0.1Ω of contact resistance a 10A load burns 10W at a single point (10² × 0.1). Heat loosens the contact further, which raises the resistance, which raises the heat. Each power-strip junction was one more chance for that cycle to start.
 
 ### Voltage Dips & EMI
 
@@ -194,3 +213,4 @@ Doing that exercise: drawing the topology, walking the circuits, actually checki
 6. [What is the purpose of neutral disconnect in a circuit breaker?](https://electronics.stackexchange.com/questions/688210/what-is-the-purpose-of-neutral-disconnect-in-a-circuit-breaker)
 7. [Aderdikte kennisbank](https://www.elektramat.nl/kennisbank/aderdikte/)
 8. [Kabeldoorsnede calculator](https://builder-calc.com/nl/elektronica/kabeldoorsnedecalculator-op-basis-van-vermogen-en-stroom-online-berekening.html)
+9. [Victron Wiring Unlimited](https://www.victronenergy.com/upload/documents/The_Wiring_Unlimited_book/43562-Wiring_Unlimited-pdf-en.pdf)

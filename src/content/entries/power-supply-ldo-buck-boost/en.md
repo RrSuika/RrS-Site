@@ -62,6 +62,8 @@ What I've learned:
 - Plan your voltage rails thoughtfully. Sensitive circuits may need extra filtering on their supply.
 - Protection devices (fuse, reverse-polarity) look basic but define your product's safety floor. Never cheap out here.
 
+Fuse selection gets four checks in the wiring guide: current rating, voltage rating, interrupt rating and speed (FF/F/M/T/TT). The interrupt rating becomes safety-critical at battery scale: LiFePO₄ delivers far higher short-circuit currents than lead-acid, and the fuse has to break that fault current without rupturing itself. Typical values: MEGA fuses 2.5kA at 70V DC, NH blade fuses 25kA, Class T 200kA. The board-level habit of picking protection for what it has to survive carries straight over to battery systems.
+
 ## LDO Linear Regulators: Clean and Simple, But They Get Hot
 
 An LDO essentially burns excess voltage as heat. The math is clear:
@@ -89,6 +91,8 @@ Practical lessons:
 A Buck takes a completely different approach: instead of burning excess voltage, it switches a MOSFET on and off at high speed and smooths the output with an LC filter. Efficiency is typically 85%–97%.
 
 The trade-off: output has high-frequency ripple, and you need more external components: at minimum an inductor, a freewheeling diode (or synchronous rectifier MOSFET), and input/output caps.
+
+The wiring guide describes the same ripple phenomenon at system scale: an inverter pulls a fluctuating DC current from the battery at twice the grid frequency (100Hz), and the battery-cable resistance turns that into ripple voltage on the whole DC bus, with Victron alarming at 2.25V RMS on a 24V system. Its fix list mirrors board-level practice: shorter and thicker conductors, tight connections, quality parts. Same physics, different scale: ripple is fluctuating current times series resistance, and the cure is always a lower-impedance path.
 
 I default to Buck when the voltage drop exceeds ~3V and current is above ~0.3A: like 12V systems, or stepping battery voltage down for high-power loads. The LM2596 module is my prototyping staple: adjustable output, cheap, reliable.
 
@@ -245,3 +249,7 @@ For sensitive circuits, add an LDO or π filter (C-L-C) after the Buck. The Buck
 ### Battery Selection and Power Tree Planning
 
 Determine system voltage requirements first, then decide whether you need Boost or Buck-Boost based on battery characteristics (Li-ion 3.7V, NiMH 1.2V). Avoid major rework later.
+
+### System Scale: Battery Wiring
+
+When the power tree grows to a battery bank, the same topics reappear at system level. [Victron Wiring Unlimited](https://www.victronenergy.com/upload/documents/The_Wiring_Unlimited_book/43562-Wiring_Unlimited-pdf-en.pdf) covers voltage drop, cable sizing, fuse selection and ripple for battery and inverter systems. My off-grid solar project leans on it heavily: [Home Low-Load Solar Panel Circuit Design](/projects/home-solar-storage-design/)

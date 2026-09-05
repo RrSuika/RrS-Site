@@ -62,6 +62,8 @@ Wat ik heb geleerd:
 - Plan je spanningsrails zorgvuldig. Gevoelige schakelingen hebben mogelijk extra filtering op hun voeding nodig.
 - Beveiligingscomponenten (zekering, omgekeerde polariteit) zien er eenvoudig uit, maar ze leggen de ondergrens van de veiligheid van je product vast. Bespaar hier nooit op.
 
+Zekeringselectie kent vier checks in de bedradingsgids: stroomwaarde, spanningswaarde, onderbrekingsvermogen en snelheid (FF/F/M/T/TT). Het onderbrekingsvermogen wordt op batterijschaal veiligheidskritisch: LiFePO4 levert veel hogere kortsluitstromen dan loodzuur, en de zekering moet die foutstroom kunnen onderbreken zonder zelf te barsten. Typische waarden: MEGA-zekeringen 2,5kA bij 70V DC, NH-meszekeringen 25kA, Class T 200kA. De board-level-gewoonte om beveiliging te kiezen op basis van wat die moet doorstaan, gaat één-op-één over naar batterijsystemen.
+
 ## LDO-lineaire regelaars: schoon en simpel, maar ze worden heet
 
 Een LDO verbrandt overtollige spanning in feite als warmte. De rekensom is duidelijk:
@@ -89,6 +91,8 @@ Praktijklessen:
 Een Buck pakt het heel anders aan: in plaats van overtollige spanning te verbranden, schakelt hij een MOSFET op hoge snelheid aan en uit en maakt hij de uitgang glad met een LC-filter. De efficiëntie ligt doorgaans tussen 85%–97%.
 
 De keerzijde: de uitgang heeft hoogfrequente rimpel en je hebt meer externe componenten nodig; minimaal een spoel, een vrijloopdiode (of een synchrone gelijkrichter-MOSFET) en in- en uitgangscondensatoren.
+
+De bedradingsgids beschrijft hetzelfde rimpelverschijnsel op systeemschaal: een omvormer trekt een fluctuerende gelijkstroom uit de accu op tweemaal de netfrequentie (100Hz), en de weerstand van de accukabel maakt daarvan rimpelspanning op de hele gelijkstroombus; Victron alarmeert op een 24V-systeem bij 2,25V RMS. De fixlijst uit de gids weerspiegelt de board-level-praktijk: kortere en dikkere geleiders, strakke verbindingen, goede componenten. Dezelfde fysica, andere schaal: rimpel is fluctuerende stroom maal serieweerstand, en het medicijn is altijd een pad met lagere impedantie.
 
 Ik kies standaard voor Buck wanneer het spanningsverschil groter is dan ~3V en de stroom boven ~0.3A komt, zoals bij 12V-systemen, of bij het omlaag brengen van batterijspanning voor hoogvermogenbelastingen. De LM2596-module is mijn vaste prototyping-module; instelbare uitgang, goedkoop, betrouwbaar.
 
@@ -245,3 +249,7 @@ Voeg voor gevoelige schakelingen een LDO of een π-filter (C-L-C) na de Buck toe
 ### Batterijselectie en planning van de vermogensboom
 
 Bepaal eerst de spanningsvereisten van het systeem en beslis daarna op basis van de batterijkarakteristieken (Li-ion 3.7V, NiMH 1.2V) of je Boost of Buck-Boost nodig hebt. Zo voorkom je later grote aanpassingen.
+
+### Systeemschaal: batterijbekabeling
+
+Wanneer de vermogensboom uitgroeit tot een accubank, komen dezelfde onderwerpen op systeemniveau terug. [Victron Wiring Unlimited](https://www.victronenergy.com/upload/documents/The_Wiring_Unlimited_book/43562-Wiring_Unlimited-pdf-en.pdf) behandelt spanningsval, kabeldimensies, zekeringselectie en rimpel voor accu- en omvormersystemen. Mijn off-grid zonneproject leunt er zwaar op: [Circuitontwerp: zonnepaneelsysteem voor thuis](/nl/projects/home-solar-storage-design/)

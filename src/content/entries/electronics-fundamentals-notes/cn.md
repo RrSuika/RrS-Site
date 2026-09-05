@@ -104,6 +104,8 @@ translationKey: electronics-fundamentals-notes
 4. **端帽与引线**：金属端帽压在棒的两端，镀锡铜引线焊在端帽上。
 5. **保护涂层与色环**：表面涂覆绝缘漆保护，彩色条纹标出阻值和精度。
 
+同一种几何尺寸下，阻值和材料的电阻率 ρ 成正比。布线指南的电导率表里，铜是 1.7 × 10⁻⁸ Ω·m，碳钢是 16.9 × 10⁻⁸ Ω·m，钛是 41.7 × 10⁻⁸ Ω·m。碳膜电阻和金属膜电阻的差别，背后就是这同一套物理：膜层材料决定了同样阻值需要切多长的螺旋，也决定了温度特性和噪声底。
+
 ![电阻色环](./21.png)
 
 ### LED 限流
@@ -121,6 +123,8 @@ LED 工作电压 3V，电流 13.5mA（0.0135A），用 5V 电源。
 
 - V_降 = V_源 - V_LED = 5V - 3V = 2V
 - R = V_降 / I = 2V / 0.0135A = 148.15Ω → **选用 150Ω 电阻**
+
+焊接前还差一步：算一下电阻上烧掉的功率。P = I² × R = 0.0135² × 150 ≈ 27mW，标准 ¼W 电阻只用掉额定功率的约 11%，很稳。用 P = V × I 也能得到同一个答案（2V × 0.0135A = 27mW）。电流一大，功率按 I² 涨，所以电阻的额定功率和阻值同样重要。
 
 ### LED 能当电阻吗？
 
@@ -160,6 +164,8 @@ LED 工作电压 3V，电流 13.5mA（0.0135A），用 5V 电源。
 ![整流桥与电感 2](./25.png)
 
 在电源电路里，电感和电容配合构成 LC 滤波器。桥式整流器把交流变成脉动直流后，电感抑制纹波电流、电容平滑电压，输出的直流比单用电容干净得多。
+
+同一套纹波物理在系统尺度上也会出现，布线指南里就有：逆变器从电池抽取的直流电流按两倍电网频率（100Hz）波动，电池线缆的电阻把它变成直流母线上的纹波电压，Victron 在 24V 系统上 2.25V RMS 就会报警。不管是小小的滤波器件还是粗粗的电池线缆，机制是一样的：纹波 = 波动的电流 × 串联电阻。
 
 ## 二极管
 
@@ -223,4 +229,5 @@ LED 工作电压 3V，电流 13.5mA（0.0135A），用 5V 电源。
 15. [模块化交流线路 EMI 滤波器详解](https://passive-components.eu/modular-ac-line-emi-filters-explained/)
 16. [带电容滤波的桥式整流器](https://www.voltagelab.com/bridge-rectifier-with-capacitor-filter/)
 17. [碳膜电阻器详解](https://www.utmel.com/blog/categories/resistor/understanding-of-carbon-film-resistors)
+18. [Victron Wiring Unlimited](https://www.victronenergy.com/upload/documents/The_Wiring_Unlimited_book/43562-Wiring_Unlimited-pdf-en.pdf)
 18. [电阻色环代码：色环含义](https://www.te.com/en/products/passive-components/resistors/intersection/resistor-color-codes.html)

@@ -104,6 +104,8 @@ Weerstanden zijn passieve componenten die de stroomdoorgang belemmeren. Twee hoo
 4. **Eindkappen en aansluitdraden**: metalen kapjes worden op beide uiteinden geperst, vertinde koperdraden worden op de kapjes gelast.
 5. **Beschermende coating en kleurbanden**: isolerende lak met gekleurde strepen die de weerstandswaarde en tolerantie coderen.
 
+De weerstand van een bepaalde geometrie schaalt met de soortelijke weerstand ρ van het materiaal. De geleidbaarheidstabel uit de bedradingsgids zet koper op 1,7 × 10⁻⁸ Ω·m, koolstofstaal op 16,9 × 10⁻⁸ Ω·m en titanium op 41,7 × 10⁻⁸ Ω·m. Die spreiding is dezelfde fysica die koolstoffilm- van metaalfilmweerstanden scheidt; het filmmateriaal bepaalt hoeveel spiraal er voor een streefwaarde nodig is, en daarmee ook het temperatuurgedrag en de ruisvloer.
+
 ![Kleurbanden van weerstanden](./21.png)
 
 ### Stroombegrenzing voor LED's
@@ -121,6 +123,8 @@ De LED werkt op 3V en trekt 13.5mA (0.0135A), met een 5V-voeding.
 
 - V_drop = V_source - V_LED = 5V - 3V = 2V
 - R = V_drop / I = 2V / 0.0135A = 148.15Ω → **gebruik een weerstand van 150Ω**
+
+Nog één controle voordat je gaat solderen: de weerstand verbrandt P = I² × R = 0,0135² × 150 ≈ 27mW, dus een standaard ¼W-weerstand draait op ongeveer 11% van zijn vermogen. Hetzelfde antwoord komt uit P = V × I (2V × 0,0135A = 27mW). Bij hogere stromen klimt het vermogen met I², en daarom doet het wattage van een weerstand er net zo veel toe als de weerstandswaarde.
 
 ### Kan een LED als weerstand dienen?
 
@@ -160,6 +164,8 @@ Spoelen slaan energie op in een magnetisch veld wanneer er stroom doorheen loopt
 ![Gelijkrichtbrug met spoel 2](./25.png)
 
 In voedingscircuits werken spoelen en condensatoren samen als LC-filters. Nadat de gelijkrichtbrug wisselspanning heeft omgezet in pulserende gelijkspanning, onderdrukt de spoel de rimpelstroom en maakt de condensator de spanning glad. De resulterende gelijkspanning is veel schoner dan bij filtering met alleen een condensator.
+
+Dezelfde rimpelfysica duikt op systeemschaal op in de bedradingsgids: een omvormer trekt een fluctuerende gelijkstroom uit de accu op tweemaal de netfrequentie (100Hz), en de weerstand van de accukabel maakt daarvan rimpelspanning op de gelijkstroombus; Victron alarmeert op een 24V-systeem bij 2,25V RMS. Kleine filtercomponenten of dikke accukabels, het mechanisme is hetzelfde: rimpel is fluctuerende stroom maal serieweerstand.
 
 ## Diode
 
@@ -224,3 +230,4 @@ De praktische vaardigheden waaraan ik bouw: circuits opbouwen op een breadboard,
 16. [Gelijkrichtbrug met condensatorfilter](https://www.voltagelab.com/bridge-rectifier-with-capacitor-filter/)
 17. [Koolstoffilmweerstanden begrijpen](https://www.utmel.com/blog/categories/resistor/understanding-of-carbon-film-resistors)
 18. [Kleurcodes van weerstanden: betekenis van de kleurbanden](https://www.te.com/en/products/passive-components/resistors/intersection/resistor-color-codes.html)
+19. [Victron Wiring Unlimited](https://www.victronenergy.com/upload/documents/The_Wiring_Unlimited_book/43562-Wiring_Unlimited-pdf-en.pdf)

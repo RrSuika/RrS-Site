@@ -61,6 +61,19 @@ De regelaar is een 6-poorts MPPT (PV / BAT / LOAD), dus de bus zit ingebouwd in 
 
 De twee 12 V-accu's staan in **serie** voor 24 V: zo blijft de omvormertak in de 100 A-klasse (24 V × 100 A = 2400 W theoretisch). Parallelschakelen op 12 V zou 200 A vragen, meer dan de MPPT aankan. Elke accu heeft een ingebouwde BMS.
 
+### Spanningsval-check: de omvormertak
+
+De Wiring Unlimited-gids heeft een rekenvoorbeeld dat bijna precies dit systeem is: een 2400 W-omvormer op een 24 V-accu. De getallen zijn hier direct toepasbaar. 16 mm² koperkabel komt uit op R = ρ × l / A = 1,7 × 10⁻⁸ × 1,5 / (16 × 10⁻⁶) = 1,6 mΩ per 1,5 m kabel. Bij de geplande accu-naar-omvormer-afstand van 1–2 m (hier 1,5 m gerekend) is de hele lus, plus en min, 3,2 mΩ, en bij de 100 A van de omvormer:
+
+- Spanningsval: V = I × R = 100 × 0,0032 = 0,32 V, dat is 1,3% van 24 V
+- Kabelwarmte: P = I² × R = 100² × 0,0032 = 32 W
+
+De gids adviseert onder 2,5% spanningsval te blijven (0,6 V bij 24 V), dus 16 mm² op 1,5 m voldoet. Op 3 m haalt dezelfde kabel 2,7%, en daar komt de "ideaal 25 mm²"-opmerking uit §01 vandaan: 25 mm² op 1,5 m zou ongeveer 0,2 V schelen. De omvormertak is de enige plek in dit systeem waar kabelweerstand er echt toe doet. De MPPT-accutak voert alleen laadstroom (600 W ÷ ~27 V ≈ 22 A), 1 m 16 mm² valt daar ongeveer 0,05 V, dus de 16 mm²-klemlimiet van de MPPT is aan die kant geen issue.
+
+### Serie of parallel: wat de gids zegt
+
+De seriekeuze past ook bij het advies van de gids over grote accubanken. Die raadt af om grote banken uit veel parallelle 12 V-strings op te bouwen, met een maximum van 3 à 4 parallelle strings, omdat bedradingsverschillen plus kleine verschillen in interne weerstand (typisch 3–10 mΩ) onbalans veroorzaken. Stroom kiest altijd de weg met de minste weerstand, dus de accu het dichtst bij de aansluitpunten krijgt de zwaarste belasting en gaat het eerst stuk. Twee accu's in serie ontwijken dat probleem. Serie brengt een eigen balanceervraag mee (weer die verschillen in interne weerstand), die wordt opgelost door de ingebouwde BMS van elke accu, met beide accu's volledig opgeladen vóór de eerste serieschakeling (§05).
+
 ## 03 Kernbeslissingen
 
 | Onderdeel   | Beslissing                                                       | Waarom                                                                                                                       |
@@ -87,6 +100,10 @@ De hele keten vermenigvuldigd (paneel → accu → omvormer → 230 V):
 
 Reken in de praktijk op **77–84% end-to-end** (typisch ~80%). Ter vergelijking: de LED-tak slaat de omvormer over (≈90% via MPPT + accu), daarom draait verlichting rechtstreeks op DC en blijft 230 V een reserve: elke kWh door de omvormerketen laat ongeveer een vijfde achter.
 
+### Waar de verliezen heen gaan: rimpel
+
+De gids noemt nog een verliesmechanisme dat de rendementsketen niet laat zien: rimpel. Een omvormer trekt een fluctuerende DC-stroom uit de accu op tweemaal de netfrequentie (100 Hz op een 50 Hz-net), en elke fluctuatie verschijnt als spanningszwaai over de kabelweerstand. Hoe groter de spanningsval, hoe groter de rimpel. Victron alarmeert op 24 V-systemen boven 2,25 V RMS (hard alarm bij 3,75 V) en noemt dunne of lange accukabels als eerste oorzaak. Met 1,3% spanningsval in de omvormertak blijft de rimpel hier ruim onder het alarmniveau. De fixlijst is dezelfde als bij spanningsval: korte kabels, dik koper, strakke verbindingen. Rimpel veroudert ook de condensatoren van de omvormer en kost acculevensduur, dus het is de moeite waard om opnieuw te checken als de tak ooit langer wordt.
+
 ## 05 Beveiliging & veiligheid
 
 - PV-zijde: 20 A 2P niet-gepolariseerde DC-automaat, tevens onderhoudsschakelaar; de MPPT-accuverbinding loopt via een 2P DC-automaat (accu-isolatie). Alle automaten/schakelaars moeten DC-geschikt en niet-gepolariseerd zijn; AC-automaten kunnen DC-vlambogen niet doven.
@@ -94,6 +111,24 @@ Reken in de praktijk op **77–84% end-to-end** (typisch ~80%). Ter vergelijking
 - Bedradingsnormen: de MPPT gebruikt de gangbare groene schroefklemmen, gecombineerd met aderhulzen (geen vertinde draadeinden, soldeerkruip); gesloten kabelogen op M8-bouten (geen open ogen); hydraulische krimp; rood/plus en zwart/min consequent.
 - Accu's in serie: zelfde model, zelfde batch; controleer of de BMS serieschakeling ondersteunt; laad beide accu's volledig op vóór het in serie zetten.
 - Inbedrijfstelling: polariteit controleren vóór inschakelen; eerst de accu, dan de panelen; laadparameters volgens de LiFePO4 24 V-specificatie.
+
+### Zekeringkeuze: vier criteria
+
+De gids vat zekeringkeuze samen in vier criteria: stroomwaarde, spanningswaarde, onderbrekingsvermogen en snelheid. Twee daarvan zijn hier relevant.
+
+- Snelheid: DC-circuits met capacitieve lasten (een omvormer laadt bij inschakelen zijn ingangscondensatoren op) willen een trage (T) zekering; een snelle zekering trippt op de inschakelstroom.
+- Onderbrekingsvermogen: LiFePO4 levert veel hogere kortsluitstromen dan loodzuur, en de zekering moet die foutstroom kunnen onderbreken zonder zelf te barsten. Typische waarden: MEGA-zekeringen 2,5 kA bij 70 V DC, MRBF 2 kA bij 58 V, NH-meszekeringen 25 kA, Class T 200 kA. De 100 A DC-automaat op de MPPT-accuverbinding moet vóór ingebruikname hierop gecontroleerd worden. Voor lithiumsystemen noemt de gids minstens één zekering of automaat met voldoende onderbrekingsvermogen in de DC-lijn een verplichte veiligheidseis.
+
+## 06 Check tegen de Wiring Unlimited-gids
+
+| Check                | Regel uit de gids                                            | Status                                                                                                          |
+| -------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| Spanningsval omvormertak | max 2,5% (0,6 V bij 24 V)                                | 1,3% bij 1,5 m 16 mm² ✓                                                                                        |
+| Accubank             | max 3–4 parallelle strings, let op balans                   | 2 in serie, BMS-balans ✓                                                                                        |
+| Zekeringplaatsing    | hoofdzekering dicht bij de accu, elke verbruiker apart gezekerd | 100 A-automaat op de acculijn ✓; de omvormertak heeft nu alleen de isolatieschakelaar, een eigen zekering is een open punt |
+| Zekeringsnelheid     | T (traag) voor omvormers                                    | controleren bij inkoop                                                                                          |
+| Onderbrekingsvermogen | ≥ maximale kortsluitstroom van de accu                     | 100 A-automaat controleren vóór ingebruikname                                                                    |
+| Rimpel               | pre-alarm bij 2,25 V RMS op 24 V                            | 1,3% spanningsval, ruime marge ✓                                                                                |
 
 # Stuklijst (BOM)
 

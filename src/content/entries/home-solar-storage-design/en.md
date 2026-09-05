@@ -61,6 +61,19 @@ The controller is a 6-port MPPT (PV / BAT / LOAD), which means the busbar is bui
 
 The two 12V batteries are wired in **series** for 24V: this keeps the inverter branch at a 100A-class current (24V × 100A = 2400W theoretical output). Paralleling at 12V would need 200A, beyond what the MPPT supports. Each battery carries its own built-in BMS.
 
+### Voltage Drop Check: the Inverter Branch
+
+The wiring guide's worked example happens to be almost exactly this system: a 2400W inverter on a 24V battery. Its numbers apply directly. 16mm² copper cable works out to R = ρ × l / A = 1.7 × 10⁻⁸ × 1.5 / (16 × 10⁻⁶) = 1.6mΩ per 1.5m of cable. With the planned battery-to-inverter run of 1–2m (1.5m used here), the full loop, positive plus negative, is 3.2mΩ, and at the inverter's 100A:
+
+- Voltage drop: V = I × R = 100 × 0.0032 = 0.32V, 1.3% of 24V
+- Power lost as cable heat: P = I² × R = 100² × 0.0032 = 32W
+
+The guide advises staying under 2.5% drop (0.6V at 24V), so 16mm² at 1.5m clears the bar. Stretched to 3m the same cable reaches 2.7%, which is exactly where the "ideally 25mm²" note in §01 comes from: 25mm² at 1.5m would drop about 0.2V. The inverter branch is the only run in this system where cable resistance actually matters. The MPPT-to-battery run only carries charge current (600W ÷ ~27V ≈ 22A), and 1m of 16mm² drops about 0.05V there, so the MPPT's 16mm² terminal limit is a non-issue on that side.
+
+### Series vs Parallel: What the Wiring Guide Says
+
+The series decision matches the guide's advice on large battery banks. It recommends against building big banks from many paralleled 12V strings, capping it at 3–4 parallel strings, because wiring differences plus the small differences in battery internal resistance (typically 3–10mΩ) create imbalance. Current always takes the path of least resistance, so the battery closest to the terminals gets worked harder, discharged harder, charged harder, and fails first. Two batteries in series sidestep that problem. Series brings its own balancing question (those internal resistance differences again), which is handled by each battery's built-in BMS, with both units charged to full before the first series connection (§05).
+
 ## 03 Key Decisions
 
 | Item       | Decision                                                        | Why                                                                                                              |
@@ -87,6 +100,10 @@ Multiplying the full chain (panel → battery → inverter → 230V):
 
 Expect roughly **77–84% end-to-end** in practice (typically ~80%). For comparison, the LED path skips the inverter entirely (≈90% through MPPT + battery), which is why lighting runs directly on DC and 230V stays a reserve: every kWh pushed through the inverter chain leaves about a fifth behind.
 
+### Where the Losses Go: Ripple
+
+The guide points to one more loss mechanism that the efficiency chain doesn't show: ripple. An inverter draws a fluctuating DC current from the battery at twice the AC frequency (100Hz on a 50Hz grid), and every fluctuation appears as a voltage swing across the cable resistance. The larger the voltage drop, the larger the ripple. On 24V systems Victron alarms above 2.25V RMS (hard alarm at 3.75V) and lists thin or long battery cables as the first cause. With the inverter branch at 1.3% drop, ripple here stays well below the alarm level. The fix list is identical to the voltage-drop fix list: short cables, thick copper, tight connections. Ripple also ages the inverter's capacitors and eats into battery life, so it is worth rechecking if the branch ever gets longer.
+
 ## 05 Protection & Safety
 
 - PV side: 20A 2P non-polarized DC breaker, doubling as a maintenance isolator; the MPPT-to-battery line runs through a 2P DC breaker (battery isolation). All breakers/switches must be DC-rated and non-polarized; AC breakers cannot quench DC arcs.
@@ -94,6 +111,24 @@ Expect roughly **77–84% end-to-end** in practice (typically ~80%). For compari
 - Wiring standards: the MPPT uses the common green screw-clamp terminal blocks, paired with pin ferrules (no tinned wire ends, solder creeps); closed copper lugs onto M8 studs (no open lugs); hydraulic crimp; red/black discipline.
 - Batteries in series: same model, same batch; confirm the BMS supports series connection; fully charge both before series wiring.
 - Commissioning: polarity check before powering anything, battery first and PV second, charge parameters set per the LiFePO₄ 24V spec.
+
+### Fuse Selection: Four Criteria
+
+The guide reduces fuse selection to four criteria: current rating, voltage rating, interrupt rating and speed. Two of them deserve attention here:
+
+- Speed: DC circuits with capacitive loads (an inverter charges its input capacitors at power-on) want a slow-blow (T) fuse; a fast fuse will nuisance-trip on inrush.
+- Interrupt rating: LiFePO₄ delivers far higher short-circuit currents than lead-acid, and the fuse has to break that fault current without rupturing itself. Typical ratings: MEGA fuses 2.5kA at 70V DC, MRBF 2kA at 58V, NH blade fuses 25kA, Class T 200kA. The 100A DC breaker on the MPPT-to-battery line needs this checked against the battery's short-circuit spec before commissioning. For lithium systems the guide calls at least one DC-line fuse or breaker with an adequate interrupt rating a mandatory safety requirement.
+
+## 06 Cross-Check Against the Wiring Guide
+
+| Check              | Guide rule                                                    | Status                                                                                             |
+| ------------------ | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Inverter branch drop | max 2.5% at 24V (0.6V)                                      | 1.3% at 1.5m of 16mm² ✓                                                                           |
+| Battery bank       | max 3–4 parallel strings, mind the balance                    | 2-in-series, BMS balanced ✓                                                                         |
+| Fuse placement     | main fuse near the battery, every consumer fused individually | 100A breaker on the battery line ✓; the inverter branch currently has only the isolator switch, its own fuse is an open item |
+| Fuse speed         | T (slow) for the inverter's inrush                            | verify at purchase                                                                                  |
+| Interrupt rating   | at least the battery's max fault current                      | verify the 100A breaker spec before commissioning                                                   |
+| Ripple             | pre-alarm at 2.25V RMS on 24V                                 | 1.3% drop leaves a large margin ✓                                                                  |
 
 # BOM Overview
 

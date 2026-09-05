@@ -56,6 +56,10 @@ translationKey: studio-electrical-optimization
 
 ![配电盘结构](./2.png)
 
+荷兰电网按布线指南的说法属于 TN-C-S 制式：电网送来三相加上一根中性线与接地合一的导体（PEN），电表柜里把它拆成中性线和接地线，再配上本地的接地桩。整个 groepenkast 就建立在这道拆分上，RCD 保护之所以成立也是因为它：漏电检测只有在中性线和接地相连的电网里才起作用，比如 TN 或 TT 制式。
+
+RCD 的工作原理是比对相线和中性线的电流，差值超过 5~~30mA 时在 25~~40ms 内断开，比触电把心脏推入室颤的速度更快。这同一个东西有一堆名字：RCCB、GFCI、GFI、安全开关。一个实用副作用：本身带一点持续漏电的设备，比如带浪涌保护的插线板和旧冰箱压缩机，会让 RCD 莫名其妙地跳闸。RCD 无缘无故跳了，先查这两样。
+
 ## 断路器：1P 与 2P
 
 这个区别比大多数人以为的重要：
@@ -88,6 +92,19 @@ translationKey: studio-electrical-optimization
 - **短路电流：** 电缆得扛得住故障时的热应力，撑到断路器跳闸
 
 ![电缆截面参考](./7.png)
+
+### 电压降的数学
+
+"越长电阻越大" 布线指南的版本，套在工作区约 10m 的回路、16A 负载上：
+
+| 10m 回路（来回）             | 2.5mm²        | 4mm²          |
+| ---------------------------- | ------------- | ------------- |
+| R = ρ × l / A                | 136mΩ         | 85mΩ          |
+| 16A 时压降                   | 2.2V（0.95%） | 1.4V（0.59%） |
+| 30A 浪涌时压降               | 4.1V          | 2.6V          |
+| 16A 时线缆发热（P = I² × R） | 35W           | 22W           |
+
+升级把压降砍掉了约 38%。稳态 16A 下 2.5mm² 其实还在指南 2.5% 的建议线内（230V 即 5.75V），但电机启动电流正是差距拉开的时候，而且线缆上每烧掉 1W，工具就少拿 1W。
 
 ## 线缆缺陷
 
@@ -135,6 +152,8 @@ translationKey: studio-electrical-optimization
 ### 消灭串联插线板
 
 我之前是插线板插在插线板上。每个连接点都增加接触电阻、产生热量、提高故障概率。这是个树形拓扑，每条分支都是潜在的着火点。**解决：** 改成星形拓扑;用一个高质量的16A插线板作为中心分配点，所有设备从它辐射出去，不再互相串联。
+
+热量背后的公式是 P = I² × R。布线指南的参考值里，一个合格的连接（端子压好、螺丝拧紧）大约 0.06mΩ，一个 150A 保险丝 0.35mΩ，一个 500A 分流器 0.10mΩ。磨损或松动的触点完全是另一个量级：0.1Ω 的接触电阻在 10A 负载下，单点就烧 10W（10² × 0.1）。发热让触点更松，电阻更大，热量更高。每一个插线板接点，都是这个循环的又一个起点。
 
 ### 电压跌落与电磁干扰
 
@@ -194,3 +213,4 @@ translationKey: studio-electrical-optimization
 6. [断路器中零线断开的作用是什么？](https://electronics.stackexchange.com/questions/688210/what-is-the-purpose-of-neutral-disconnect-in-a-circuit-breaker)
 7. [线径知识库](https://www.elektramat.nl/kennisbank/aderdikte/)
 8. [电缆截面计算器](https://builder-calc.com/nl/elektronica/kabeldoorsnedecalculator-op-basis-van-vermogen-en-stroom-online-berekening.html)
+9. [Victron Wiring Unlimited](https://www.victronenergy.com/upload/documents/The_Wiring_Unlimited_book/43562-Wiring_Unlimited-pdf-en.pdf)

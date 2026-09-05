@@ -56,6 +56,10 @@ Ter context: in Nederlandse woningen zit de _groepenkast_ in de meterkast. De st
 
 ![Structuur van de groepenkast](./2.png)
 
+Het Nederlandse net is in de terminologie van de bedradingsgids een TN-C-S-systeem: het net levert de fasen plus een gecombineerde nul-aardgeleider (PEN), die de meterkast splitst in nul en aarde, ondersteund door een lokale aardpen. Die splitsing is de basis waarop de hele groepenkast bouwt, en het is ook wat RCD-beveiliging überhaupt mogelijk maakt; lekstroomdetectie werkt alleen in netten waar nul en aarde met elkaar verbonden zijn, zoals TN of TT.
+
+Een RCD vergelijkt de stroom in de fase- en de nuldraad en opent het circuit binnen 25–40ms zodra het verschil boven 5–30mA uitkomt; sneller dan een elektrische schok het hart in ventrikelfibrilleren kan duwen. Hetzelfde apparaat gaat schuil achter verschillende namen: RCCB, GFCI, GFI, veiligheidsschakelaar. Eén praktische bijwerking: apparatuur met een klein beetje permanente aardlek, zoals stekkerdozen met overspanningsbeveiliging en oude koelkastcompressoren, kan een RCD onvoorspelbaar laten trippen. Tript de RCD zonder duidelijke reden, dan zijn dat de gebruikelijke verdachten.
+
 ## Installatieautomaten: 1P vs. 2P
 
 Dit onderscheid is belangrijker dan mensen beseffen:
@@ -88,6 +92,19 @@ De doorsnede van een kabel is niet zomaar een getal op de mantel; die bepaalt ho
 - **Kortsluitstroom:** De kabel moet de thermische belasting van een fout lang genoeg doorstaan zodat de automaat kan uitschakelen
 
 ![Referentie kabeldoorsneden](./7.png)
+
+### De wiskunde achter spanningsval
+
+"Langere kabel = meer spanningsval." De versie uit de bedradingsgids, toegepast op de 10m-circuits in deze werkplaats bij een belasting van 16A:
+
+| 10m-circuit, volledige lus           | 2.5mm²       | 4mm²         |
+| ------------------------------------ | ------------ | ------------ |
+| R = ρ × l / A                        | 136mΩ        | 85mΩ         |
+| Spanningsval bij 16A                 | 2,2V (0,95%) | 1,4V (0,59%) |
+| Spanningsval bij 30A inschakelstroom | 4,1V         | 2,6V         |
+| Kabelwarmte bij 16A (P = I² × R)     | 35W          | 22W          |
+
+De opwaardering sneed de spanningsval met ruwweg 38% terug. Bij een stabiele 16A blijft 2.5mm² nog binnen de 2,5%-richtlijn uit de gids (5,75V bij 230V), maar de inschakelstromen van motoren zijn precies het regime waar het verschil zichtbaar wordt, en elke watt kabelwarmte is een watt die het gereedschap niet bereikt.
 
 ## Kabelschade
 
@@ -135,6 +152,8 @@ Bij apparatuur met hoge inschakelstromen zal een standaard B-curve-automaat onno
 ### Doorlussen elimineren
 
 Ik had stekkerdozen in andere stekkerdozen gestoken. Elk koppelpunt voegt contactweerstand toe, genereert warmte en vergroot de kans dat er iets bezwijkt onder belasting. Het is een boomtopologie waarin elke tak een potentiële brand is. **Oplossing:** Overgestapt op een stertopologie; één hoogwaardige 16A-stekkerdoos als centraal verdeelpunt, waar alles op aansluit in plaats van door elkaar heen te lussen.
+
+De wiskunde achter de warmte is P = I² × R. In de referentiewaarden van de bedradingsgids zit een goede verbinding (degelijk kabeloog, vast aangedraaide klem) rond 0,06mΩ, een 150A-zekering op 0,35mΩ en een 500A-shunt op 0,10mΩ. Een versleten of los contact is een ander verhaal; bij 0,1Ω contactweerstand verbrandt een belasting van 10A al 10W op één enkel punt (10² × 0,1). Warmte laat het contact verder loskomen, wat de weerstand verhoogt, wat de warmte verhoogt. Elk koppelpunt van een stekkerdoos was nog een kans dat die cyclus begon.
 
 ### Spanningsdips en EMI
 
@@ -194,3 +213,4 @@ Die oefening (de topologie tekenen, de circuits nalopen, echt controleren wat wa
 6. [Wat is het doel van het onderbreken van de nul in een installatieautomaat?](https://electronics.stackexchange.com/questions/688210/what-is-the-purpose-of-neutral-disconnect-in-a-circuit-breaker)
 7. [Aderdikte kennisbank](https://www.elektramat.nl/kennisbank/aderdikte/)
 8. [Kabeldoorsnede calculator](https://builder-calc.com/nl/elektronica/kabeldoorsnedecalculator-op-basis-van-vermogen-en-stroom-online-berekening.html)
+9. [Victron Wiring Unlimited](https://www.victronenergy.com/upload/documents/The_Wiring_Unlimited_book/43562-Wiring_Unlimited-pdf-en.pdf)
