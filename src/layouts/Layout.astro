@@ -320,13 +320,18 @@ const websiteSchema = {
             return palette[Math.floor(Math.random() * palette.length)];
           }
 
+           function parseRgb(color: string) {
+            const m = color.match(/\d+/g) || [];
+            return [Number(m[0]), Number(m[1]), Number(m[2])];
+          }
+
           function initStars() {
             stars = [];
             const area = width * height;
             const count = Math.max(
               70,
               Math.min(
-                width < 768 ? 160 : 380,
+                width < 768 ? 1260 : 5000,
                 Math.floor(area / (width < 768 ? 5200 : 3600)),
               ),
             );
@@ -339,6 +344,7 @@ const websiteSchema = {
               const baseVx = Math.cos(FLOW_ANGLE) * speed + jitterX;
               const baseVy = Math.sin(FLOW_ANGLE) * speed + jitterY;
               const bright = Math.random() < 0.075;
+              const starColor = randomColor();
 
               stars.push({
                 x: Math.random() * width,
@@ -349,7 +355,8 @@ const websiteSchema = {
                 baseVx,
                 baseVy,
                 size: 0.35 + depth * depth * 1.7,
-                color: randomColor(),
+                color: starColor,
+                rgb: parseRgb(starColor),
                 twinkleSpeed: 0.35 + Math.random() * 1.8,
                 twinklePhase: Math.random() * Math.PI * 2,
                 glow: bright ? 8 + Math.random() * 8 : 2.5 + Math.random() * 4,
@@ -566,16 +573,17 @@ const websiteSchema = {
             // blue-white, white, yellow, orange and red are clearly separated.
             function randomColor() {
               const colors = [
-                "rgb(205, 225, 255)",
-                "rgb(235, 242, 255)",
+                "rgb(120, 160, 255)",
+                "rgb(170, 200, 255)",
+                "rgb(210, 220, 250)",
                 "rgb(255, 255, 255)",
-                "rgb(255, 238, 200)",
-                "rgb(255, 208, 150)",
-                "rgb(255, 168, 105)",
-                "rgb(255, 120, 85)",
-                "rgb(240, 92, 70)",
+                "rgb(255, 230, 185)",
+                "rgb(255, 210, 130)",
+                "rgb(255, 160, 85)",
+                "rgb(255, 110, 70)",
+                "rgb(230, 70, 60)",
               ];
-              const weights = [16, 16, 14, 12, 9, 6, 3, 2];
+              const weights = [12, 12, 8, 3, 8, 12, 14, 10, 5];
               let total = 0;
               for (const w of weights) total += w;
               let roll = Math.random() * total;
@@ -586,17 +594,21 @@ const websiteSchema = {
               return colors[colors.length - 1];
             }
 
+          function parseRgb(color: string) {
+            const m = color.match(/\d+/g) || [];
+            return [Number(m[0]), Number(m[1]), Number(m[2])];
+          }
 
           function initStars() {
             stars = [];
             const area = width * height;
-            // Star count: 7/8 of the original density.
+            // Star count: half of the previous density.
             // Tune density here: lower area divisor = more stars.
             const count = Math.max(
-              30,
+              20,
               Math.min(
-                width < 768 ? 1260 : 3150,
-                Math.floor(area / (width < 768 ? 1150 : 1030)),
+                width < 768 ? 472 : 1180,
+                Math.floor(area / (width < 768 ? 3100 : 2750)),
               ),
             );
 
@@ -619,20 +631,22 @@ const websiteSchema = {
                const bright = Math.random() < 0.08;
                const baseDriftVx = (Math.random() - 0.5) * 0.14;
                const baseDriftVy = (Math.random() - 0.5) * 0.14;
+               const starColor = randomColor();
               stars.push({
                 theta,
                 phi,
-                // Small proper motion: each star moves independently,
-                // Per-star screen-space drift: varied directions and speeds,
-                // with no orbital/central convergence.
                 driftX: 0,
                  driftY: 0,
                  driftVx: baseDriftVx,
                  driftVy: baseDriftVy,
                  baseDriftVx,
                  baseDriftVy,
-                 color: randomColor(),
-                 sizeScale: 0.45 + Math.random() * 0.8,
+                 color: starColor,
+                 rgb: parseRgb(starColor),
+                 sizeScale:
+                   Math.random() < 0.67
+                     ? 0.3 + Math.random() * 0.5
+                     : 1.0 + Math.random() * 0.6,
                  twinkleSpeed: 0.35 + Math.random() * 2.2,
                  twinklePhase: Math.random() * Math.PI * 2,
                  bright,
@@ -769,27 +783,31 @@ const websiteSchema = {
             }
 
             const near = 1 - z2;
-            const size = (1.0 + star.sizeScale * 1.4) * (0.85 + near * 0.2);
+            const size = (0.5 + star.sizeScale * 1.4) * (0.85 + near * 0.2) * 0.75;
             const twinkle =
               0.62 + 0.38 * Math.sin(time * star.twinkleSpeed + star.twinklePhase);
             const alpha = (0.42 + star.sizeScale * 0.28) * twinkle;
 
+            // Smooth radial gradient — no hard circle edge, just a gradual glow.
+            const [sr, sg, sb] = star.rgb || [255, 255, 255];
+            const glowRadius = Math.max(size * 2.8, 4);
+            const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowRadius);
+            glow.addColorStop(0, `rgba(${sr},${sg},${sb},${Math.min(1, alpha)})`);
+            glow.addColorStop(0.35, `rgba(${sr},${sg},${sb},${Math.min(1, alpha * 0.55)})`);
+            glow.addColorStop(0.7, `rgba(${sr},${sg},${sb},${Math.min(1, alpha * 0.14)})`);
+            glow.addColorStop(1, `rgba(${sr},${sg},${sb},0)`);
             ctx.save();
-            ctx.globalAlpha = Math.min(1, alpha);
-            ctx.fillStyle = star.color;
-            ctx.shadowColor = star.color;
-            ctx.shadowBlur = star.bright ? star.glow * (0.35 + z2 * 0.65) : 0;
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = glow;
             ctx.beginPath();
-            ctx.arc(sx, sy, size, 0, Math.PI * 2);
+            ctx.arc(sx, sy, glowRadius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Hot white core — keeps bright stars looking like real
-            // point sources instead of flat coloured disks.
-            ctx.globalAlpha = Math.min(1, alpha * (0.4 + near * 0.35));
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = "#ffffff";
+            // Tiny bright core — keeps the star a point source, not a disk.
+            ctx.fillStyle = star.color;
+            ctx.globalAlpha = Math.min(1, alpha);
             ctx.beginPath();
-            ctx.arc(sx, sy, Math.max(0.25, size * 0.36), 0, Math.PI * 2);
+            ctx.arc(sx, sy, Math.max(0.4, size * 0.85), 0, Math.PI * 2);
             ctx.fill();
 
 
