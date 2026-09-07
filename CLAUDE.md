@@ -20,7 +20,8 @@ Manage it with `astro dev stop`, `astro dev status`, `astro dev logs`. Build wit
 - **Token fidelity policy**: every token value was copied 1:1 from the original pre-cleanup styles. When replacing literals, use a token **only if its value is identical in both themes**; otherwise leave the literal. Never invent new colors, never "harmonize" values, never recolor.
 - Theme contract: `data-theme` on `<html>` (dark default), `localStorage["rrsuika-theme"]`, toggle via `window.__toggleTheme`.
 - **⚠️ Hero terminal is temporarily hidden**: `global.css` §14 contains `.hero .terminal { display: none; }` with restore instructions. Deleting that block restores the terminal (element is intact in `Hero.astro`).
-- Background layers (§10): weakened particle canvas (`#neural-canvas`, script in Layout.astro — 140/70 particles, CONNECTION_DIST 140, shadowBlur 8, opacity 0.25 dark / 0.10 light) + hex grid + noise + scanlines (0.28 dark / 0.08 light) + vignette.
+- Background layers (§10): active 3D starfield canvas (`#starfield-canvas`, script in Layout.astro — celestial-sphere stars with realistic spectral colours, proper motion, camera drift + local star drag; opacity 0.85 dark / hidden in light (replaced by retro black grid)) + hex grid + noise + scanlines (0.28 dark / 0.08 light) + vignette.
+  - The old `#neural-canvas` neural network and the earlier 2D star script are disabled-but-preserved for rollback (`data-neural="enabled"` / `data-star-version="2d"`).
 - CJK: `html[lang="zh"]` headings get `letter-spacing: 0; line-height: 1.2` (§13); `.hero h1` is Latin and keeps its display tracking.
 - Scrollbar is intentionally fully hidden (original behavior, kept by user preference).
 - Fonts: Google Fonts JetBrains Mono 400/700/800/900, Saira Condensed, VT323; self-hosted Smiley Sans Oblique (得意黑) subsets in `public/fonts/dyh`. `--font-mono`/`--font-body` include CJK fallbacks.

@@ -4,7 +4,7 @@
 > 接手任何新任务时：**先读本文件 → 再用快速索引（§11）定位文件 → 只读必要的源文件 → 动手。**
 > 与 `CLAUDE.md` 的分工：CLAUDE.md 是**规则与政策**（必须遵守的约束），本文件是**架构事实与原因**（"现在怎么组织的、为什么、去哪改"）。`AGENTS.md` 只讲开发服务器的工作方式。
 >
-> - 最后更新：2026-08-31 v1.6（① 全站 URL 尾斜杠约定：`trailingSlash: "always"` + 所有链接/sitemap 带尾斜杠，修复 GSC"网页会自动重定向"告警，§9 决策 16；② 正文图片构建时解析：新增 `markdown-resolve-images.ts` Sätteri 插件接入 Astro 原生内容图片管线，删除 ProjectDetail 客户端图片修正，修复 Cloudflare 4xx 报告中的详情页图片 404，§9 决策 17）
+> - 最后更新：2026-09-04 v1.7（① 背景粒子神经网络被 3D 星空暂时替换：`#starfield-canvas` 天球式拟真星空 + 鼠标拖拽 + 真实恒星光谱色，原 `#neural-canvas` 与早期 2D 星空脚本保留可回退，§6.3/§10/§11；② 全站 URL 尾斜杠约定：`trailingSlash: "always"` + 所有链接/sitemap 带尾斜杠，修复 GSC"网页会自动重定向"告警，§9 决策 16；③ 正文图片构建时解析：新增 `markdown-resolve-images.ts` Sätteri 插件接入 Astro 原生内容图片管线，删除 ProjectDetail 客户端图片修正，修复 Cloudflare 4xx 报告中的详情页图片 404，§9 决策 17）
 > - 维护规则见 §12：代码若与本文件冲突，**以代码为准**，并更新本文件。
 >
 > **⚠️ v1.2 全量校正（旧段落中未逐行改写的“双语/仅 zh”表述，一律以下面为准）：**
@@ -20,7 +20,7 @@
 | 技术栈   | **Astro 7.1.6**（纯静态输出）、**zod 4**（内容 schema）、TypeScript（`astro/tsconfigs/strict`）、原生 CSS + 少量原生 JS。**无任何集成**：无 React/Vue/Svelte、无 MDX、无 Tailwind、无适配器 |
 | 站点     | https://rrsuika-studio.pages.dev （Cloudflare Pages，push 到 `main` 自动部署）                                                                                                              |
 | 语言     | 英文为主（默认无前缀），中文为 `/zh` 前缀镜像。**手动 i18n**：不使用 Astro 内置 i18n routing（虽然 astro.config.mjs 里声明了 i18n 配置，实际路由全部手写，见 §3、§9）                       |
-| 设计方向 | 复古科幻 CRT 终端 / 技术手册 HUD 风（retro-futurism）：暗色默认 + 亮色"蓝图纸"（Soviet technical manual）主题                                                                               |
+| 设计方向 | 复古科幻 CRT 终端 / 技术手册 HUD 风（retro-futurism）：暗色默认 + 亮色"蓝图纸"（Soviet technical manual）主题；2026-09-04 暗色文字改为暖白复古色，亮色背景改为黑色四边形+十字网格                                                                               |
 | 阶段     | 生产运行中。架构稳定；art 页面**冻结**（用户决定）；首页 Hero 终端处于**临时隐藏实验**状态（§14，见 §10）                                                                                   |
 
 **GitHub**：远程仓库 `RrS-Site`（账号 RrSuika；本地文件夹名为 MyPortfolio），主分支 `main`，工作树干净即代表生产状态。
@@ -60,7 +60,7 @@ MyPortfolio/
 │   │   └── zh/                # 全部中文静态页镜像（独立文件，非模板共享）
 │   ├── components/            # 11 个组件：全局 6 个 + home/ 5 个（见 §5）
 │   ├── styles/
-│   │   └── global.css         # ★ 设计系统唯一事实来源（14 个 section，955 行）
+│   │   └── global.css         # ★ 设计系统唯一事实来源（14 个 section，1070+ 行）
 │   └── utils/                 # 4 个工具模块（见下表）
 ├── 输入/                      # ★ 用户给 AI 的"投递箱"：素材放这里，AI 读取后转写为站内内容（§12 规则 13）。已移出版本控制，永不提交/上传
 ├── node_modules/ .astro/ dist/  # 依赖/构建产物（gitignored，勿读勿改）
@@ -243,7 +243,7 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 
 ## 6. 样式与视觉设计系统
 
-**唯一事实来源：`src/styles/global.css`（955 行，14 个 section）。** 文件头含两条铁律：
+**唯一事实来源：`src/styles/global.css`（1070+ 行，14 个 section）。** 文件头含两条铁律：
 
 1. **BREAKPOINT REGISTRY**：断点字面量清单 `1100 / 1000 / 900 / 800 / 768 / 769 / 700 / 600 / 500`（媒体查询里不能引用 CSS 变量，所以全局与组件里保持字面量，新增断点要与清单同步）。
 2. **FIDELITY POLICY**：所有 token 值 1:1 复制自清理前原样式；**替换字面量时，仅当 token 在两主题值相同才允许**，否则保留字面量；**禁止发明新颜色、"harmonize"、重着色**。
@@ -283,7 +283,7 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 
 ### 6.3 背景层（§10）
 
-`#neural-canvas` 粒子画布（fixed，dark `opacity: 0.25`，light `opacity: 0.1 + filter: invert(1)`，<900px 视口粒子数降为 70）+ hex grid（`body::before` 三向 linear-gradient，`52px 90px`）+ noise（`body::after` SVG feTurbulence data-URI）+ scanlines（`#crt-overlay`，dark `opacity: 0.28` / light `0.08`，`mix-blend-mode: screen`）+ amber vignette（`#tube-vignette`，`opacity: 0.6` / `0.4`）。粒子脚本在 Layout.astro 内（参数区：`CONNECTION_DIST = 140`、`mouse.radius = 140`、`shadowBlur = 8`、粒子色 55% `rgba(255,95,31,.9)` / 45% `rgba(0,176,255,.9)`）。
+`#starfield-canvas` 动态星空画布（fixed，dark `opacity: 0.85`，light 隐藏星空，改用复古黑色四边形+十字网格背景，3D 天球式星星：真实恒星光谱色、自行运动、缓慢相机漂移 + 鼠标近旁星点局部拖拽动画、微光/十字星芒）+ hex grid（`body::before` 三向 linear-gradient，`52px 90px`）+ noise（`body::after` SVG feTurbulence data-URI）+ scanlines（`#crt-overlay`，dark `opacity: 0.28` / light `0.08`，`mix-blend-mode: screen`）+ amber vignette（`#tube-vignette`，`opacity: 0.6` / `0.4`）。星空脚本在 Layout.astro 内（参数区：恒星数 90–3000（前端视锥内约 88% 正向采样，桌面端最多 3000 / 移动端约 900）、`AUTO_ROTATION = 0.00032`、鼠标近旁星点局部拖拽（不随鼠标整体旋转）、`STAR_WEIGHTS` 按真实恒星颜色分布；性能折衷：光晕仅在亮星启用、DPR cap 1.5；星空不再整体跟随鼠标，改为局部星点拖拽）。原 `#neural-canvas` 神经网络粒子画布与 2D 版星空脚本被暂时禁用保留（`<html data-neural="enabled">` / `data-star-version="2d"` 可回退）。
 
 ### 6.4 其他全局约定
 
@@ -309,7 +309,7 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 | **Hero 打字机**                    | `home/Hero.astro`：SYS.BOOT 启动序列 + 循环 live logs（终端整体被 global.css §14 隐藏）；左列文字逐字打字                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **art 页（冻结）**                 | `art/index.astro` + `zh/art/index.astro` 各自独立实现：`import.meta.glob(eager)` 扫描 4 个 art 条目文件夹图片（排除 `cover.png`）、硬编码 4 分类（CATEGORIES）+ 按语言作品名（TITLE_MAP）、每行无缝跑马灯（悬停暂停、拖拽 1.5×、点击 lightbox、Esc/←/→/触摸滑动）。**两语言文件实现有差异**（en 用 opacity 动画，zh 用 display 切换）                                                                                                                                                                                                                                                                                                                                              |
 | **about 页**                       | 三个 about 页（en/zh/nl，独立文件）：design-process 站台自动轮播（IntersectionObserver 激活，1.5s/步）、capability matrix canvas（8 个绘制函数：3D 环面/CMF 色块/示波器/波纹/DNA 螺旋/矿石传送带/像素网格/软件终端，4.2s 轮播，`define:vars` 注入翻译）、**技能星图**（2026-09-01 重做，用户要求 Obsidian 关系图谱式效果：lieflat-charts B2 big-force 语法，ECharts 力导向网络——11 个技能大点（灰阶，亮度随连接数）+ 技能小点绕行 + 大点间骨干连线，亮度随连接数递增，定时轻微漂移，拖拽回弹、hover 邻接聚焦、点击空白重播、缩放平移；echarts@6 CDN `is:inline defer` 加载 + 轮询 boot；数据标签经 `t.skillMap` 三语注入，坐标/连线/大小在页面脚本）、ANNEX 打字机彩蛋。**dossier 卡**（PERSONNEL_DOSSIER // ABOUT_MODULE）：左列 identity（OPERATOR/名字/角色 + LOCATION/FIELD/INTERESTS mini 行;2026-08-16 平衡左右列移到左侧），右列 data 行（CURRENT_FOCUS/SKILLS 芯片/SOFTWARE 图标）。软件图标在 `public/icons/`（6 个灰度 logo），按明暗极性打 `pol-dark`/`pol-light` 类：暗主题 `pol-dark` 加 `invert(0.9)`，亮主题 `pol-light` 加 `brightness(0.3)`（2026-08-16 新增） |
-| **背景粒子**                       | Layout.astro 脚本（参数见 §6.3）；`prefers-reduced-motion` 时隐藏                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **背景星空**                       | `#starfield-canvas` 3D 天球星空（Layout.astro 脚本，参数见 §6.3）；原神经网络 `#neural-canvas` 被暂时禁用保留，`prefers-reduced-motion` 时隐藏                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | **移动端提示**                     | `#mobile-notice`：sessionStorage `"rrsuika-mobile-notice"` 记忆关闭；桌面（≥769px）隐藏                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | **结构化数据**                     | Layout head：`WebSite`（每页）；about 页：`Person`（name "RrSuika Studio"、alternateName `["RrS"]`、sameAs GitHub `RrSuika` + pixiv、Rotterdam NL）；详情模板：`TechArticle`（含 `translationOfWork`，§3.2-6）                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
@@ -359,6 +359,8 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 | ---- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 🟢   | ProjectCard 自建 routeMap              | 已修复（2026-08-14）：改用 `buildEntryUrl(project, project.data.lang)`，行为等价，与 `typeToRoute` 单一来源对齐。                                                                                     |
 | 🟡   | Hero 终端被隐藏（实验状态）            | global.css §14。用户尚未决定保留还是恢复。改首页 Hero 视觉时勿被"终端不见了"误导。                                                                                                                    |
+| 🟡   | 神经网络背景被星空短暂替换（实验状态） | `#starfield-canvas` 3D 星空在 Layout.astro 激活；原 `#neural-canvas` 脚本被禁用保留，回退方式：`<html data-neural="enabled">`（神经网络）/ `data-star-version="2d"`（早期 2D 星空）。用户尚未决定是否删除神经网络。 |
+| 🔴   | 黑洞背景移植（未来计划）              | 用户已下载 `输入/Shadertoy - Kerr Newman Black Hole`（Buffer A/B/C/D/Image，克尔-纽曼黑洞实时渲染 + 拟真星空背景），计划在本次星空效果确认后移植为背景；当前不实现。 |
 | 🟡   | ArtGallery 是死代码 + gallery 双实现   | 详情模板的 art 分支不可达（getStaticPaths 过滤 art）；实际 art 展示由两个冻结的 art 页各自实现的 marquee/lightbox 承担。两套实现并存且 en/zh 版还有细节差异。受冻结政策约束，**动它们需要用户解冻**。 |
 | 🟢   | zh/notes 页未用翻译键                  | 已修复（2026-08-14）：改用 `t.sections.notes.*`，zh 翻译描述补句号与 en 对齐。两版样式覆盖的细微漂移仍存在，见 🔴 清单。                                                                              |
 | 🟡   | about 页多文件臃肿且实现漂移           | en/zh/nl 三份独立实现（各 ~4000+ 行），canvas 动画脚本三份维护，动画参数与样式有独立差异。重构（共享模板）需要用户同意;这是当前最大的维护成本点。                                                     |
@@ -383,6 +385,7 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 | 需求                         | 优先检查位置                                                                                                            |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | 改首页 Hero / 恢复终端       | `src/components/home/Hero.astro` + `src/styles/global.css` §14（删除隐藏规则）                                          |
+| 改背景星空 / 恢复神经网络      | `src/layouts/Layout.astro`（`#starfield-canvas` + 3D 星空脚本；神经网络恢复设 `data-neural="enabled"`）+ `src/styles/global.css` §10 |
 | 改首页精选项目               | `src/pages/index.astro`、`zh/index.astro`、`nl/index.astro` 的 `featuredKeys`                                           |
 | 改首页 SYS.LOG 规则          | `src/pages/index.astro`（zh 同）frontmatter `latestEntries` 逻辑                                                        |
 | 改导航 / 语言切换 / 主题按钮 | `src/components/Navbar.astro`                                                                                           |

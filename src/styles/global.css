@@ -24,11 +24,11 @@
   --panel-light: #161625;
 
   /* TEXT */
-  --text: #e8e6e0;
-  --text-bright: #ffffff;
-  --text-soft: #dddddd;
-  --text-tertiary: #999999;
-  --text-dim: #777777;
+  --text: #eee4cf;
+  --text-bright: #f6eedb;
+  --text-soft: #e2d7bd;
+  --text-tertiary: #b3a48a;
+  --text-dim: #91846e;
   --on-accent: #000000;
 
   /* BORDERS */
@@ -547,6 +547,16 @@ main {
     scroll-behavior: auto;
   }
 
+
+  #star-canvas {
+    display: none;
+  }
+
+  #starfield-canvas {
+    display: none;
+  }
+
+
   #neural-canvas {
     display: none;
   }
@@ -555,8 +565,79 @@ main {
 /* ═══════════════════════════════════════════
    §10  BACKGROUND LAYERS
    Hex grid + noise + scanlines + vignette,
-   plus the particle canvas (weakened).
+   plus the active 3D starfield canvas; the old neural canvas is disabled.
    ═══════════════════════════════════════════ */
+
+
+/* ── Starfield canvas (temporarily replaces the neural network) ── */
+#star-canvas {
+  position: fixed;
+
+  inset: 0;
+
+  width: 100vw;
+  height: 100vh;
+
+  pointer-events: none;
+
+  z-index: 0;
+
+  opacity: 0.8;
+
+  transition: filter 0.4s var(--ease-out), opacity 0.4s var(--ease-out);
+}
+
+:root[data-theme="light"] #star-canvas {
+  opacity: 0.32;
+}
+
+/* ── Active 3D starfield canvas ── */
+#starfield-canvas {
+  position: fixed;
+
+  inset: 0;
+
+  width: 100vw;
+  height: 100vh;
+
+  pointer-events: none;
+
+  z-index: 0;
+
+  opacity: 0.85;
+
+  transition: filter 0.4s var(--ease-out), opacity 0.4s var(--ease-out);
+}
+
+/* Light mode does not show the starfield — it uses the retro grid instead. */
+:root[data-theme="light"] #starfield-canvas {
+  display: none;
+}
+
+/* The earlier 2D star canvas is disabled and hidden; kept for possible rollback. */
+#star-canvas {
+  display: none;
+}
+
+/* If someone deliberately opts into the older 2D starfield,
+   swap the visible canvas back. */
+html[data-star-version="2d"] #star-canvas {
+  display: block;
+}
+
+html[data-star-version="2d"] #starfield-canvas {
+  display: none;
+}
+
+/* If the original neural network is deliberately re-enabled,
+   hide both starfield variants so the old background layer returns. */
+html[data-neural="enabled"] #starfield-canvas,
+html[data-neural="enabled"] #star-canvas {
+  display: none;
+}
+
+
+
 
 /* ── Particle network canvas (WEAKENED: lower opacity, fewer
       glow, softer connections vs. the original) ── */
@@ -605,11 +686,9 @@ body::before {
 }
 
 :root[data-theme="light"] body::before {
-  background-image:
-    linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
-    linear-gradient(60deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
-    linear-gradient(120deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
-  opacity: 0.4;
+  background-image: url("data:image/svg+xml,%3Csvg width='96' height='96' viewBox='0 0 96 96' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0V96M0 48H96M48 40V56M40 48H56' fill='none' stroke='%23000000' stroke-opacity='0.3' stroke-width='1.2'/%3E%3C/svg%3E");
+  background-size: 96px 96px;
+  opacity: 0.5;
 }
 
 /* ── Concrete / brutalist noise overlay ── */
@@ -714,6 +793,16 @@ body::after {
 :root[data-theme="light"] .card {
   background: var(--paper);
   box-shadow: var(--shadow-paper);
+}
+/* Glassmorphism in light theme over the starfield/background */
+/* Glassmorphism in light theme over the starfield/background */
+:root[data-theme="light"] .card {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 16px 40px rgba(110, 98, 78, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(120, 110, 90, 0.12);
 }
 :root[data-theme="light"] .card h2,
 :root[data-theme="light"] .card h3 { color: var(--text-bright); }
