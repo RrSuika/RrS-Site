@@ -1,0 +1,7 @@
+{
+  // 关闭 Astro 文件的保存时自动格式化，保持仓库手写紧凑风格。
+  // （防止 Prettier 在 Ctrl+S 时重排整个文件——2026-09-07 曾误触发一次）
+  "[astro]": {
+    "editor.formatOnSave": false
+  }
+}
