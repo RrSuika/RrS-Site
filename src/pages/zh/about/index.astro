@@ -611,7 +611,27 @@ const personSchema = {
           const chartEl = document.getElementById("skill-field");
           if (!chartEl) return;
 
-          const PAPER = "#d8d8e0";
+          const isLight = () => document.documentElement.getAttribute("data-theme") === "light";
+          const PAL = () => isLight() ? {
+            paper: "#2b2822",
+            ink: "#1a1815",
+            sub: "#5a554e",
+            dot: "#8d877e",
+            satLink: "#a89f93",
+            hubLink: "#8a8178",
+            tooltipBg: "#f8f4ec",
+            shade: ["#6e6961", "#6e6961", "#767168", "#7e7970", "#868177", "#8e897f"],
+          } : {
+            paper: "#d8d8e0",
+            ink: "#0a0a10",
+            sub: "#9a9aa6",
+            dot: "#8a8a96",
+            satLink: "#3f3e46",
+            hubLink: "#55535f",
+            tooltipBg: "#d8d8e0",
+            shade: ["#6a6a75", "#6a6a75", "#7e7e8a", "#92929c", "#a6a6b0", "#babac4"],
+          };
+          const PAPER = PAL().paper;
           const SKILL_FS = /[一-鿿]/.test((skillMap.hubs[0]?.skills[0] || skillMap.hubs[0]?.name || "")) ? 10.5 : 8.5;
           const rnd = (i, k) => ((i * 73856093) ^ (k * 19349663)) % 1000 / 1000;
 
@@ -629,7 +649,7 @@ const personSchema = {
           // hub size follows connection count: more links, bigger dot
           const DEG = new Array(hubs.length).fill(0);
           // gray ramp: more connections, brighter dot
-          const SHADE = ["", "#6a6a75", "#7e7e8a", "#92929c", "#a6a6b0", "#babac4"];
+          const SHADE = PAL().shade;
           LINKS.forEach(([a, b]) => { DEG[a]++; DEG[b]++; });
 
           hubs.forEach((hub, di) => {
@@ -641,7 +661,7 @@ const personSchema = {
               hub: true,
               dom: di,
               symbolSize: 10 + DEG[di] * 2.6,
-              itemStyle: { color: SHADE[DEG[di]] },
+              itemStyle: { color: SHADE[DEG[di]] || SHADE[0] },
               label: {
                 show: true,
                 position: "right",
@@ -660,14 +680,15 @@ const personSchema = {
                 hub: false,
                 dom: di,
                 symbolSize: 2.5 + Math.sqrt(v) * 1.5,
-                itemStyle: { color: "#8a8a96" },
-                label: { show: true, position: "right", distance: 4, color: "#9a9aa6", fontSize: SKILL_FS },
+                itemStyle: { color: PAL().dot },
+                label: { show: true, position: "right", distance: 4, color: PAL().sub, fontSize: SKILL_FS },
               });
               // satellite → its hub
               links.push({
                 source: sk,
                 target: hid,
-                lineStyle: { width: 0.5 + v * 0.05, color: "#3f3e46", opacity: 0.5 },
+                __sat: true,
+                lineStyle: { width: 0.5 + v * 0.05, color: PAL().satLink, opacity: 0.5 },
               });
             });
           });
@@ -677,9 +698,10 @@ const personSchema = {
             links.push({
               source: hubs[a].name,
               target: hubs[b].name,
+              __sat: false,
               lineStyle: {
                 width: 1.6 + rnd(a + 2, b + 3) * 2.2,
-                color: "#55535f",
+                color: PAL().hubLink,
                 opacity: 0.65,
                 curveness: 0.08,
               },
@@ -689,9 +711,9 @@ const personSchema = {
           const option = {
             animationDuration: 300,
             tooltip: {
-              backgroundColor: PAPER,
+              backgroundColor: PAL().tooltipBg,
               borderWidth: 0,
-              textStyle: { color: "#0a0a10", fontSize: 12 },
+              textStyle: { color: PAL().ink, fontSize: 12 },
               padding: [10, 14],
               formatter: (p) => (p.dataType === "node" ? p.name : ""),
             },
@@ -830,6 +852,38 @@ const personSchema = {
               setInterval(wander, 2600);
               requestAnimationFrame(float);
             }, 1500);
+            const applyTheme = () => {
+              const p = PAL();
+              nodes.forEach((n) => {
+                if (n.hub) {
+                  n.itemStyle.color = p.shade[n.value] || p.shade[0];
+                  n.label.color = p.paper;
+                } else {
+                  n.itemStyle.color = p.dot;
+                  n.label.color = p.sub;
+                }
+              });
+              links.forEach((l) => {
+                l.lineStyle.color = l.__sat ? p.satLink : p.hubLink;
+              });
+              g.setOption({
+                tooltip: { backgroundColor: p.tooltipBg, textStyle: { color: p.ink } },
+                series: [{
+                  data: nodes,
+                  links: links,
+                  emphasis: {
+                    focus: "adjacency",
+                    lineStyle: { color: p.paper, opacity: 0.9, width: 1.4 },
+                    label: { show: true, color: p.paper, position: "right", fontSize: 10 },
+                  },
+                }],
+              });
+              setTimeout(syncTargets, 800);
+            };
+            new MutationObserver(applyTheme).observe(document.documentElement, {
+              attributes: true,
+              attributeFilter: ["data-theme"],
+            });
             return true;
           };
 
@@ -3519,6 +3573,12 @@ const personSchema = {
         transparent 35%
       ),
       #08080c;
+  }
+  :root[data-theme="light"] .skill-field {
+    background: #f5f0e6;
+  }
+  :root[data-theme="light"] .skill-field .skill-tree-label {
+    color: #55504a;
   }
 
   #skill-field {
