@@ -684,8 +684,8 @@ const websiteSchema = {
             camPitch = 0;
 
             // Mouse velocity decays quickly after movement stops.
-            mouse.vx *= 0.82;
-            mouse.vy *= 0.82;
+            mouse.vx *= 0.9;
+            mouse.vy *= 0.9;
             if (Math.abs(mouse.vx) < 0.02) mouse.vx = 0;
             if (Math.abs(mouse.vy) < 0.02) mouse.vy = 0;
 
@@ -721,14 +721,14 @@ const websiteSchema = {
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 if (dist < dragRadius && dist > 0.001) {
                   const falloff = 1 - dist / dragRadius;
-                  star.driftVx += mouse.vx * falloff * 0.03; // DRAG_STRENGTH
-                  star.driftVy += mouse.vy * falloff * 0.03;
+                  star.driftVx += mouse.vx * falloff * 0.06; // DRAG_STRENGTH
+                  star.driftVy += mouse.vy * falloff * 0.06;
                 }
               }
 
               // Relax back to the intrinsic base drift.
-              star.driftVx += (star.baseDriftVx - star.driftVx) * 0.06;
-              star.driftVy += (star.baseDriftVy - star.driftVy) * 0.06;
+              star.driftVx += (star.baseDriftVx - star.driftVx) * 0.15;
+              star.driftVy += (star.baseDriftVy - star.driftVy) * 0.15;
 
               const spd = Math.sqrt(star.driftVx * star.driftVx + star.driftVy * star.driftVy);
               const maxSpd = 0.35; // MAX_SPEED
@@ -853,8 +853,8 @@ const websiteSchema = {
             mouse.py = event.clientY;
             mouse.x = event.clientX;
             mouse.y = event.clientY;
-            mouse.vx = dx * 0.2; // MOUSE_SENSITIVITY
-            mouse.vy = dy * 0.2;
+            mouse.vx = dx * 0.4; // MOUSE_SENSITIVITY
+            mouse.vy = dy * 0.4;
             mouse.active = true;
           });
 
