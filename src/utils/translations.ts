@@ -403,6 +403,13 @@ export const translations = {
                 "Dark screen + green system logs, the hacker-terminal mood. The accidental fifth dialect: it arrived with the dark theme and never left.",
               refs: "Blade Runner · The Matrix",
             },
+            {
+              code: "STYLE_06 // NEUMORPHIC_GLASS",
+              era: "2020s–now",
+              body:
+                "Frosted-glass cards floating over paper, neumorphic buttons pressed out of the background with soft double shadows and inner highlights. This site's light mode: the project cards blur what's behind them, the ACCESS button is moulded from the paper itself.",
+              refs: "Apple visionOS glass · Windows Fluent/Acrylic · Figma neumorphism wave",
+            },
           ],
           worksIndex: "// WORKS_INDEX // VISUAL WORKS ON THE SAME FREQUENCY",
           works: [
@@ -833,6 +840,13 @@ export const translations = {
               body:
                 "黑底绿字的系统日志、黑客终端氛围。意外混入的第五种视觉语言，帅到我了",
               refs: "《银翼杀手》 · 《黑客帝国》",
+            },
+            {
+              code: "STYLE_06 // NEUMORPHIC_GLASS",
+              era: "2020s–至今",
+              body:
+                "磨砂玻璃卡片浮在纸面上，新拟态按钮像从背景里被挤出来：柔和的深浅双阴影、内高光。这个网站亮色模式里的项目卡片和 ACCESS 按钮就是它。",
+              refs: "Apple visionOS 玻璃 · Windows Fluent/Acrylic · Figma 新拟态风潮",
             },
           ],
           worksIndex: "// WORKS_INDEX // 同频的视觉作品",
@@ -1289,6 +1303,13 @@ export const translations = {
               body:
                 "Donker scherm + groene systeemlogs, de sfeer van een hackerterminal. Het toevallige vijfde dialect: het kwam met het donkere thema en ging nooit meer weg.",
               refs: "Blade Runner · The Matrix",
+            },
+            {
+              code: "STYLE_06 // NEUMORPHIC_GLASS",
+              era: "Jaren 20–nu",
+              body:
+                "Frosted-glass kaarten die over papier zweven, neumorfische knoppen die met zachte dubbele schaduwen en binnenlichten uit de achtergrond omhooggedrukt lijken. De lichtmodus van deze site: projectkaarten vervagen wat erachter ligt, de ACCESS-knop is uit het papier zelf gevormd.",
+              refs: "Apple visionOS-glas · Windows Fluent/Acrylic · neumorfisme-golf in de Figma-community",
             },
           ],
           worksIndex: "// WORKS_INDEX // VISUEEL WERK OP DEZELFDE FREQUENTIE",

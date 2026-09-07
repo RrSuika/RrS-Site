@@ -641,6 +641,10 @@ const websiteSchema = {
                  driftVy: baseDriftVy,
                  baseDriftVx,
                  baseDriftVy,
+                 dragX: 0,
+                 dragY: 0,
+                 dragVx: 0,
+                 dragVy: 0,
                  color: starColor,
                  rgb: parseRgb(starColor),
                  sizeScale:
@@ -690,7 +694,7 @@ const websiteSchema = {
             if (Math.abs(mouse.vy) < 0.02) mouse.vy = 0;
 
             // Independent per-star proper motion
-            const dragRadius = 150;
+            const dragRadius = 90;
             const focal = Math.max(width, height) * 0.95;
             for (const star of stars) {
               // Project to screen (same math as drawStar) so mouse forces can
@@ -709,8 +713,8 @@ const websiteSchema = {
               const z2 = y0 * sinPitch + z1 * cx;
               if (z2 <= 0.08) continue;
 
-              let sx = width / 2 + (x1 / z2) * focal + (star.driftX || 0);
-              let sy = height / 2 + (y2 / z2) * focal + (star.driftY || 0);
+              let sx = width / 2 + (x1 / z2) * focal + (star.driftX || 0) + (star.dragX || 0);
+              let sy = height / 2 + (y2 / z2) * focal + (star.driftY || 0) + (star.dragY || 0);
               sx = ((sx % width) + width) % width;
               sy = ((sy % height) + height) % height;
 
@@ -721,26 +725,25 @@ const websiteSchema = {
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 if (dist < dragRadius && dist > 0.001) {
                   const falloff = 1 - dist / dragRadius;
-                  star.driftVx += mouse.vx * falloff * 0.06; // DRAG_STRENGTH
-                  star.driftVy += mouse.vy * falloff * 0.06;
+                  star.dragVx += mouse.vx * falloff * 0.12; // DRAG_STRENGTH
+                  star.dragVy += mouse.vy * falloff * 0.12;
                 }
               }
 
-              // Relax back to the intrinsic base drift.
-              star.driftVx += (star.baseDriftVx - star.driftVx) * 0.15;
-              star.driftVy += (star.baseDriftVy - star.driftVy) * 0.15;
+              // Elastic spring pulls the mouse offset back to zero, giving
+              // a visible rebound after the cursor leaves or slows down.
+              star.dragVx += -star.dragX * 0.0013;
+              star.dragVy += -star.dragY * 0.0013;
+              star.dragVx *= 0.88;
+              star.dragVy *= 0.88;
+              star.dragX += star.dragVx * dt;
+              star.dragY += star.dragVy * dt;
 
-              const spd = Math.sqrt(star.driftVx * star.driftVx + star.driftVy * star.driftVy);
-              const maxSpd = 0.35; // MAX_SPEED
-              if (spd > maxSpd) {
-                const scale = maxSpd / spd;
-                star.driftVx *= scale;
-                star.driftVy *= scale;
-              }
-              star.driftX += star.driftVx * dt;
-              star.driftY += star.driftVy * dt;
-            }
+              // The base star drift continues independently.
+              star.driftX += star.baseDriftVx * dt;
+              star.driftY += star.baseDriftVy * dt;
           }
+        }
 
           function drawStar(star: any) {
             const cp = Math.cos(star.phi);
@@ -767,8 +770,8 @@ const websiteSchema = {
             let sy = height / 2 + (y2 / z2) * focal;
 
             // Continuous screen-space drift (no attraction/orbit)
-            sx += star.driftX || 0;
-            sy += star.driftY || 0;
+            sx += (star.driftX || 0) + (star.dragX || 0);
+            sy += (star.driftY || 0) + (star.dragY || 0);
             sx = ((sx % width) + width) % width;
             sy = ((sy % height) + height) % height;
 
@@ -853,8 +856,8 @@ const websiteSchema = {
             mouse.py = event.clientY;
             mouse.x = event.clientX;
             mouse.y = event.clientY;
-            mouse.vx = dx * 0.4; // MOUSE_SENSITIVITY
-            mouse.vy = dy * 0.4;
+            mouse.vx = dx * 0.65; // MOUSE_SENSITIVITY
+            mouse.vy = dy * 0.65;
             mouse.active = true;
           });
 

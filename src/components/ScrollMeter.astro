@@ -257,28 +257,6 @@
       visibility 0.3s;
   }
 
-  /* Corner brackets — matching the site's key style */
-  .back-to-top::before,
-  .back-to-bottom::before {
-    content: "";
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    width: 4px;
-    height: 4px;
-    border: 1px solid var(--border-strong);
-  }
-
-  .back-to-top::after,
-  .back-to-bottom::after {
-    content: "";
-    position: absolute;
-    right: 4px;
-    bottom: 4px;
-    width: 4px;
-    height: 4px;
-    border: 1px solid var(--border-strong);
-  }
 
   .back-to-top.visible,
   .back-to-bottom.visible,
@@ -365,12 +343,6 @@
     color: #145a28;
   }
 
-  :root[data-theme="light"] .back-to-top::before,
-  :root[data-theme="light"] .back-to-bottom::before,
-  :root[data-theme="light"] .back-to-top::after,
-  :root[data-theme="light"] .back-to-bottom::after {
-    border-color: var(--border-strong);
-  }
 
   :root[data-theme="light"] .back-to-top.visible:hover,
   :root[data-theme="light"] .back-to-bottom.visible:hover {
