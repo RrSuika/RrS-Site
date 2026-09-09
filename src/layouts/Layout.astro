@@ -20,6 +20,8 @@ interface Props {
   /** explicit alternate-language versions; undefined → all other languages auto-assumed; null → no alternates */
   alternateHrefs?: { lang: string; href: string }[] | null;
   noIndex?: boolean;
+  /** black-hole video background layer (homepage only, dark mode only) */
+  blackhole?: boolean;
 }
 
 const {
@@ -28,6 +30,7 @@ const {
   ogImage,
   alternateHrefs,
   noIndex = false,
+  blackhole = false,
 } = Astro.props;
 
 const language = getLanguageFromPath(Astro.url.pathname);
@@ -208,6 +211,142 @@ const websiteSchema = {
         ×
       </button>
     </div>
+
+
+      <!-- =========================================
+          BLACK-HOLE VIDEO LAYER — homepage only, DESKTOP only.
+
+          Stacking order, bottom → top:
+            pure black (this layer's own background)
+            → black-hole video (#blackhole-video)
+            → starfield canvas (#starfield-canvas, same
+              z-index, later in the DOM)
+            → page content (.site-content, z-index 1)
+
+          Size / position knobs live in global.css §10
+          under "#blackhole-layer". Only rendered when the
+          page passes `blackhole` to <Layout>; hidden in
+          light mode, on phones, and under prefers-reduced-motion.
+
+          No `autoplay` and no `src` in the markup on purpose: the
+          script below attaches the source only on desktop, so phones
+          never download the 3 MB video.
+      ========================================== -->
+
+      {
+        blackhole && (
+          <div id="blackhole-layer" aria-hidden="true">
+            <video
+              id="blackhole-video"
+              data-src="/media/blackhole.mp4"
+              muted
+              loop
+              playsinline
+              preload="none"
+              tabindex="-1"
+            ></video>
+          </div>
+        )
+      }
+
+      <!-- Black-hole layer: desktop gate + autoplay + fade-in.
+           · desktop only (≥ 769px) — phones get no layer and no download
+           · reveal the layer only once the first frame is decoded, so the
+             video never pops in mid-load (CSS: #blackhole-layer.bh-fade)
+           · still frame instead of motion when the visitor asks for
+             reduced motion
+           · retry once on the first gesture if a browser (Safari low-power
+             mode) blocks muted autoplay -->
+      <script>
+        (() => {
+          const layer = document.getElementById("blackhole-layer");
+          const video = document.getElementById(
+            "blackhole-video",
+          ) as HTMLVideoElement | null;
+
+          if (!layer || !video) return;
+
+          const desktop = window.matchMedia("(min-width: 769px)");
+          const reducedMotion = window.matchMedia(
+            "(prefers-reduced-motion: reduce)",
+          );
+
+          // Phones/tablets: no layer, and the source is never attached.
+          if (!desktop.matches) return;
+
+          const source = video.dataset.src;
+
+          if (!source) return;
+
+          layer.classList.add("bh-on", "bh-fade");
+
+          let revealTimer = 0;
+          const reveal = () => {
+            window.clearTimeout(revealTimer);
+            layer.classList.add("is-ready");
+            video.removeEventListener("loadeddata", reveal);
+            video.removeEventListener("canplay", reveal);
+            video.removeEventListener("error", reveal);
+          };
+
+          video.addEventListener("loadeddata", reveal);
+          video.addEventListener("canplay", reveal);
+          video.addEventListener("error", reveal);
+
+          video.preload = "auto";
+          video.src = source;
+
+          if (reducedMotion.matches) {
+            // Load the first frame, then hold it: no motion.
+            video.loop = false;
+            video.pause();
+            revealTimer = window.setTimeout(reveal, 1500);
+            return;
+          }
+
+          const tryPlay = () => {
+            if (!video.paused) return;
+            video.play().catch(() => {});
+          };
+
+          // Safety net: never leave the layer hidden if no event fires.
+          revealTimer = window.setTimeout(reveal, 1500);
+
+          tryPlay();
+          document.addEventListener("pointerdown", tryPlay, { once: true });
+          document.addEventListener("keydown", tryPlay, { once: true });
+
+          // Don't decode frames nobody can see: pause while the tab is hidden
+          // or the theme is light (the layer is display:none there), and
+          // resume when it becomes visible again.
+          document.addEventListener("visibilitychange", () => {
+            if (document.hidden) video.pause();
+            else tryPlay();
+          });
+
+          new MutationObserver(() => {
+            if (document.documentElement.getAttribute("data-theme") === "light") {
+              video.pause();
+            } else {
+              tryPlay();
+            }
+          }).observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ["data-theme"],
+          });
+
+          // Live resize across the mobile/desktop breakpoint.
+          desktop.addEventListener("change", (event) => {
+            if (event.matches) {
+              layer.classList.add("bh-on");
+              tryPlay();
+            } else {
+              layer.classList.remove("bh-on");
+              video.pause();
+            }
+          });
+        })();
+      </script>
 
 
       <!-- =========================================
@@ -745,6 +884,49 @@ const websiteSchema = {
           }
         }
 
+          /* Per-star constants (glow radius, gradient, core radius, flare)
+             are computed once and cached on the star. The previous version
+             called ctx.createRadialGradient() + four addColorStop() calls
+             with freshly built rgba() strings for every star on every frame
+             (~500–1200 stars at 60fps) — colour-string parsing alone was
+             several milliseconds per frame, which starved the compositor and
+             made the homepage video drop frames. The cached gradient is built
+             at the origin and positioned with ctx.translate(), so the render
+             is identical. Assumes a fixed camera (camYaw / camPitch stay 0);
+             caches are rebuilt on resize because initStars() reruns. */
+          function prepareStar(star: any) {
+            const cp = Math.cos(star.phi);
+            const x0 = cp * Math.cos(star.theta);
+            const y0 = cp * Math.sin(star.theta);
+            const z0 = Math.sin(star.phi);
+            const cy = Math.cos(camYaw);
+            const sinYaw = Math.sin(camYaw);
+            const x1 = x0 * cy - z0 * sinYaw;
+            const z1 = x0 * sinYaw + z0 * cy;
+            const cx = Math.cos(camPitch);
+            const sinPitch = Math.sin(camPitch);
+            const z2 = y0 * sinPitch + z1 * cx;
+
+            const near = 1 - z2;
+            const size = (0.5 + star.sizeScale * 1.4) * (0.85 + near * 0.2) * 0.75;
+            const [sr, sg, sb] = star.rgb || [255, 255, 255];
+            const glowRadius = Math.max(size * 2.8, 4);
+
+            const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, glowRadius);
+            glow.addColorStop(0, `rgba(${sr},${sg},${sb},1)`);
+            glow.addColorStop(0.35, `rgba(${sr},${sg},${sb},0.55)`);
+            glow.addColorStop(0.7, `rgba(${sr},${sg},${sb},0.14)`);
+            glow.addColorStop(1, `rgba(${sr},${sg},${sb},0)`);
+
+            star.cache = {
+              glow,
+              glowRadius,
+              coreRadius: Math.max(0.4, size * 0.85),
+              flare: (2.4 + size * 3.4) * (0.7 + near * 0.5),
+              alphaBase: 0.42 + star.sizeScale * 0.28,
+            };
+          }
+
           function drawStar(star: any) {
             const cp = Math.cos(star.phi);
             const x0 = cp * Math.cos(star.theta);
@@ -785,34 +967,28 @@ const websiteSchema = {
               return;
             }
 
-            const near = 1 - z2;
-            const size = (0.5 + star.sizeScale * 1.4) * (0.85 + near * 0.2) * 0.75;
+            if (!star.cache) prepareStar(star);
+            const cache = star.cache;
+
             const twinkle =
               0.62 + 0.38 * Math.sin(time * star.twinkleSpeed + star.twinklePhase);
-            const alpha = (0.42 + star.sizeScale * 0.28) * twinkle;
+            const alpha = Math.min(1, cache.alphaBase * twinkle);
+
+            ctx.save();
+            ctx.translate(sx, sy);
 
             // Smooth radial gradient — no hard circle edge, just a gradual glow.
-            const [sr, sg, sb] = star.rgb || [255, 255, 255];
-            const glowRadius = Math.max(size * 2.8, 4);
-            const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowRadius);
-            glow.addColorStop(0, `rgba(${sr},${sg},${sb},${Math.min(1, alpha)})`);
-            glow.addColorStop(0.35, `rgba(${sr},${sg},${sb},${Math.min(1, alpha * 0.55)})`);
-            glow.addColorStop(0.7, `rgba(${sr},${sg},${sb},${Math.min(1, alpha * 0.14)})`);
-            glow.addColorStop(1, `rgba(${sr},${sg},${sb},0)`);
-            ctx.save();
-            ctx.globalAlpha = 1;
-            ctx.fillStyle = glow;
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = cache.glow;
             ctx.beginPath();
-            ctx.arc(sx, sy, glowRadius, 0, Math.PI * 2);
+            ctx.arc(0, 0, cache.glowRadius, 0, Math.PI * 2);
             ctx.fill();
 
             // Tiny bright core — keeps the star a point source, not a disk.
             ctx.fillStyle = star.color;
-            ctx.globalAlpha = Math.min(1, alpha);
             ctx.beginPath();
-            ctx.arc(sx, sy, Math.max(0.4, size * 0.85), 0, Math.PI * 2);
+            ctx.arc(0, 0, cache.coreRadius, 0, Math.PI * 2);
             ctx.fill();
-
 
             // Very subtle diffraction cross on the brightest stars
             if (star.bright) {
@@ -820,12 +996,12 @@ const websiteSchema = {
               ctx.shadowBlur = 0;
               ctx.lineWidth = 0.6;
               ctx.strokeStyle = star.color;
-              const flare = (2.4 + size * 3.4) * (0.7 + near * 0.5);
+              const flare = cache.flare;
               ctx.beginPath();
-              ctx.moveTo(sx - flare, sy);
-              ctx.lineTo(sx + flare, sy);
-              ctx.moveTo(sx, sy - flare);
-              ctx.lineTo(sx, sy + flare);
+              ctx.moveTo(-flare, 0);
+              ctx.lineTo(flare, 0);
+              ctx.moveTo(0, -flare);
+              ctx.lineTo(0, flare);
               ctx.stroke();
             }
             ctx.restore();

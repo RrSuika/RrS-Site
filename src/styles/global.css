@@ -663,6 +663,120 @@ main {
    plus the active 3D starfield canvas; the old neural canvas is disabled.
    ═══════════════════════════════════════════ */
 
+/* ── Black-hole video layer (homepage only, dark mode only, DESKTOP only) ──
+   Homepage stacking order, bottom → top:
+
+     1. pure black  → this layer's own background
+     2. black hole  → #blackhole-video
+     3. starfield   → #starfield-canvas (same z-index: 0, later in the DOM)
+     4. everything else → .site-content (z-index: 1) + scanlines/vignette
+
+   Desktop only: the layer starts hidden and JS adds .bh-on (script in
+   Layout.astro) on viewports ≥ 769px, so phones never download the video.
+   No JS → no layer.
+
+   MANUAL TUNING — edit the knobs below.
+   All of them accept any CSS length: % / vw / vh / px / rem.
+
+     --blackhole-x        centre of the video, horizontal (75% = right of centre).
+     --blackhole-y        centre of the video, vertical. Fitted to the viewport
+                          height — see the calc() below.
+     --blackhole-width    rendered box width.  100% = full viewport width.
+     --blackhole-height   rendered box height. 100% = full viewport height.
+     --blackhole-scale    extra zoom on top of the box (1 = none, 1.5 = 150%).
+     --blackhole-opacity  1 = fully opaque; lower it to let the page
+                          background blend through.
+
+   The video is 1920×1080 (16:9). object-fit decides what happens when the
+   box aspect ratio differs: "cover" fills the box and crops the overflow,
+   "contain" shows the whole frame and letterboxes it. Swap it on
+   #blackhole-video below if you want the entire black hole always visible. */
+#blackhole-layer {
+  --blackhole-x: 75%;
+
+  /* Vertical position, fitted to the two hand-tuned values:
+       viewport 562px tall (1080p screen) → 59.5%  = 334px from the top
+       viewport 802px tall (2K screen)    → 53.0%  = 425px from the top
+     That is: centre = 122px + 37.8% of the viewport height. A bare percentage
+     drifts whenever the window height changes (which is why the fixed 52%/60%
+     steps never matched), while this line reproduces both tuned positions. */
+  --blackhole-y: calc(122px + 37.8vh);
+
+  --blackhole-width: 125%;
+  --blackhole-height: 125%;
+  --blackhole-scale: 1;
+  --blackhole-opacity: 1;
+
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 0;
+
+  pointer-events: none;
+
+  overflow: hidden;
+
+  background: #000;
+
+  /* Hidden until JS enables it on desktop. */
+  display: none;
+}
+
+
+/* Desktop only — phones/tablets never see the layer, even if a class lingers. */
+@media (min-width: 769px) {
+  #blackhole-layer.bh-on {
+    display: block;
+  }
+}
+
+/* Fast fade-in so the video never pops in mid-decode.
+   JS adds .bh-fade straight away, then .is-ready once the first frame is
+   decoded (with a timeout fallback). Tune the duration here. */
+#blackhole-layer.bh-fade {
+  opacity: 0;
+
+  transition: opacity 0.5s var(--ease-out);
+}
+
+#blackhole-layer.bh-fade.is-ready {
+  opacity: 1;
+}
+
+#blackhole-video {
+  position: absolute;
+
+  left: var(--blackhole-x);
+
+  top: var(--blackhole-y);
+
+  width: var(--blackhole-width);
+
+  height: var(--blackhole-height);
+
+  transform: translate(-50%, -50%) scale(var(--blackhole-scale));
+
+  transform-origin: center center;
+
+  object-fit: cover;
+
+  object-position: center center;
+
+  opacity: var(--blackhole-opacity);
+
+  /* Keep the video on its own compositor layer: it repaints every frame
+     while playing, so this stops it from dragging the rest of the page
+     (and vice versa) into repaints. */
+  will-change: transform;
+
+  display: block;
+}
+
+/* Light mode keeps the retro grid — no black hole there. */
+:root[data-theme="light"] #blackhole-layer {
+  display: none;
+}
 
 /* ── Starfield canvas (temporarily replaces the neural network) ── */
 #star-canvas {

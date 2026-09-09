@@ -471,56 +471,60 @@ const projectsPath = getLocalizedPath("/projects", language);
   }
 
   .barcode {
+    /* Bars use the same warm ink as the FUNCTIONAL headline (body --text)
+       instead of pure #fff, which read colder/greyer next to it. */
+    --barcode-ink: var(--text);
+
     width: 140px;
     height: 35px;
     background: repeating-linear-gradient(
       90deg,
-      #fff 0px,
-      #fff 1px,
+      var(--barcode-ink) 0px,
+      var(--barcode-ink) 1px,
       transparent 1px,
       transparent 4px,
-      #fff 4px,
-      #fff 7px,
+      var(--barcode-ink) 4px,
+      var(--barcode-ink) 7px,
       transparent 7px,
       transparent 8px,
-      #fff 8px,
-      #fff 9px,
+      var(--barcode-ink) 8px,
+      var(--barcode-ink) 9px,
       transparent 9px,
       transparent 12px,
-      #fff 12px,
-      #fff 15px,
+      var(--barcode-ink) 12px,
+      var(--barcode-ink) 15px,
       transparent 15px,
       transparent 17px,
-      #fff 17px,
-      #fff 18px,
+      var(--barcode-ink) 17px,
+      var(--barcode-ink) 18px,
       transparent 18px,
       transparent 23px,
-      #fff 23px,
-      #fff 26px,
+      var(--barcode-ink) 23px,
+      var(--barcode-ink) 26px,
       transparent 26px,
       transparent 28px,
-      #fff 28px,
-      #fff 30px,
+      var(--barcode-ink) 28px,
+      var(--barcode-ink) 30px,
       transparent 30px,
       transparent 35px,
-      #fff 35px,
-      #fff 36px,
+      var(--barcode-ink) 35px,
+      var(--barcode-ink) 36px,
       transparent 36px,
       transparent 38px,
-      #fff 38px,
-      #fff 42px,
+      var(--barcode-ink) 38px,
+      var(--barcode-ink) 42px,
       transparent 42px,
       transparent 43px,
-      #fff 43px,
-      #fff 46px,
+      var(--barcode-ink) 43px,
+      var(--barcode-ink) 46px,
       transparent 46px,
       transparent 50px,
-      #fff 50px,
-      #fff 52px,
+      var(--barcode-ink) 50px,
+      var(--barcode-ink) 52px,
       transparent 52px,
       transparent 54px,
-      #fff 54px,
-      #fff 58px,
+      var(--barcode-ink) 54px,
+      var(--barcode-ink) 58px,
       transparent 58px,
       transparent 60px
     );
@@ -528,6 +532,12 @@ const projectsPath = getLocalizedPath("/projects", language);
     animation: barcodeIn 0.6s ease-out forwards;
     animation-delay: 0.4s;
   }
+
+  /* Light theme: the headline switches to --text-bright, so match that. */
+  :root[data-theme="light"] .barcode {
+    --barcode-ink: var(--text-bright);
+  }
+
   @keyframes barcodeIn {
     from {
       opacity: 0;

@@ -4,7 +4,8 @@
 > 接手任何新任务时：**先读本文件 → 再用快速索引（§11）定位文件 → 只读必要的源文件 → 动手。**
 > 与 `CLAUDE.md` 的分工：CLAUDE.md 是**规则与政策**（必须遵守的约束），本文件是**架构事实与原因**（"现在怎么组织的、为什么、去哪改"）。`AGENTS.md` 只讲开发服务器的工作方式。
 >
-> - 最后更新：2026-09-04 v1.7（① 背景粒子神经网络被 3D 星空暂时替换：`#starfield-canvas` 天球式拟真星空 + 鼠标拖拽 + 真实恒星光谱色，原 `#neural-canvas` 与早期 2D 星空脚本保留可回退，§6.3/§10/§11；② 全站 URL 尾斜杠约定：`trailingSlash: "always"` + 所有链接/sitemap 带尾斜杠，修复 GSC"网页会自动重定向"告警，§9 决策 16；③ 正文图片构建时解析：新增 `markdown-resolve-images.ts` Sätteri 插件接入 Astro 原生内容图片管线，删除 ProjectDetail 客户端图片修正，修复 Cloudflare 4xx 报告中的详情页图片 404，§9 决策 17）
+> - 最后更新：2026-09-09 v1.8（首页黑洞视频背景层：`输入/黑洞动画 - AI 插帧.mp4` 转码未改、原样拷贝为 `public/media/blackhole.mp4`，由 `Layout` 的 `blackhole` prop 在**仅三个首页**（en/zh/nl）渲染 `#blackhole-layer` + `#blackhole-video`；首页暗色模式叠层固定为「纯黑底 → 黑洞视频 → 星空 → 页面内容」，其他页面不受影响；位置/尺寸在 global.css §10 用 `--blackhole-*` 变量调节，`--blackhole-y` 按视口高度线性跟随（`calc(122px + 37.8vh)`，由用户实测两点拟合），且**只在桌面端（≥769px）启用、手机端连视频都不下载**；首帧解码后渐入避免闪跳，§6.3/§9 决策 18/§11）
+> - 2026-09-04 v1.7（① 背景粒子神经网络被 3D 星空暂时替换：`#starfield-canvas` 天球式拟真星空 + 鼠标拖拽 + 真实恒星光谱色，原 `#neural-canvas` 与早期 2D 星空脚本保留可回退，§6.3/§10/§11；② 全站 URL 尾斜杠约定：`trailingSlash: "always"` + 所有链接/sitemap 带尾斜杠，修复 GSC"网页会自动重定向"告警，§9 决策 16；③ 正文图片构建时解析：新增 `markdown-resolve-images.ts` Sätteri 插件接入 Astro 原生内容图片管线，删除 ProjectDetail 客户端图片修正，修复 Cloudflare 4xx 报告中的详情页图片 404，§9 决策 17）
 > - 维护规则见 §12：代码若与本文件冲突，**以代码为准**，并更新本文件。
 >
 > **⚠️ v1.2 全量校正（旧段落中未逐行改写的“双语/仅 zh”表述，一律以下面为准）：**
@@ -48,6 +49,7 @@ MyPortfolio/
 │   ├── robots.txt             # 全站允许；AI 训练爬虫禁 /art/ 与 /zh/art/
 │   ├── google0d89945c0c4db4b1.html  # Google Search Console 验证文件
 │   ├── icons/                 # 6 个软件 logo PNG（about 档案卡 SOFTWARE 行；来自 输入/，勿重命名）
+│   ├── media/blackhole.mp4    # 首页黑洞背景视频（1920×1080/60fps/约5s/3.1MB，来自 输入/黑洞动画 - AI 插帧.mp4，未转码）
 │   └── art/fashion-design/    # 4 张 PNG 副本;为保留 alpha 透明通道直接以原图提供
 ├── src/
 │   ├── content.config.ts      # ★ 内容 Schema 唯一事实来源（单一 collection `entries`）
@@ -206,8 +208,9 @@ Props（都在 `src/layouts/Layout.astro` 顶部 interface）：
 | `ogImage?`       | string 或 null；缺省回退 `/og-card.png`                                                                                                              |
 | `alternateHref?` | **`undefined` = 假定对方语言页面存在**，自动用 `getLocalizedPath` 推导 hreflang；**`null` = 不输出 hreflang**（页面无译文时，详情页无译文时传 null） |
 | `noIndex?`       | 输出 `robots noindex`（404 页用）                                                                                                                    |
+| `blackhole?`     | 布尔；true 时渲染首页黑洞视频层（`#blackhole-layer` + `#blackhole-video`，暗色模式专用）。**仅三个首页**（`index.astro`/`zh/index.astro`/`nl/index.astro`）传 `blackhole`，其他页面不传 |
 
-Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/viewport/color-scheme/theme-color×2、Google Fonts JetBrains Mono 400/700/800/900、favicon、canonical、hreflang+x-default、og:_/twitter:_、**JSON-LD WebSite** `{name:"RrSuika Studio", url, inLanguage:["en","zh"]}`）；body 结构（skip-link、`#mobile-notice` 移动端提示、`#neural-canvas` 粒子画布、`<Navbar/>` + `<main#main-content/>`(slot) + `<Footer/>`、`<ScrollMeter/>`、`#crt-overlay` + `#tube-vignette` 背景层、粒子/主题切换/mobile-notice 三个脚本）。`global.css` 在此以 frontmatter import 引入（唯一引入点）。
+Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/viewport/color-scheme/theme-color×2、Google Fonts JetBrains Mono 400/700/800/900、favicon、canonical、hreflang+x-default、og:_/twitter:_、**JSON-LD WebSite** `{name:"RrSuika Studio", url, inLanguage:["en","zh"]}`）；body 结构（skip-link、`#mobile-notice` 移动端提示、**`#blackhole-layer` 黑洞视频层（仅首页）**、`#star-canvas`（停用）、`#starfield-canvas` 星空画布、`#neural-canvas`（停用）、`<Navbar/>` + `<main#main-content/>`(slot) + `<Footer/>`、`<ScrollMeter/>`、`#crt-overlay` + `#tube-vignette` 背景层、黑洞自动播放/星空/主题切换/mobile-notice 脚本）。`global.css` 在此以 frontmatter import 引入（唯一引入点）。
 
 ### 5.2 组件清单（共 11 个）与复用指引
 
@@ -262,7 +265,7 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | `--bg`                                                                        | `#07070d`                                                                             | `#f0ebe0`                                                                  |
 | `--panel` / `--panel-light`                                                   | `#0e0e18` / `#161625`                                                                 | `#e5dfd3` / `#f8f4ec`                                                      |
-| `--text` / `--text-bright` / `--text-soft` / `--text-tertiary` / `--text-dim` | `#e8e6e0` / `#ffffff` / `#dddddd` / `#999999` / `#777777`                             | `#1a1815` / `#1a1a1a` / `#444444` / `#666666` / `#555555`                  |
+| `--text` / `--text-bright` / `--text-soft` / `--text-tertiary` / `--text-dim` | `#eee4cf` / `#f6eedb` / `#e2d7bd` / `#b3a48a` / `#91846e`（2026-09 用户改暖，旧文档值已过时）                             | `#1a1815` / `#1a1a1a` / `#444444` / `#666666` / `#555555`                  |
 | `--on-accent`                                                                 | `#000000`                                                                             | `#ffffff`                                                                  |
 | `--border` / `--border-accent` / `--border-strong` / `--border-divider`       | `rgba(255,255,255,.10)` / `rgba(224,148,58,.25)` / `rgba(255,255,255,.2)` / `#333333` | `rgba(0,0,0,.08)` / `rgba(176,112,32,.25)` / `rgba(0,0,0,.15)` / `#cccccc` |
 | `--accent`（真空管琥珀）/ `--accent-glow` / `--accent-deep`                   | `#e8943a` / `#f0b860` / `#b87020`                                                     | `#c07020` / `#d08030` / `#8b4513`                                          |
@@ -283,7 +286,9 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 
 ### 6.3 背景层（§10）
 
-`#starfield-canvas` 动态星空画布（fixed，dark `opacity: 0.85`，light 隐藏星空，改用复古黑色四边形+十字网格背景，3D 天球式星星：真实恒星光谱色、自行运动、缓慢相机漂移 + 鼠标近旁星点局部拖拽动画、微光/十字星芒）+ hex grid（`body::before` 三向 linear-gradient，`52px 90px`）+ noise（`body::after` SVG feTurbulence data-URI）+ scanlines（`#crt-overlay`，dark `opacity: 0.28` / light `0.08`，`mix-blend-mode: screen`）+ amber vignette（`#tube-vignette`，`opacity: 0.6` / `0.4`）。星空脚本在 Layout.astro 内（参数区：恒星数 90–3000（前端视锥内约 88% 正向采样，桌面端最多 3000 / 移动端约 900）、`AUTO_ROTATION = 0.00032`、鼠标近旁星点局部拖拽（不随鼠标整体旋转）、`STAR_WEIGHTS` 按真实恒星颜色分布；性能折衷：光晕仅在亮星启用、DPR cap 1.5；星空不再整体跟随鼠标，改为局部星点拖拽）。原 `#neural-canvas` 神经网络粒子画布与 2D 版星空脚本被暂时禁用保留（`<html data-neural="enabled">` / `data-star-version="2d"` 可回退）。
+**首页（en/zh/nl 三个 index）暗色模式叠层，由下到上固定为：纯黑底（`#blackhole-layer` 的 `background: #000`）→ 黑洞视频（`#blackhole-video`，`public/media/blackhole.mp4`）→ 星空（`#starfield-canvas`）→ 页面内容（`.site-content` z-index 1）+ 扫描线/暗角。** 三者同为 `z-index: 0`，靠 DOM 顺序决定前后（`#blackhole-layer` 在 `#starfield-canvas` 之前）；其他页面不渲染黑洞层，只有「`--bg` → 星空 → 内容」。黑洞视频层的尺寸/位置由 6 个 `--blackhole-*` 变量控制（定义在 global.css §10 的 `#blackhole-layer` 内，注释即说明书）；light 模式 `display: none`，`prefers-reduced-motion` 时脚本停播、只留首帧静帧；首帧解码完成后 0.5s 渐入（`.bh-fade` → `.is-ready`），避免加载时视频闪跳。**仅桌面端**：层默认 `display: none`，JS 在 `min-width: 769px` 时加 `.bh-on` 才显示，且 `<video>` 用 `data-src` 由 JS 挂载，手机端零请求（实测 390px 视口 `readyState=0`、`src` 为空）。
+
+`#starfield-canvas` 动态星空画布（fixed，dark `opacity: 0.85`，light 隐藏星空，改用复古黑色四边形+十字网格背景，3D 天球式星星：真实恒星光谱色、自行运动、缓慢相机漂移 + 鼠标近旁星点局部拖拽动画、微光/十字星芒）+ hex grid（`body::before` 三向 linear-gradient，`52px 90px`）+ noise（`body::after` SVG feTurbulence data-URI）+ scanlines（`#crt-overlay`，dark `opacity: 0.28` / light `0.08`，`mix-blend-mode: screen`）+ amber vignette（`#tube-vignette`，`opacity: 0.6` / `0.4`）。星空脚本在 Layout.astro 内（参数区：恒星数 90–3000（前端视锥内约 88% 正向采样，桌面端最多 3000 / 移动端约 900）、`AUTO_ROTATION = 0.00032`、鼠标近旁星点局部拖拽（不随鼠标整体旋转）、`STAR_WEIGHTS` 按真实恒星颜色分布；性能折衷：光晕仅在亮星启用、DPR cap 1.5；星空不再整体跟随鼠标，改为局部星点拖拽）。原 `#neural-canvas` 神经网络粒子画布与 2D 版星空脚本被暂时禁用保留（`<html data-neural="enabled">` / `data-star-version="2d"` 可回退）。**性能（2026-09-09）**：每颗星的径向渐变在首帧算一次并缓存到 `star.cache`（`prepareStar()`），绘制时用 `ctx.translate()` 复用；此前是每帧每星 `createRadialGradient()` + 4 次 `addColorStop()` + 现拼 rgba 字符串，600 颗星实测约 3.0ms/帧，缓存后约 0.9ms/帧（headless Chrome 软件渲染基准），这也是首页视频偶发掉帧的主因。
 
 ### 6.4 其他全局约定
 
@@ -291,6 +296,7 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 - **§14 Hero 终端隐藏**：`.hero .terminal { display: none; }`;恢复方法就是删掉这条规则（注释写明"无需修改任何其他文件"）。
 - **滚动条全站完全隐藏**（`scrollbar-width: none` + `::-webkit-scrollbar { display: none }`）;用户偏好的原始行为，不要"修复"。
 - **旧调色板字面量**（刻意保留，勿重着色）：Navbar 警告条纹 `#ff5f1f`、品牌三色点 `#ff3333/#ffd400/#00b0ff`、Hero 终端 `rgba(255,95,31,…)`、亮色绿 `#00703c`（Footer/AboutPreview/LatestUpdates/about 页）、ScrollMeter 亮色深绿 `#145a28`、§11 里 art gallery 冻结样式（注释 "frozen: kept verbatim"）。
+- **Hero 条形码与标题同色（2026-09-09 用户要求）**：`.barcode` 的条纹颜色走 `--barcode-ink`（暗色 = `--text`、亮色 = `--text-bright`），与 FUNCTIONAL 标题逐字同色；原来是写死的 `#fff`，在暖白标题旁边偏冷偏灰。以后改色请改这两个变量，不要写死 `#fff`。
 - 通用模式：`.tag-chip`（pill 筛选按钮，§12 共享实现）、`.data-tag`（mono 大写数据标签）、`.skip-link`、hover 用 `--ease-out`、按下 `--spring-snappy`；入场动画 `pageIn`/`cardIn` + 各网格容器 nth-child stagger（§8）；`prefers-reduced-motion` 全局降级（§9，并隐藏粒子画布）。
 - 页面局部样式：写在各自 `.astro` 的 `<style>` 内（自动作用域）；少数 `is:global`（如 ProjectDetail 的 article 排版）。**全局设计系统级 CSS 只应进 global.css。**
 
@@ -348,6 +354,8 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 15. **og-card.png 手工生成**：分享卡视觉（终端风格 + 三色条 + 中英标语）由脚本硬编码 SVG 渲染，无构建步骤;改分享卡要改脚本并手动重跑。
 16. **全站 URL 统一尾斜杠（2026-08-31）**：`astro.config.mjs` 设 `trailingSlash: "always"`（canonical/hreflang/og:url 自动带尾斜杠），`getLocalizedPath`/`buildEntryUrl`/`sitemap.xml.ts` 均输出尾斜杠，硬编码链接（404 页按钮、JSON-LD `url`）也带尾斜杠。原因：Cloudflare Pages 对目录型页面把不带斜杠的请求 308 重定向到带斜杠版本；默认 `"ignore"` 会让每个页面的 canonical 指向重定向 URL，Google Search Console 报"网页会自动重定向"并拖累收录。**新增内部链接必须带尾斜杠**（唯一例外：资源文件与首页 `/`）。
 17. **正文图片构建时解析（2026-08-31）**：新增 `src/utils/markdown-resolve-images.ts`（Sätteri raw 节点插件，经 `markdown.processor: satteri({ hastPlugins })` 注册），把正文原始 HTML 中 `<img src="./…">` 重写为 `__ASTRO_IMAGE_` 标记并加入 `localImagePaths`，由 Astro 原生内容图片管线（image-marker + `updateImageReferencesInBody`）在渲染期解析为哈希 webp URL；同时删除了 ProjectDetail 里旧的客户端图片修正（隐藏 div 图片表 + DOMContentLoaded 重写）。原因：浏览器解析 HTML 时先用相对路径发请求，Cloudflare Error Monitoring 报大量详情页图片 404；markdown 语法图片（`![](./x.png)`）本就走原生管线，只缺原始 HTML 图片。**关键坑**：① 插件随 astro.config 打包，配置 bundle 里 `import.meta.glob(eager)` 的图片值没有 astro:assets 处理（`.src` 是 `/src/content/...` 原始路径，生产 404），插件内只能使用 lazy glob 的**键**做存在性检查，绝不解析**值**；② Astro 内容层把渲染结果缓存于 `node_modules/.astro/data-store.json`（仅按文件摘要失效），改动 markdown 管线配置后须删除 `node_modules/.astro` 强制重渲（Cloudflare 从干净环境构建，部署不受影响）。
+18. **首页黑洞视频背景层（2026-09-09）**：用户要求首页暗色模式下叠层为「纯黑色背景 → 黑洞视频 → 星空 → 其他元素」，其他页面保持原样。实现方式：视频原样拷贝为 `public/media/blackhole.mp4`（1920×1080/60fps/约 5s/3.1MB，h264 yuv420p，**未转码**），`Layout` 新增 `blackhole` 布尔 prop，为 true 时在 `#starfield-canvas` **之前**插入 `#blackhole-layer`（`position: fixed; inset: 0; z-index: 0; background: #000; overflow: hidden`）内含 `<video autoplay muted loop playsinline preload="auto">`；三者同为 `z-index: 0`，因此**层序完全由 DOM 顺序决定**——若日后移动标记位置，层序会跟着变。只有三个首页传 `blackhole`。light 模式整层 `display: none`（保留复古网格）；`prefers-reduced-motion` 时脚本 `pause()` 只留首帧（不删除层，视觉构图不塌）。**渐入**：JS 立刻给层加 `.bh-fade`（`opacity: 0` + 0.35s 过渡），在视频 `loadeddata`/`canplay` 时加 `.is-ready` 淡入，避免首帧解码期间「闪一下」；无 JS 时 `#blackhole-layer:not(.bh-fade)` 的 `blackholeIn` 动画兜底，另有 1.5s 超时保护防止永久不可见。渐入时长在 global.css §10 的 `#blackhole-layer.bh-fade` 一处改。尺寸/位置用 `--blackhole-*` 自定义属性（x/y/width/height/scale/opacity，定义在 `#blackhole-layer` 内）+ `object-fit` 调节，注释写在 global.css §10。**`--blackhole-y` 线性跟随视口高度**：`calc(122px + 37.8vh)`。用用户现场 HUD 调出的两组真实数据拟合——视口高 562px（1080p 屏）时 59.5% = 334px，视口高 802px（2K 屏）时 53.0% = 425px（两点都在 0.1px 内复现）。**教训**：纯百分比（52%/60%）或按"屏幕分辨率"的假设都靠不住——用户两块屏的实际视口只有 562/802px（Windows 缩放 + 窗口非最大化），百分比会随窗口高度漂移；`clamp(52%, calc(345.6px + 28vh), 60%)` 和 `@media (min-height: 1200px)` 两档方案都因为假设视口≈屏幕分辨率而失效。以后调这个值，用 Layout 里那个 `?bhtune=1` 工具量真实数据。**桌面端限定**：`<video>` 不带 `autoplay`/`src`，改用 `data-src`，脚本只在 `min-width: 769px` 时挂载并播放，手机端既不显示也不下载（CSS 也加了 `@media (min-width: 769px)` 双保险）。**权衡**：`#blackhole-layer` 的纯黑底会盖住 `body::before` 的 hex grid（首页暗色模式下网格不可见），这是层序要求的直接结果；`body::after` 噪点与 `#crt-overlay`/`#tube-vignette` 仍在最上层，保持整机 CRT 质感。
+19. **星空每帧开销优化（2026-09-09，配合首页视频）**：`drawStar()` 原先每帧为每颗星新建径向渐变并拼接 4 个 rgba 字符串（500–1200 颗 × 60fps），实测 600 颗星约 3.0ms/帧，抢占主线程导致首页黑洞视频偶发掉帧。改为 `prepareStar()` 在首帧算好 `glow`（原点渐变）、`glowRadius`、`coreRadius`、`flare`、`alphaBase` 缓存到 `star.cache`，绘制时 `ctx.save(); ctx.translate(sx, sy)` 复用同一条渐变，alpha 改由 `globalAlpha` 承担（数学上与旧版逐 stop 乘 alpha 等价），实测降到约 0.9ms/帧，渲染结果不变。**注意**：缓存假设相机固定（`camYaw`/`camPitch` 恒为 0）；若日后恢复相机旋转，必须改为每帧重算或按帧失效。同批还加了：`#blackhole-video { will-change: transform }`（独占合成层）、标签页隐藏/切到亮色主题时暂停视频（省解码）。
 
 ---
 
@@ -360,7 +368,7 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 | 🟢   | ProjectCard 自建 routeMap              | 已修复（2026-08-14）：改用 `buildEntryUrl(project, project.data.lang)`，行为等价，与 `typeToRoute` 单一来源对齐。                                                                                     |
 | 🟡   | Hero 终端被隐藏（实验状态）            | global.css §14。用户尚未决定保留还是恢复。改首页 Hero 视觉时勿被"终端不见了"误导。                                                                                                                    |
 | 🟡   | 神经网络背景被星空短暂替换（实验状态） | `#starfield-canvas` 3D 星空在 Layout.astro 激活；原 `#neural-canvas` 脚本被禁用保留，回退方式：`<html data-neural="enabled">`（神经网络）/ `data-star-version="2d"`（早期 2D 星空）。用户尚未决定是否删除神经网络。 |
-| 🔴   | 黑洞背景移植（未来计划）              | 用户已下载 `输入/Shadertoy - Kerr Newman Black Hole`（Buffer A/B/C/D/Image，克尔-纽曼黑洞实时渲染 + 拟真星空背景），计划在本次星空效果确认后移植为背景；当前不实现。 |
+| 🟢   | 首页黑洞背景（已实现，视频版）        | 2026-09-09 完成：首页暗色模式用 `输入/黑洞动画 - AI 插帧.mp4`（拷贝为 `public/media/blackhole.mp4`）作最底层视频，叠层「纯黑 → 视频 → 星空 → 内容」，见 §9 决策 18。`输入/Shadertoy - Kerr Newman Black Hole` 的实时着色器版本**仍未移植**，作为可选升级保留；若日后移植，只需把 `#blackhole-video` 换成 canvas，`#blackhole-layer` 的层序与调参变量不动。 |
 | 🟡   | ArtGallery 是死代码 + gallery 双实现   | 详情模板的 art 分支不可达（getStaticPaths 过滤 art）；实际 art 展示由两个冻结的 art 页各自实现的 marquee/lightbox 承担。两套实现并存且 en/zh 版还有细节差异。受冻结政策约束，**动它们需要用户解冻**。 |
 | 🟢   | zh/notes 页未用翻译键                  | 已修复（2026-08-14）：改用 `t.sections.notes.*`，zh 翻译描述补句号与 en 对齐。两版样式覆盖的细微漂移仍存在，见 🔴 清单。                                                                              |
 | 🟡   | about 页多文件臃肿且实现漂移           | en/zh/nl 三份独立实现（各 ~4000+ 行），canvas 动画脚本三份维护，动画参数与样式有独立差异。重构（共享模板）需要用户同意;这是当前最大的维护成本点。                                                     |
@@ -386,6 +394,7 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | 改首页 Hero / 恢复终端       | `src/components/home/Hero.astro` + `src/styles/global.css` §14（删除隐藏规则）                                          |
 | 改背景星空 / 恢复神经网络      | `src/layouts/Layout.astro`（`#starfield-canvas` + 3D 星空脚本；神经网络恢复设 `data-neural="enabled"`）+ `src/styles/global.css` §10 |
+| 改首页黑洞视频 / 位置大小      | `src/styles/global.css` §10 `#blackhole-layer` 里的 `--blackhole-*` 变量（x/width/height/scale/opacity 是固定值，**y 是 `calc(122px + 37.8vh)`，按用户实测两点拟合**）+ `#blackhole-video` 的 `object-fit`；换视频改 `public/media/blackhole.mp4`（markup 里是 `data-src`，换路径改 Layout.astro）；关掉黑洞=去掉三个首页 `<Layout>` 的 `blackhole` prop；手机端开关=Layout 脚本的 `min-width: 769px` 与 global.css §10 同名媒体查询 |
 | 改首页精选项目               | `src/pages/index.astro`、`zh/index.astro`、`nl/index.astro` 的 `featuredKeys`                                           |
 | 改首页 SYS.LOG 规则          | `src/pages/index.astro`（zh 同）frontmatter `latestEntries` 逻辑                                                        |
 | 改导航 / 语言切换 / 主题按钮 | `src/components/Navbar.astro`                                                                                           |
