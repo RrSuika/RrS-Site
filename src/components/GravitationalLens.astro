@@ -1,0 +1,1453 @@
+---
+import { getLanguageFromPath } from "../utils/i18n";
+import { getTranslations } from "../utils/translations";
+
+/**
+ * GRAVITATIONAL LENS — homepage starfield (dark mode + desktop only).
+ *
+ * Replaces the celestial #starfield-canvas on the three homepages while the
+ * black-hole video is active. Stars form ONE continuous inward stream: each
+ * star is born near the outer edge of the field and falls monotonically
+ * toward the black hole, never stopping until it dies at the ring.
+ *
+ *   OUTER   rMid <= r < rOuter very slow radial drift
+ *   MIDDLE  rInner <= r < rMid  faster drift (smoothstep ramp across rMid)
+ *   INNER   rRing  <= r < rInner slows down the closer it gets to the ring
+ *   BLACK   r < rRing            the star died at the ring and respawned;
+ *                                nothing is drawn inside — the video's black
+ *                                disc shows through as pure black
+ *   DISK    diskInner ≤ rDraw < diskOuter  not drawn — the video's accretion
+ *                                disk sits above the starfield and occludes
+ *                                these stars; they keep falling invisibly and
+ *                                reappear inside diskInner, briefly, before
+ *                                fading out at the black-hole ring
+ *   BAND    rRing < rDraw <= rRing + photonBand  circular band of tiny, bright
+ *                                stars (the lensed background piling up just
+ *                                outside the ring); these stay circular instead
+ *                                of taking the tangential lens stretch
+ *
+ * Stars also spiral clockwise as they fall inward (--lens-swirl, scaled by
+ * rRing/r so the rotation tightens towards the black hole). A screen-space
+ * gravitational-lens approximation pushes stars outward and
+ * stretches them tangentially as they approach the ring (except inside the
+ * photon band, where they stay circular), then fades them out so they vanish
+ * right at the black-hole outer ring.
+ *
+ * Because the inward flux is constant, steady-state density is ∝ 1/speed:
+ * respawns sample a numeric CDF with that weight, so the field is at its
+ * steady state from the first frame and there are no boundary seams.
+ *
+ * MANUAL TUNING
+ *   All knobs are CSS custom properties on #lens-canvas (global.css §10).
+ *   Press ` (backtick) — or open a homepage with ?lens=tune — to show the
+ *   keyboard tuner: 1–0 / TAB pick a target, arrows move it, C copies the
+ *   tuned values back as CSS for global.css.
+ */
+
+const language = getLanguageFromPath(Astro.url.pathname);
+const lensTune = getTranslations(language).lensTune;
+
+---
+
+<canvas id="lens-canvas" aria-hidden="true"></canvas>
+<div id="lens-tune-l10n" data-json={JSON.stringify(lensTune)} hidden></div>
+
+<script is:inline>
+  // Synchronous gate: hide the celestial starfield before any module script
+  // runs so it never paints underneath the lens for a frame.
+  (() => {
+    if (
+      document.getElementById("lens-canvas") &&
+      window.matchMedia("(min-width: 769px)").matches &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
+      document.documentElement.getAttribute("data-theme") !== "light"
+    ) {
+      document.documentElement.setAttribute("data-lens", "on");
+    }
+  })();
+</script>
+
+<script>
+  (() => {
+    const canvasNode = document.getElementById(
+      "lens-canvas",
+    ) as HTMLCanvasElement | null;
+    if (!canvasNode) return;
+    // Non-null aliases: TS narrows consts only up to the first function
+    // declaration (they hoist), so everything below uses these plain types.
+    const canvas = canvasNode;
+    const ctxRaw = canvas.getContext("2d", { alpha: true });
+    if (!ctxRaw) return;
+    const ctx = ctxRaw;
+
+    const root = document.documentElement;
+    const DESKTOP = window.matchMedia("(min-width: 769px)");
+    const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const TAU = Math.PI * 2;
+
+    /* Tuner copy, localised per page language (emitted by the frontmatter
+       into #lens-tune-l10n; falls back to English if that element is gone). */
+    const L10N = (() => {
+      try {
+        const raw = document.getElementById("lens-tune-l10n")?.dataset.json;
+        if (raw) return JSON.parse(raw) as Record<string, any>;
+      } catch (_) {
+        /* fall through */
+      }
+      return {
+        title: "GRAVITATIONAL LENS // TUNE",
+        groups: {},
+        labels: {},
+        desc: {},
+        keysDual: "←→ first axis · ↑↓ second axis",
+        keysSingle: "←→ / ↑↓ value",
+        footer: "",
+        inactive: "LENS INACTIVE",
+        copy: "COPY",
+        copied: "COPIED",
+        copyBlocked: "COPY BLOCKED",
+        reset: "RESET",
+        keyPrefix: "KEY",
+        escClose: "ESC close",
+        debug: {
+          outerEdge: "OUTER EDGE",
+          outerMid: "OUTER / MIDDLE",
+          midInner: "MIDDLE / INNER",
+          ring: "BLACK-HOLE RING",
+          diskInner: "DISK INNER",
+          diskOuter: "DISK OUTER",
+          photonBand: "PHOTON BAND",
+        },
+        off: "off",
+      } as Record<string, any>;
+    })();
+
+    /* ══════════════════════════════════════════════════════════════
+       1. SPECTRAL PALETTE — same families as the site starfield
+    ═══════════════════════════════════════════════════════════════ */
+    const COLORS = [
+      "rgb(120, 160, 255)",
+      "rgb(170, 200, 255)",
+      "rgb(210, 220, 250)",
+      "rgb(255, 255, 255)",
+      "rgb(255, 230, 185)",
+      "rgb(255, 210, 130)",
+      "rgb(255, 160, 85)",
+      "rgb(255, 110, 70)",
+      "rgb(230, 70, 60)",
+    ];
+    const WEIGHTS = [12, 12, 8, 3, 8, 12, 14, 10, 5];
+    const PALETTE: string[] = [];
+    COLORS.forEach((color, i) => {
+      const w = WEIGHTS[i] ?? 1;
+      for (let k = 0; k < w; k++) PALETTE.push(color);
+    });
+    const RGB = new Map<string, [number, number, number]>();
+    COLORS.forEach((color) => {
+      const m = color.match(/\d+/g) ?? ["255", "255", "255"];
+      RGB.set(color, [Number(m[0]), Number(m[1]), Number(m[2])]);
+    });
+
+    /* ══════════════════════════════════════════════════════════════
+       2. CONFIG — every knob is a unitless CSS custom property
+    ═══════════════════════════════════════════════════════════════ */
+    const FALLBACK = {
+      cx: 0.7658, // lens centre X, fraction of viewport width
+      cyPx: 122, // lens centre Y = this px offset…
+      cyVh: 0.4358, // …plus this fraction of viewport height (mirrors --blackhole-y)
+      rOuter: 1.7, // outer edge of the field, × viewport height
+      rMid: 0.69, // outer / middle boundary
+      rInner: 0.4, // middle / inner boundary
+      rRing: 0.25, // black-hole outer ring — inside = pure black
+      diskInnerW: 0.285, // inner ellipse half-width, × viewport height
+      diskInnerH: 0.276, // inner ellipse half-height (independent of the outer)
+      diskOuterW: 0.48, // outer ellipse half-width
+      diskOuterH: 0.39, // outer ellipse half-height
+      diskTilt: -15, // ellipse rotation in degrees (negative = right side up)
+      diskDx: 0, // disk centre offset X, × viewport height
+      diskDy: 0, // disk centre offset Y, × viewport height (negative = up)
+      diskFeather: 0.03, // edge fade band, × viewport height
+      speedOuter: 0.02, // viewport heights per second
+      speedMid: 0.03,
+      innerEase: 6, // how sharply the inner segment slows near the ring
+      bulge: 0.01, // lensing push-out at the ring, × viewport height
+      stretch: 3.4, // tangential stretch at the ring (1 = none)
+      swirl: 0.08, // clockwise spiral drift at the ring, rad / s
+      density: 1.5, // star-count multiplier
+      gapBoost: 8, // brightness boost for the circular ring band
+      photonBand: 0.025, // width of that band, × viewport height (keep it inside
+      // the disk's inner ellipse so the band stays a circle)
+      photonSize: 0.45, // star-size multiplier inside that band
+    };
+    type Cfg = typeof FALLBACK;
+    let cfg: Cfg = { ...FALLBACK };
+
+    const readNum = (cs: CSSStyleDeclaration, name: string, fb: number) => {
+      const v = parseFloat(cs.getPropertyValue(name));
+      return Number.isFinite(v) ? v : fb;
+    };
+
+    function readCfg() {
+      const cs = getComputedStyle(canvas);
+      const f = FALLBACK;
+      cfg = {
+        cx: readNum(cs, "--lens-cx", f.cx),
+        cyPx: readNum(cs, "--lens-cy-px", f.cyPx),
+        cyVh: readNum(cs, "--lens-cy-vh", f.cyVh),
+        rOuter: readNum(cs, "--lens-r-outer", f.rOuter),
+        rMid: readNum(cs, "--lens-r-mid", f.rMid),
+        rInner: readNum(cs, "--lens-r-inner", f.rInner),
+        rRing: readNum(cs, "--lens-r-ring", f.rRing),
+        diskInnerW: readNum(cs, "--lens-disk-inner-w", f.diskInnerW),
+        diskInnerH: readNum(cs, "--lens-disk-inner-h", f.diskInnerH),
+        diskOuterW: readNum(cs, "--lens-disk-outer-w", f.diskOuterW),
+        diskOuterH: readNum(cs, "--lens-disk-outer-h", f.diskOuterH),
+        diskTilt: readNum(cs, "--lens-disk-tilt", f.diskTilt),
+        diskDx: readNum(cs, "--lens-disk-dx", f.diskDx),
+        diskDy: readNum(cs, "--lens-disk-dy", f.diskDy),
+        diskFeather: readNum(cs, "--lens-disk-feather", f.diskFeather),
+        speedOuter: readNum(cs, "--lens-speed-outer", f.speedOuter),
+        speedMid: readNum(cs, "--lens-speed-mid", f.speedMid),
+        innerEase: readNum(cs, "--lens-inner-ease", f.innerEase),
+        bulge: readNum(cs, "--lens-bulge", f.bulge),
+        stretch: readNum(cs, "--lens-stretch", f.stretch),
+        swirl: readNum(cs, "--lens-swirl", f.swirl),
+        density: readNum(cs, "--lens-density", f.density),
+        gapBoost: readNum(cs, "--lens-gap-boost", f.gapBoost),
+        photonBand: readNum(cs, "--lens-photon-band", f.photonBand),
+        photonSize: readNum(cs, "--lens-photon-size", f.photonSize),
+      };
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       3. GEOMETRY
+    ═══════════════════════════════════════════════════════════════ */
+    let W = 0;
+    let H = 0;
+    let DPR = 1;
+    let cx = 0;
+    let cy = 0;
+    let rRing = 0;
+    let rInner = 0;
+    let rMid = 0;
+    let rOuter = 0;
+    let diskInnerW = 0;
+    let diskInnerH = 0;
+    let diskOuterW = 0;
+    let diskOuterH = 0;
+    let diskCos = 1;
+    let diskSin = 0;
+    let diskDx = 0; // disk centre offset from the lens centre, px
+    let diskDy = 0;
+    let diskFeather = 10;
+    let photonOuter = 0; // rRing + photon-band width, px
+    let farCorner = 0;
+
+    // Boundary radii + fade bands + speed-ramp widths, filled by geometry().
+    // Stars are one continuous stream (see the header comment): these are the
+    // speed-segment boundaries along the way, not per-layer population loops.
+    let fRing = 0; // fade-out band before the ring, px (alpha 1 → 0 at rRing)
+    let fFar = 0; // fade-in band under the outer rim, px
+    let rampW = 0; // smoothstep ramp width across the rMid speed change, px
+
+    const clamp = (v: number, lo: number, hi: number) =>
+      v < lo ? lo : v > hi ? hi : v;
+
+    function geometry() {
+      cx = cfg.cx * W;
+      cy = cfg.cyPx + cfg.cyVh * H;
+      const s = H;
+      rRing = Math.max(2, cfg.rRing * s);
+      rInner = Math.max(rRing + 4, cfg.rInner * s);
+      rMid = Math.max(rInner + 4, cfg.rMid * s);
+      rOuter = Math.max(rMid + 4, cfg.rOuter * s);
+      // Accretion-disk annulus: a rotated ellipse. Each edge has its own
+      // half-width and half-height, so the two rings are independent.
+      diskInnerW = Math.max(rRing + 2, cfg.diskInnerW * s);
+      diskInnerH = Math.max(2, cfg.diskInnerH * s);
+      diskOuterW = Math.max(diskInnerW + 2, cfg.diskOuterW * s);
+      diskOuterH = Math.max(diskInnerH + 2, cfg.diskOuterH * s);
+      const tilt = (cfg.diskTilt * Math.PI) / 180;
+      diskCos = Math.cos(tilt);
+      diskSin = Math.sin(tilt);
+      diskDx = cfg.diskDx * s;
+      diskDy = cfg.diskDy * s;
+      diskFeather = Math.max(1, cfg.diskFeather * s);
+      // The band must stay a CIRCLE, so cap it at the disk's inner vertical
+      // half-axis minus the disk offset (a circle of that radius always fits
+      // inside the inner ellipse, whatever the tilt).
+      const bandMax = diskInnerH - Math.hypot(diskDx, diskDy);
+      photonOuter = Math.min(
+        rRing + Math.max(2, cfg.photonBand * s),
+        Math.max(rRing + 2, bandMax),
+      );
+
+      farCorner = Math.hypot(
+        Math.max(cx, W - cx),
+        Math.max(cy, H - cy),
+      );
+
+      const slowSpan = Math.max(1, rOuter - rMid);
+      const midSpan = Math.max(1, rMid - rInner);
+      const inSpan = Math.max(1, rInner - rRing);
+
+      // One continuous stream: fade in just under the outer rim, fade out in
+      // the last stretch before the ring, and ease the outer→middle speed
+      // change across a smoothstep ramp instead of a hard line.
+      fFar = clamp(slowSpan * 0.12, 24, 160);
+      fRing = clamp(inSpan * 0.38, 10, 90);
+      rampW = clamp(Math.min(slowSpan, midSpan) * 0.12, 12, 80);
+      buildSpawn();
+    }
+
+    function measure() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      DPR = Math.min(window.devicePixelRatio || 1, 1.5);
+      canvas.width = Math.max(1, Math.floor(W * DPR));
+      canvas.height = Math.max(1, Math.floor(H * DPR));
+      canvas.style.width = `${W}px`;
+      canvas.style.height = `${H}px`;
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      geometry();
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       4. STARS
+    ═══════════════════════════════════════════════════════════════ */
+    type Star = {
+      r: number; // distance from the lens centre, px
+      a: number; // angle around the centre, rad
+      size: number;
+      color: string;
+      bright: boolean;
+      tws: number;
+      twp: number;
+      base: number;
+      birth: number;
+    };
+    let stars: Star[] = [];
+
+    /* ── Radial spawn sampling ─────────────────────────────────────
+       Every star falls monotonically from the outer rim to the ring, so the
+       inward flux is constant and the steady-state density is ∝ 1/speed.
+       Respawns sample a numeric CDF with that weight over
+       [rRing + fRing, rOuter] (past the ring fade-out tail), which puts the
+       field at its steady state from the first frame — no settling waves,
+       no boundary seams. Built in geometry(); used by respawn(). */
+    const SPAWN_N = 512;
+    const cdfR: number[] = new Array(SPAWN_N + 1);
+    const cdfC: number[] = new Array(SPAWN_N + 1);
+    let spawnMin = 0;
+    let spawnTotal = 0;
+
+    function buildSpawn() {
+      spawnMin = Math.max(1, rRing + fRing);
+      const hi = Math.max(spawnMin + 1, rOuter);
+      const dr = (hi - spawnMin) / SPAWN_N;
+      let acc = 0;
+      cdfR[0] = spawnMin;
+      cdfC[0] = 0;
+      for (let i = 0; i < SPAWN_N; i++) {
+        const r = spawnMin + (i + 0.5) * dr;
+        acc += dr / Math.max(speedAt(r), 1e-3); // density ∝ 1/v
+        cdfR[i + 1] = spawnMin + (i + 1) * dr;
+        cdfC[i + 1] = acc;
+      }
+      spawnTotal = acc;
+    }
+
+    function sampleR(): number {
+      if (spawnTotal <= 0) return spawnMin;
+      const u = Math.random() * spawnTotal;
+      let lo = 0;
+      let hi = SPAWN_N;
+      while (hi - lo > 1) {
+        const m = (lo + hi) >> 1;
+        if (cdfC[m] < u) lo = m;
+        else hi = m;
+      }
+      const t = (u - cdfC[lo]) / Math.max(cdfC[hi] - cdfC[lo], 1e-12);
+      return cdfR[lo] + t * (cdfR[hi] - cdfR[lo]);
+    }
+
+    function starCount() {
+      const area = W * H;
+      const base = clamp(Math.floor(area / 1600), 180, 1400);
+      return Math.max(60, Math.round(base * cfg.density));
+    }
+
+    function makeStar(): Star {
+      const color = PALETTE[(Math.random() * PALETTE.length) | 0];
+      const bright = Math.random() < 0.08;
+      return {
+        r: 0,
+        a: Math.random() * TAU,
+        size: bright ? 1.9 + Math.random() * 1.3 : 0.7 + Math.random() * 0.9,
+        color,
+        bright,
+        tws: 0.35 + Math.random() * 2.0,
+        twp: Math.random() * TAU,
+        base: bright ? 0.95 : 0.5 + Math.random() * 0.3,
+        birth: 0,
+      };
+    }
+
+    // Spawn a star somewhere on its way in (steady-state density profile),
+    // then let it drift. Respawned stars fade in over ~1.2 s so the recycle
+    // never pops.
+    function respawn(s: Star, initial = false) {
+      s.r = sampleR();
+      s.a = Math.random() * TAU;
+      s.birth = initial ? 2 : 0;
+    }
+
+    function initStars() {
+      const n = starCount();
+      stars = [];
+      for (let i = 0; i < n; i++) {
+        const s = makeStar();
+        respawn(s, true);
+        stars.push(s);
+      }
+    }
+
+    function reclamp() {
+      // Rebuild when the density knob changes the target count; cheap and
+      // predictable. Respawn anything a knob moved outside the field.
+      if (Math.abs(stars.length - starCount()) > 4) {
+        initStars();
+        return;
+      }
+      for (const s of stars) {
+        if (s.r > rOuter || s.r < rRing) respawn(s);
+      }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       5. PHYSICS — radial speed in viewport heights / second.
+       One profile for every star: speedOuter in the far field, blended to
+       speedMid by a smoothstep ramp centred on rMid (half-width rampW on
+       each side), then easing down toward 20 % at the ring.
+    ═══════════════════════════════════════════════════════════════ */
+    function speedAt(r: number) {
+      if (r >= rMid + rampW) return cfg.speedOuter;
+      if (r > rInner) {
+        // Flat speedMid stretch below the ramp.
+        if (r <= rMid - rampW) return cfg.speedMid;
+        const b = clamp((r - (rMid - rampW)) / (2 * rampW), 0, 1);
+        const e = b * b * (3 - 2 * b); // smoothstep across the ramp
+        return cfg.speedMid + (cfg.speedOuter - cfg.speedMid) * e;
+      }
+      // Inner stretch: full speed at rInner (t = 1 → speedMid, continuous),
+      // easing down to 20 % right at the ring.
+      const span = Math.max(1, rInner - rRing);
+      const t = clamp((r - rRing) / span, 0, 1);
+      return cfg.speedMid * (0.2 + 0.8 * Math.pow(t, cfg.innerEase));
+    }
+
+    let time = 0;
+
+    function update(dt: number) {
+      for (let i = 0; i < stars.length; i++) {
+        const s = stars[i];
+        s.birth += dt;
+        if (cfg.swirl !== 0) {
+          s.a += cfg.swirl * (rRing / Math.max(s.r, rRing)) * dt;
+        }
+        s.r -= speedAt(s.r) * H * dt;
+        if (s.r <= rRing) respawn(s);
+      }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       6. RENDER
+    ═══════════════════════════════════════════════════════════════ */
+    const gradCache = new Map<string, CanvasGradient>();
+
+    function gradFor(color: string) {
+      let g = gradCache.get(color);
+      if (g) return g;
+      const rgb = RGB.get(color) ?? [255, 255, 255];
+      const r = rgb[0];
+      const gg = rgb[1];
+      const b = rgb[2];
+      g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+      g.addColorStop(0, `rgba(${r},${gg},${b},1)`);
+      g.addColorStop(0.14, `rgba(${r},${gg},${b},0.85)`);
+      g.addColorStop(0.42, `rgba(${r},${gg},${b},0.24)`);
+      g.addColorStop(0.72, `rgba(${r},${gg},${b},0.05)`);
+      g.addColorStop(1, `rgba(${r},${gg},${b},0)`);
+      gradCache.set(color, g);
+      return g;
+    }
+
+    // Gravitational-lens profile: 1 at the black-hole ring, 0 at rInner.
+    function lensProfile(r: number) {
+      if (r >= rInner) return 0;
+      const span = Math.max(1, rInner - rRing);
+      const k = 1 - clamp((r - rRing) / span, 0, 1);
+      return k * k;
+    }
+
+    // Accretion-disk mask. The video's disk is a rotated, squashed ellipse
+    // annulus whose centre sits above the black hole, so its lower half is
+    // smaller and stars survive longer there. Returns 1 for a star clear of
+    // the disk, fading to 0 as it reaches the edge, and 0 inside the annulus.
+    function diskMaskAlpha(sx: number, sy: number) {
+      const dx = sx - (cx + diskDx);
+      const dy = sy - (cy + diskDy);
+      // Rotate the point into the ellipse's local frame.
+      const lx = dx * diskCos + dy * diskSin;
+      const ly = -dx * diskSin + dy * diskCos;
+
+      const ox = lx / diskOuterW;
+      const oy = ly / diskOuterH;
+      const tOut = Math.sqrt(ox * ox + oy * oy);
+      // Outside the outer ellipse: fade out as it approaches the edge.
+      const dOut = (tOut - 1) * ((diskOuterW + diskOuterH) / 2);
+      if (dOut >= 0) return clamp(dOut / diskFeather, 0, 1);
+
+      const ix = lx / diskInnerW;
+      const iy = ly / diskInnerH;
+      const tIn = Math.sqrt(ix * ix + iy * iy);
+      // Inside the inner ellipse: fade back in away from the inner edge.
+      const dIn = (1 - tIn) * ((diskInnerW + diskInnerH) / 2);
+      if (dIn > 0) return clamp(dIn / diskFeather, 0, 1);
+
+      return 0; // inside the annulus → fully hidden
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      const bulgePx = cfg.bulge * H;
+      const stretchMax = Math.max(1, cfg.stretch);
+
+      for (let i = 0; i < stars.length; i++) {
+        const s = stars[i];
+        const r = s.r;
+
+        // Lens: push outward + stretch tangentially near the ring.
+        const p = lensProfile(r);
+        const rDraw = r + bulgePx * p;
+        // Hard floor: nothing may be drawn inside the black-hole ring, even if a
+        // negative --lens-bulge pushes a star inward past it.
+        if (rDraw <= rRing) continue;
+
+        const ca = Math.cos(s.a);
+        const sa = Math.sin(s.a);
+        const sx = cx + rDraw * ca;
+        const sy = cy + rDraw * sa;
+        if (sx < -90 || sx > W + 90 || sy < -90 || sy > H + 90) continue;
+
+        // The video's accretion disk sits above the starfield: fade a star out
+        // at the disk edge rather than cutting it, and keep it hidden inside.
+        const diskFade = diskMaskAlpha(sx, sy);
+        if (diskFade <= 0.002) continue;
+
+        // Alpha: fade in just under the outer rim, fade out before the ring,
+        // plus respawn fade + twinkle + lens boost.
+        let edge = (rOuter - r) / fFar;
+        const ring = (r - rRing) / fRing;
+        if (ring < edge) edge = ring;
+        edge = clamp(edge, 0, 1);
+        const birth = clamp(s.birth / 1.2, 0, 1);
+        const tw = 0.68 + 0.32 * Math.sin(time * s.tws + s.twp);
+
+        // The thin circular band just outside the black-hole ring is where the
+        // lensed background piles up: draw those stars smaller + brighter so the
+        // band reads as a dense ring of tiny circular stars.
+        const inBand = rDraw <= photonOuter;
+        const bandAlpha = inBand ? cfg.gapBoost : 1;
+        const bandSize = inBand ? cfg.photonSize : 1;
+        let alpha = s.base * tw * edge * birth * (1 + 0.9 * p) * diskFade * bandAlpha;
+        if (alpha <= 0.004) continue;
+        if (alpha > 1) alpha = 1;
+
+        // Band stars stay circular (the user asked for a circular ring of tiny
+        // stars, not the tangential smear the lensing applies further out).
+        const stretch = inBand ? 1 : 1 + (stretchMax - 1) * p;
+        const size = s.size * (1 + 0.45 * p) * bandSize;
+        // Band stars are genuinely tiny: their glow shrinks with the band-size
+        // multiplier (the ring-gap brightness boost keeps them readable).
+        const glowR = Math.max(size * 3.0, 3.8 * bandSize);
+        const coreR = Math.max(0.42, size * 0.8);
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.translate(sx, sy);
+        ctx.rotate(s.a);
+        ctx.scale(1, stretch);
+
+        // Soft glow (cached unit gradient, scaled).
+        ctx.save();
+        ctx.scale(glowR, glowR);
+        ctx.fillStyle = gradFor(s.color);
+        ctx.beginPath();
+        ctx.arc(0, 0, 1, 0, TAU);
+        ctx.fill();
+        ctx.restore();
+
+        // Bright core so stars stay point sources, not fuzzy discs.
+        ctx.fillStyle = s.color;
+        ctx.beginPath();
+        ctx.arc(0, 0, coreR, 0, TAU);
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      if (tuneOn && showRings) drawDebug();
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       7. DEBUG OVERLAY (only while tuning)
+    ═══════════════════════════════════════════════════════════════ */
+    function drawDebug() {
+      const rings: [number, string, string][] = [
+        [rOuter, "rgba(110, 190, 255, 0.55)", L10N.debug.outerEdge],
+        [rMid, "rgba(255, 205, 110, 0.55)", L10N.debug.outerMid],
+        [rInner, "rgba(255, 125, 195, 0.55)", L10N.debug.midInner],
+        [rRing, "rgba(255, 80, 80, 0.9)", L10N.debug.ring],
+      ];
+
+      ctx.save();
+      ctx.font = "11px ui-monospace, SFMono-Regular, Menlo, monospace";
+      ctx.textBaseline = "middle";
+      ctx.lineWidth = 1;
+
+      // Faint fill of the hidden accretion-disk annulus (rotated ellipse).
+      const dcx = cx + diskDx;
+      const dcy = cy + diskDy;
+      const dtilt = Math.atan2(diskSin, diskCos);
+      ctx.fillStyle = "rgba(255, 150, 60, 0.06)";
+      ctx.beginPath();
+      ctx.ellipse(dcx, dcy, diskOuterW, diskOuterH, dtilt, 0, TAU);
+      ctx.ellipse(dcx, dcy, diskInnerW, diskInnerH, dtilt, 0, TAU, true);
+      ctx.fill();
+
+      // Disk boundary ellipses + labels (rightmost point of each ellipse).
+      ctx.strokeStyle = "rgba(255, 150, 60, 0.85)";
+      ctx.fillStyle = "rgba(255, 150, 60, 0.85)";
+      for (const [rw, rh, label] of [
+        [diskInnerW, diskInnerH, L10N.debug.diskInner],
+        [diskOuterW, diskOuterH, L10N.debug.diskOuter],
+      ] as [number, number, string][]) {
+        ctx.setLineDash([6, 7]);
+        ctx.beginPath();
+        ctx.ellipse(dcx, dcy, rw, rh, dtilt, 0, TAU);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillText(label, dcx + rw * diskCos + 8, dcy + rw * diskSin);
+      }
+
+
+      // Photon band: the circular outer edge of the tiny-star ring.
+      if (photonOuter > rRing) {
+        ctx.setLineDash([3, 5]);
+        ctx.strokeStyle = "rgba(120, 255, 210, 0.75)";
+        ctx.beginPath();
+        ctx.arc(cx, cy, photonOuter, 0, TAU);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = "rgba(120, 255, 210, 0.85)";
+        const bang = -Math.PI * 0.75;
+        ctx.fillText(
+          L10N.debug.photonBand,
+          cx + photonOuter * Math.cos(bang) + 6,
+          cy + photonOuter * Math.sin(bang),
+        );
+      }
+
+
+      for (const [rad, color, label] of rings) {
+        if (rad <= 0) continue;
+        ctx.setLineDash([6, 7]);
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.arc(cx, cy, rad, 0, TAU);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = color;
+        ctx.fillText(label, cx + rad + 8, cy);
+      }
+
+      // Centre crosshair
+      ctx.setLineDash([]);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+      const L = 15;
+      ctx.beginPath();
+      ctx.moveTo(cx - L, cy);
+      ctx.lineTo(cx + L, cy);
+      ctx.moveTo(cx, cy - L);
+      ctx.lineTo(cx, cy + L);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx, cy, 5, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       8. RUN / STOP
+    ═══════════════════════════════════════════════════════════════ */
+    let running = false;
+    let rafId = 0;
+    let lastT = 0;
+
+    function loop(now: number) {
+      if (!running) {
+        rafId = 0;
+        return;
+      }
+      rafId = requestAnimationFrame(loop);
+      if (!lastT) lastT = now;
+      let dt = (now - lastT) / 1000;
+      lastT = now;
+      if (!(dt > 0)) dt = 1 / 60;
+      if (dt > 0.05) dt = 0.05;
+      time += dt;
+      update(dt);
+      draw();
+    }
+
+    function shouldRun() {
+      return (
+        DESKTOP.matches &&
+        !REDUCED.matches &&
+        root.getAttribute("data-theme") !== "light"
+      );
+    }
+
+    function start() {
+      if (running) return;
+      readCfg();
+      running = true;
+      root.setAttribute("data-lens", "on");
+      measure();
+      initStars();
+      lastT = 0;
+      rafId = requestAnimationFrame(loop);
+      if (tuneOn) renderHud();
+    }
+
+    function stop() {
+      const wasRunning = running;
+      running = false;
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = 0;
+      root.removeAttribute("data-lens");
+      if (wasRunning) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      if (tuneOn) renderHud();
+    }
+
+    function sync() {
+      if (shouldRun()) start();
+      else stop();
+    }
+
+    // Re-read the CSS knobs, then rebuild geometry and re-clamp the field.
+    function refresh() {
+      readCfg();
+      if (!running) return;
+      geometry();
+      reclamp();
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       9. KEYBOARD TUNER
+       Press ` (backtick) or Ctrl+Alt+G, or load ?lens=tune.
+       Everything it changes is written to inline custom properties and
+       saved to localStorage, so tuning survives a reload. C copies the
+       current values back as CSS for global.css §10.
+    ═══════════════════════════════════════════════════════════════ */
+    type Knob = {
+      prop: string;
+      step: number;
+      min: number;
+      max: number;
+      digits: number;
+      unit?: "vh" | "px";
+    };
+    const KNOB: Record<string, Knob> = {
+      cx: { prop: "--lens-cx", step: 0.002, min: -0.5, max: 1.5, digits: 3 },
+      cyVh: { prop: "--lens-cy-vh", step: 0.002, min: -0.5, max: 1.5, digits: 3 },
+      cyPx: { prop: "--lens-cy-px", step: 4, min: -600, max: 1200, digits: 0, unit: "px" },
+      rOuter: { prop: "--lens-r-outer", step: 0.01, min: 0.05, max: 2.5, digits: 3, unit: "vh" },
+      rMid: { prop: "--lens-r-mid", step: 0.01, min: 0.05, max: 2.5, digits: 3, unit: "vh" },
+      rInner: { prop: "--lens-r-inner", step: 0.01, min: 0.02, max: 2.5, digits: 3, unit: "vh" },
+      rRing: { prop: "--lens-r-ring", step: 0.005, min: 0.005, max: 2.5, digits: 3, unit: "vh" },
+      diskInnerW: { prop: "--lens-disk-inner-w", step: 0.005, min: 0.01, max: 2.5, digits: 3, unit: "vh" },
+      diskInnerH: { prop: "--lens-disk-inner-h", step: 0.005, min: 0.01, max: 2.5, digits: 3, unit: "vh" },
+      diskOuterW: { prop: "--lens-disk-outer-w", step: 0.005, min: 0.02, max: 2.5, digits: 3, unit: "vh" },
+      diskOuterH: { prop: "--lens-disk-outer-h", step: 0.005, min: 0.02, max: 2.5, digits: 3, unit: "vh" },
+      diskTilt: { prop: "--lens-disk-tilt", step: 1, min: -90, max: 90, digits: 1 },
+      diskDx: { prop: "--lens-disk-dx", step: 0.005, min: -1, max: 1, digits: 3, unit: "vh" },
+      diskDy: { prop: "--lens-disk-dy", step: 0.005, min: -1, max: 1, digits: 3, unit: "vh" },
+      diskFeather: { prop: "--lens-disk-feather", step: 0.002, min: 0, max: 0.5, digits: 3, unit: "vh" },
+      speedOuter: { prop: "--lens-speed-outer", step: 0.002, min: 0, max: 2, digits: 3 },
+      speedMid: { prop: "--lens-speed-mid", step: 0.005, min: 0, max: 3, digits: 3 },
+      innerEase: { prop: "--lens-inner-ease", step: 0.05, min: 0.2, max: 12, digits: 2 },
+      bulge: { prop: "--lens-bulge", step: 0.002, min: -0.3, max: 0.6, digits: 3, unit: "vh" },
+      stretch: { prop: "--lens-stretch", step: 0.1, min: 1, max: 14, digits: 2 },
+      swirl: { prop: "--lens-swirl", step: 0.005, min: -2, max: 2, digits: 3 },
+      density: { prop: "--lens-density", step: 0.05, min: 0.1, max: 3, digits: 2 },
+      gapBoost: { prop: "--lens-gap-boost", step: 0.25, min: 1, max: 12, digits: 2 },
+      photonBand: { prop: "--lens-photon-band", step: 0.005, min: 0.005, max: 0.6, digits: 3, unit: "vh" },
+      photonSize: { prop: "--lens-photon-size", step: 0.05, min: 0.1, max: 2, digits: 2 },
+    };
+
+    type Target = {
+      id?: string;
+      label: string;
+      group: string;
+      dual?: [string, string];
+      knob?: string;
+      desc: string;
+    };
+    const TARGETS: Target[] = [
+      {
+        label: "LENS CENTRE · X / Y",
+        group: "POSITION",
+        dual: ["cx", "cyVh"],
+        desc: "透镜 / 黑洞中心。←→ 水平、↑↓ 垂直。所有分层与吸积盘都以它为圆心 —— 先把十字准星对准视频里黑洞的中心。",
+      },
+      {
+        label: "OUTER LAYER · R",
+        group: "POSITION",
+        knob: "rOuter",
+        desc: "外层星空的外边界，星星从这里淡入。←→ / ↑↓ 都改半径；越大，外场越辽阔。",
+      },
+      {
+        label: "MIDDLE LAYER · R",
+        group: "POSITION",
+        knob: "rMid",
+        desc: "外层与中层的分界。←→ / ↑↓ 都改半径；调大 = 中层变窄、外场变大。",
+      },
+      {
+        label: "INNER LAYER · R",
+        group: "POSITION",
+        knob: "rInner",
+        desc: "中层与内层的分界，也是“越靠近越慢”的减速区起点。←→ / ↑↓ 都改半径。",
+      },
+      {
+        label: "BLACK-HOLE RING · R",
+        group: "POSITION",
+        knob: "rRing",
+        desc: "黑洞外圈半径，圈内完全不画星星（纯黑）。←→ / ↑↓ 都改半径 —— 先把它对齐视频里黑洞的边缘。",
+      },
+      {
+        label: "DISK · MOVE X/Y",
+        group: "DISK",
+        id: "diskMove",
+        dual: ["diskDx", "diskDy"],
+        desc: "吸积盘椭圆环整体平移（相对黑洞中心）。←→ 左右、↑↓ 上下。",
+      },
+      {
+        label: "DISK · INNER W/H",
+        group: "DISK",
+        id: "diskInner",
+        dual: ["diskInnerW", "diskInnerH"],
+        desc: "吸积盘内边界：←→ 横向半轴、↑↓ 纵向半轴（与内/外边界各自独立）。盘内的星星被遮住。",
+      },
+      {
+        label: "DISK · OUTER W/H",
+        group: "DISK",
+        id: "diskOuter",
+        dual: ["diskOuterW", "diskOuterH"],
+        desc: "吸积盘外边界：←→ 横向半轴、↑↓ 纵向半轴（与内边界独立）。星星到这里按 FEATHER 淡出。",
+      },
+      {
+        label: "DISK · TILT",
+        group: "DISK",
+        knob: "diskTilt",
+        desc: "椭圆倾角（度）。负值 = 右高左低（视频里约 -15°）。←→ / ↑↓ 都调它。",
+      },
+      {
+        label: "DISK · FEATHER",
+        group: "DISK",
+        knob: "diskFeather",
+        desc: "吸积盘边缘淡出 / 淡入的过渡带宽。←→ / ↑↓ 都调它；0 = 硬切。",
+      },
+      {
+        label: "OUTER SPEED",
+        group: "MOTION",
+        knob: "speedOuter",
+        desc: "外层内流速度（视口高 / 秒）。越小越“非常缓慢”。←→ / ↑↓ 都调它。",
+      },
+      {
+        label: "MIDDLE SPEED",
+        group: "MOTION",
+        knob: "speedMid",
+        desc: "中层内流速度，越大越快。←→ / ↑↓ 都调它。",
+      },
+      {
+        label: "INNER SLOWDOWN",
+        group: "MOTION",
+        knob: "innerEase",
+        desc: "内层减速曲线指数。越大 = 越靠近黑洞圈才骤然变慢。",
+      },
+      {
+        label: "CLOCKWISE SWIRL",
+        group: "MOTION",
+        knob: "swirl",
+        desc: "顺时针旋进角速度（黑洞圈处，∝ rRing/r）。0 = 不旋，负值反向。",
+      },
+      {
+        label: "LENS BULGE",
+        group: "LENSING",
+        knob: "bulge",
+        desc: "靠近黑洞圈时把星星向外推的幅度（爱因斯坦环的凸起）。",
+      },
+      {
+        label: "LENS STRETCH",
+        group: "LENSING",
+        knob: "stretch",
+        desc: "靠近黑洞圈时沿切向拉长成弧的倍数。1 = 不变形。",
+      },
+      {
+        label: "RING GAP BOOST",
+        group: "LENSING",
+        knob: "gapBoost",
+        desc: "黑洞圈外那圈小星星的亮度倍率（越大越亮）。",
+      },
+      {
+        label: "PHOTON BAND W/SIZE",
+        group: "LENSING",
+        dual: ["photonBand", "photonSize"],
+        desc: "黑洞圈外的圆形星空带：←→ 带宽、↑↓ 星星大小倍率（越小越细密）。",
+      },
+      {
+        label: "FIELD DENSITY",
+        group: "FIELD",
+        knob: "density",
+        desc: "星星数量倍率。掉帧就调小。",
+      },
+      {
+        label: "LENS CENTRE · Y OFFSET px",
+        group: "POSITION",
+        knob: "cyPx",
+        desc: "中心 Y 的绝对像素偏移（配合 cy-vh），一般不用动。",
+      },
+    ];
+
+    const STEPS = [0.1, 0.25, 0.5, 1, 2, 4];
+    const SAVE_KEY = "rrsuika-lens-tune-v6"; // v6 = photon band (circular tiny stars)
+    const POS_KEY = "rrsuika-lens-tune-pos"; // panel position
+    const round4 = (v: number) => Math.round(v * 1e4) / 1e4;
+
+    let tuneEl: HTMLElement | null = null;
+    let tuneOn = false;
+    let showRings = true;
+    let targetIdx = 0;
+    let stepIdx = 3;
+    let clampHudDrag: (() => void) | null = null; // assigned in buildHud()
+
+
+    const currentVal = (prop: string) => {
+      const v = parseFloat(getComputedStyle(canvas).getPropertyValue(prop));
+      return Number.isFinite(v) ? v : 0;
+    };
+
+    // Translation key for a target (its explicit id, else its knob / first axis).
+    const targetKey = (t: Target) => t.id ?? (t.dual ? t.dual[0] : (t.knob ?? ""));
+
+    function renderHud() {
+      if (!tuneEl) return;
+      const body = tuneEl.querySelector(".lt-body") as HTMLElement | null;
+      const foot = tuneEl.querySelector(".lt-foot") as HTMLElement | null;
+      if (!body) return;
+
+      let html = "";
+      let lastGroup = "";
+      TARGETS.forEach((t, i) => {
+        if (t.group !== lastGroup) {
+          lastGroup = t.group;
+          html += `<div class="lt-sep">${L10N.groups[t.group.toLowerCase()] ?? t.group}</div>`;
+        }
+        const sel = i === targetIdx ? " is-sel" : "";
+        const key = i < 9 ? String(i + 1) : i === 9 ? "0" : "TAB";
+        let val = "";
+        let px = "";
+        if (t.dual) {
+          const vx = currentVal(KNOB[t.dual[0]].prop);
+          const vy = currentVal(KNOB[t.dual[1]].prop);
+          val = `${vx.toFixed(3)} / ${vy.toFixed(3)}`;
+          px =
+              t.dual[0] === "cx"
+                ? `${Math.round(vx * W)} / ${Math.round(cfg.cyPx + vy * H)}`
+                : t.dual[0] === "diskDx"
+                  ? `${Math.round(vx * H)} / ${Math.round(vy * H)}`
+                  : t.dual[0] === "diskInnerW" || t.dual[0] === "diskOuterW"
+                    ? `${Math.round(vx * H)} × ${Math.round(vy * H)}`
+                  : t.dual[0] === "photonBand"
+                    ? `${Math.round(vx * H)} / ×${vy.toFixed(2)}`
+                    : "";
+        } else if (t.knob) {
+          const k = KNOB[t.knob];
+          const v = currentVal(k.prop);
+          val = v.toFixed(k.digits);
+          if (k.unit === "vh") {
+            const rad = v * H;
+            px = rad > farCorner ? `${Math.round(rad)} · ${L10N.off}` : `${Math.round(rad)}`;
+          } else if (k.unit === "px") {
+            px = `${Math.round(v)}`;
+          }
+        }
+        html += `<div class="lt-row${sel}" data-i="${i}"><span class="lt-key">${key}</span><span class="lt-name">${L10N.labels[targetKey(t)] ?? t.label}</span><span class="lt-val">${val}</span><span class="lt-px">${px}</span></div>`;
+      });
+      body.innerHTML = html;
+
+        const descEl = tuneEl.querySelector(".lt-desc") as HTMLElement | null;
+        if (descEl) {
+          const target = TARGETS[targetIdx];
+          const keyLabel = targetIdx < 9 ? String(targetIdx + 1) : targetIdx === 9 ? "0" : "TAB";
+          const keys = target.dual ? L10N.keysDual : L10N.keysSingle;
+          descEl.innerHTML = `<b>[${L10N.keyPrefix} ${keyLabel}]</b> ${L10N.labels[targetKey(target)] ?? target.label} <span class="lt-desc-keys">${keys}</span><br>${L10N.desc[targetKey(target)] ?? target.desc}`; /* localized */
+        }
+
+      if (foot) {
+        foot.innerHTML = running
+          ? `${TARGETS[targetIdx].dual ? L10N.keysDual : L10N.keysSingle} · SHIFT ×10 · ALT ×0.1 · [ ] step <b>×${STEPS[stepIdx]}</b><br>${L10N.footer}`
+          : `<span class="lt-warn">${L10N.inactive}</span><br>${L10N.escClose}`;
+      }
+    }
+
+    function selectTarget(i: number) {
+      const n = TARGETS.length;
+      targetIdx = ((i % n) + n) % n;
+      renderHud();
+    }
+
+    function nudge(k: Knob, delta: number) {
+      const cur = currentVal(k.prop);
+      const v = clamp(cur + delta * k.step, k.min, k.max);
+      canvas.style.setProperty(k.prop, String(round4(v)));
+      refresh();
+      saveTune();
+      renderHud();
+    }
+
+    function cssSnippet() {
+      const seen = new Set<string>();
+      const val = (key: string) => round4(currentVal(KNOB[key].prop));
+      const px = (key: string) => Math.round(val(key) * H);
+      const centreX = Math.round(val("cx") * W);
+      const centreY = Math.round(currentVal("--lens-cy-px") + val("cyVh") * H);
+      const lines = [
+        `/* gravitational lens — tuned on ${W}×${H} viewport (dpr ${DPR}) */`,
+        `/* px: centre ${centreX},${centreY} · ring ${px("rRing")} · disk ${px("diskInnerW")}×${px("diskInnerH")}–${px("diskOuterW")}×${px("diskOuterH")} · inner ${px("rInner")} · mid ${px("rMid")} · outer ${px("rOuter")} */`,
+        "#lens-canvas {",
+      ];
+      for (const key of Object.keys(KNOB)) {
+        const k = KNOB[key];
+        if (seen.has(k.prop)) continue;
+        seen.add(k.prop);
+        lines.push(`  ${k.prop}: ${round4(currentVal(k.prop))};`);
+      }
+      lines.push("}");
+      return lines.join("\n");
+    }
+
+    let footTimer = 0;
+    function flashFoot(msg: string) {
+      if (!tuneEl) return;
+      const foot = tuneEl.querySelector(".lt-foot") as HTMLElement | null;
+      if (!foot) return;
+      const prev = foot.innerHTML;
+      foot.innerHTML = `<span class="lt-ok">${msg}</span>`;
+      window.clearTimeout(footTimer);
+      footTimer = window.setTimeout(() => {
+        foot.innerHTML = prev;
+      }, 2600);
+    }
+
+    function copyCss() {
+      const text = cssSnippet();
+      console.log(`[lens-tune] paste into src/styles/global.css §10:\n${text}`);
+      const done = () => flashFoot(L10N.copied);
+      const failed = () => flashFoot(L10N.copyBlocked);
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text).then(done, failed);
+        return;
+      }
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try {
+        ok = document.execCommand("copy");
+      } catch (_) {
+        ok = false;
+      }
+      ta.remove();
+      if (ok) done();
+      else failed();
+    }
+
+    function saveTune() {
+      const data: Record<string, number> = {};
+      for (const key of Object.keys(KNOB)) {
+        data[KNOB[key].prop] = round4(currentVal(KNOB[key].prop));
+      }
+      try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+      } catch (_) {
+        /* storage unavailable — tuning still works for this session */
+      }
+    }
+
+    function applySaved() {
+      let raw: string | null = null;
+      try {
+        raw = localStorage.getItem(SAVE_KEY);
+      } catch (_) {
+        return;
+      }
+      if (!raw) return;
+      try {
+        const data = JSON.parse(raw) as Record<string, unknown>;
+        for (const prop in data) {
+          const v = data[prop];
+          if (prop.indexOf("--lens-") === 0 && typeof v === "number" && Number.isFinite(v)) {
+            canvas.style.setProperty(prop, String(v));
+          }
+        }
+      } catch (_) {
+        /* corrupt entry — ignore and fall back to the CSS defaults */
+      }
+    }
+
+    function resetTune() {
+      try {
+        localStorage.removeItem(SAVE_KEY);
+      } catch (_) {
+        /* ignore */
+      }
+      for (const key of Object.keys(KNOB)) canvas.style.removeProperty(KNOB[key].prop);
+      refresh();
+      renderHud();
+      flashFoot(L10N.reset);
+    }
+
+    function buildHud() {
+      const el = document.createElement("div");
+      el.id = "lens-tune";
+      el.setAttribute("role", "dialog");
+      el.setAttribute("aria-label", "Gravitational lens tuner");
+      el.innerHTML = `
+        <style>
+          #lens-tune {
+            position: fixed; left: 18px; bottom: 18px; z-index: 10000;
+            width: 332px; box-sizing: border-box;
+            background: rgba(14, 20, 32, 0.5);
+            border: 1px solid rgba(150, 205, 255, 0.28);
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.14);
+            color: #dcecff;
+            font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+            backdrop-filter: blur(24px) saturate(160%);
+            -webkit-backdrop-filter: blur(24px) saturate(160%);
+            user-select: none;
+            will-change: transform;
+          }
+          #lens-tune[hidden] { display: none !important; }
+          #lens-tune .lt-head {
+            display: flex; align-items: center; gap: 8px;
+            padding: 9px 12px; border-bottom: 1px solid rgba(120,190,255,0.2);
+            letter-spacing: 0.08em;
+            cursor: grab; touch-action: none;
+          }
+          #lens-tune.is-drag .lt-head { cursor: grabbing; }
+          #lens-tune .lt-head button { cursor: pointer; }
+          #lens-tune .lt-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: #4dd0e1; box-shadow: 0 0 8px #4dd0e1;
+          }
+          #lens-tune .lt-title { flex: 1; color: #eaf6ff; font-weight: 700; }
+          #lens-tune .lt-copy { background: rgba(120,190,255,0.16); border: 1px solid rgba(120,190,255,0.45); border-radius: 5px; color: #d8ecff; font: inherit; font-weight: 700; letter-spacing: 0.08em; padding: 3px 9px; cursor: pointer; }
+          #lens-tune .lt-copy:hover { background: rgba(120,190,255,0.3); border-color: #4dd0e1; color: #fff; }
+          #lens-tune .lt-x {
+            background: none; border: 0; color: #8fb6d8;
+            font: inherit; font-size: 15px; cursor: pointer; padding: 0 2px;
+          }
+          #lens-tune .lt-x:hover { color: #fff; }
+          #lens-tune .lt-body {
+            padding: 4px 0 6px; max-height: 44vh; overflow: auto;
+            scrollbar-width: thin; scrollbar-color: rgba(120,190,255,0.4) transparent;
+          }
+          #lens-tune .lt-body::-webkit-scrollbar { width: 6px; height: 6px; }
+          #lens-tune .lt-body::-webkit-scrollbar-track { background: transparent; }
+          #lens-tune .lt-body::-webkit-scrollbar-thumb {
+            background: rgba(120,190,255,0.35); border-radius: 3px;
+          }
+          #lens-tune .lt-body::-webkit-scrollbar-thumb:hover { background: rgba(120,190,255,0.6); }
+          #lens-tune .lt-desc {
+            padding: 8px 12px; border-top: 1px solid rgba(120,190,255,0.2);
+            color: #a9c6e2; font-size: 10.5px; line-height: 1.55;
+          }
+          #lens-tune .lt-desc b { color: #ffd9a0; }
+          #lens-tune .lt-desc .lt-desc-keys { color: #7dffa0; }
+          #lens-tune .lt-sep {
+            padding: 7px 12px 2px; color: #5d7794;
+            font-size: 9.5px; letter-spacing: 0.16em;
+          }
+          #lens-tune .lt-row {
+            display: flex; align-items: center; gap: 8px;
+            padding: 4px 12px; cursor: pointer;
+          }
+          #lens-tune .lt-row:hover { background: rgba(120,190,255,0.08); }
+          #lens-tune .lt-row.is-sel {
+            background: rgba(120,190,255,0.16);
+            box-shadow: inset 2px 0 0 #4dd0e1;
+          }
+          #lens-tune .lt-key { width: 26px; color: #6f8fb0; }
+          #lens-tune .lt-name { flex: 1; color: #b9d4ee; }
+          #lens-tune .lt-val {
+            color: #ffd9a0; font-variant-numeric: tabular-nums;
+          }
+          #lens-tune .lt-px {
+            width: 78px; text-align: right; color: #7f96ad;
+            font-variant-numeric: tabular-nums;
+          }
+          #lens-tune .lt-foot {
+            padding: 8px 12px; border-top: 1px solid rgba(120,190,255,0.2);
+            color: #8fb6d8; font-size: 10px; line-height: 1.7;
+          }
+          #lens-tune .lt-foot b { color: #ffd9a0; }
+          #lens-tune .lt-ok { color: #7dffa0; }
+          #lens-tune .lt-warn { color: #ffb060; }
+        </style>
+        <div class="lt-head">
+          <span class="lt-dot"></span>
+          <span class="lt-title">${L10N.title}</span>
+          <button class="lt-copy" type="button" title="${L10N.copy}">${L10N.copy}</button>
+            <button class="lt-x" type="button" aria-label="Close tuner">×</button>
+        </div>
+        <div class="lt-body"></div>
+        <div class="lt-desc"></div>
+        <div class="lt-foot"></div>
+      `;
+      document.body.appendChild(el);
+
+      const close = el.querySelector(".lt-x");
+      close?.addEventListener("click", () => toggleTune(false));
+      const copyBtn = el.querySelector(".lt-copy");
+      copyBtn?.addEventListener("click", () => copyCss());
+      const body = el.querySelector(".lt-body");
+      body?.addEventListener("click", (event) => {
+        const row = (event.target as HTMLElement).closest(".lt-row") as HTMLElement | null;
+        if (row?.dataset.i) selectTarget(Number(row.dataset.i));
+      });
+
+      /* ── Drag the panel by its header (position persists) ── */
+      const head = el.querySelector(".lt-head") as HTMLElement | null;
+      let dragX = 0;
+      let dragY = 0;
+      const applyDrag = () => {
+        el.style.transform = `translate(${dragX}px, ${dragY}px)`;
+      };
+      // Keep the whole panel inside the viewport. It is anchored bottom-left
+      // (left: 18px / bottom: 18px), so dragX/dragY are offsets from there.
+      const clampDrag = () => {
+        const w = el.offsetWidth || 332;
+        const h = el.offsetHeight || 320;
+        const minX = -18;
+        const maxX = Math.max(minX, window.innerWidth - 18 - w);
+        const maxY = 18;
+        const minY = Math.min(maxY, 18 + h - window.innerHeight);
+        dragX = Math.max(minX, Math.min(maxX, dragX));
+        dragY = Math.max(minY, Math.min(maxY, dragY));
+        applyDrag();
+      };
+      clampHudDrag = clampDrag;
+      try {
+        const saved = JSON.parse(localStorage.getItem(POS_KEY) || "null") as {
+          x?: number;
+          y?: number;
+        } | null;
+        if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
+          dragX = saved.x as number;
+          dragY = saved.y as number;
+          applyDrag();
+        }
+      } catch (_) {
+        /* ignore bad stored position */
+      }
+      let dragging = false;
+      let downX = 0;
+      let downY = 0;
+      let originX = 0;
+      let originY = 0;
+      head?.addEventListener("pointerdown", (event) => {
+        if ((event.target as HTMLElement).closest("button")) return;
+        dragging = true;
+        downX = event.clientX;
+        downY = event.clientY;
+        originX = dragX;
+        originY = dragY;
+        el.classList.add("is-drag");
+        event.preventDefault();
+      });
+      window.addEventListener("pointermove", (event) => {
+        if (!dragging) return;
+        dragX = originX + (event.clientX - downX);
+        dragY = originY + (event.clientY - downY);
+        clampDrag();
+        /* both axes clamped together inside clampDrag() */
+        applyDrag();
+      });
+      window.addEventListener("pointerup", () => {
+        if (!dragging) return;
+        dragging = false;
+        el.classList.remove("is-drag");
+        try {
+          localStorage.setItem(POS_KEY, JSON.stringify({ x: dragX, y: dragY }));
+        } catch (_) {
+          /* ignore */
+        }
+      });
+      window.addEventListener("pointercancel", () => {
+        if (!dragging) return;
+        dragging = false;
+        el.classList.remove("is-drag");
+      });
+      return el;
+    }
+
+    function toggleTune(force?: boolean) {
+      const want = force === undefined ? !tuneOn : force;
+      if (want === tuneOn) return;
+      tuneOn = want;
+      if (tuneOn) {
+        if (!tuneEl) tuneEl = buildHud();
+        tuneEl.hidden = false;
+        renderHud();
+        clampHudDrag?.();
+      } else if (tuneEl) {
+        tuneEl.hidden = true;
+      }
+    }
+
+    function onKey(event: KeyboardEvent) {
+      const tag = (event.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+      if (
+        event.key === "`" ||
+        (event.ctrlKey && event.altKey && (event.key === "g" || event.key === "G"))
+      ) {
+        event.preventDefault();
+        toggleTune();
+        return;
+      }
+      if (!tuneOn) return;
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        toggleTune(false);
+        return;
+      }
+      if (event.key === "Tab") {
+        event.preventDefault();
+        selectTarget(targetIdx + (event.shiftKey ? -1 : 1));
+        return;
+      }
+      if (event.key === "[") {
+        event.preventDefault();
+        stepIdx = Math.max(0, stepIdx - 1);
+        renderHud();
+        return;
+      }
+      if (event.key === "]") {
+        event.preventDefault();
+        stepIdx = Math.min(STEPS.length - 1, stepIdx + 1);
+        renderHud();
+        return;
+      }
+      if (event.key === "h" || event.key === "H") {
+        event.preventDefault();
+        showRings = !showRings;
+        renderHud();
+        return;
+      }
+      if (event.key === "c" || event.key === "C") {
+        event.preventDefault();
+        copyCss();
+        return;
+      }
+      if (event.key === "r" || event.key === "R") {
+        event.preventDefault();
+        resetTune();
+        return;
+      }
+
+      const num = "1234567890".indexOf(event.key);
+      if (num >= 0 && num < TARGETS.length) {
+        event.preventDefault();
+        selectTarget(num);
+        return;
+      }
+
+      let dx = 0;
+      let dy = 0;
+      if (event.key === "ArrowLeft") dx = -1;
+      else if (event.key === "ArrowRight") dx = 1;
+      else if (event.key === "ArrowUp") dy = -1;
+      else if (event.key === "ArrowDown") dy = 1;
+      else return;
+
+      event.preventDefault();
+      const mul = STEPS[stepIdx] * (event.shiftKey ? 10 : event.altKey ? 0.1 : 1); /* SHIFT coarse / ALT fine */
+      const target = TARGETS[targetIdx];
+      if (target.dual) {
+        if (dx) nudge(KNOB[target.dual[0]], dx * mul);
+        if (dy) nudge(KNOB[target.dual[1]], dy * mul);
+      } else if (target.knob) {
+        nudge(KNOB[target.knob], (dx !== 0 ? dx : -dy) * mul);
+      }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       10. WIRE UP
+    ═══════════════════════════════════════════════════════════════ */
+    applySaved();
+    readCfg();
+    sync();
+
+    // Opened by the navbar tool icon (plus the ` and ?lens=tune shortcuts).
+    (window as typeof window & { __lensTune?: () => void }).__lensTune = () =>
+      toggleTune();
+
+    window.addEventListener("resize", () => {
+      if (running) {
+        measure();
+        reclamp();
+      }
+      if (tuneOn) renderHud();
+      clampHudDrag?.();
+
+    });
+    DESKTOP.addEventListener("change", sync);
+    REDUCED.addEventListener("change", sync);
+    new MutationObserver(sync).observe(root, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    window.addEventListener("keydown", onKey);
+
+    // Deep link into the tuner: /?lens=tune or /#lens-tune
+    const params = new URLSearchParams(window.location.search);
+    const hash = window.location.hash.replace(/^#/, "");
+    if (params.get("lens") === "tune" || hash === "lens-tune" || hash === "lens") {
+      toggleTune(true);
+    }
+  })();
+</script>

@@ -4,6 +4,7 @@ import "../styles/global.css";
 import Navbar from "../components/Navbar.astro";
 import Footer from "../components/Footer.astro";
 import ScrollMeter from "../components/ScrollMeter.astro";
+import GravitationalLens from "../components/GravitationalLens.astro";
 import {
   getLanguageFromPath,
   getLocalizedPath,
@@ -316,24 +317,24 @@ const websiteSchema = {
           document.addEventListener("pointerdown", tryPlay, { once: true });
           document.addEventListener("keydown", tryPlay, { once: true });
 
-          // Don't decode frames nobody can see: pause while the tab is hidden
-          // or the theme is light (the layer is display:none there), and
-          // resume when it becomes visible again.
-          document.addEventListener("visibilitychange", () => {
-            if (document.hidden) video.pause();
-            else tryPlay();
-          });
-
-          new MutationObserver(() => {
-            if (document.documentElement.getAttribute("data-theme") === "light") {
-              video.pause();
-            } else {
-              tryPlay();
+          // Keep the black-hole video running continuously: some browsers pause
+          // background media when the tab is hidden or loses focus, so nudge it
+          // back every couple of seconds while we are still on desktop.
+          window.setInterval(() => {
+            if (!desktop.matches) return;
+            if (video.paused && !video.ended && video.readyState >= 2) {
+              video.play().catch(() => {});
             }
-          }).observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ["data-theme"],
+          }, 2000);
+
+
+          // Tab visibility no longer pauses the video (it must keep playing).
+          // This handler is a safety net: it only ever resumes playback.
+          document.addEventListener("visibilitychange", () => {
+            if (!document.hidden) tryPlay();
           });
+          // Theme switches no longer pause the video either — it plays
+          // continuously in both themes (CSS hides the layer in light mode).
 
           // Live resize across the mobile/desktop breakpoint.
           desktop.addEventListener("change", (event) => {
@@ -358,6 +359,20 @@ const websiteSchema = {
       <canvas id="star-canvas" aria-hidden="true"></canvas>
 
       <canvas id="starfield-canvas" aria-hidden="true"></canvas>
+
+      <!-- =========================================
+           GRAVITATIONAL LENS — homepage only, dark
+           mode + desktop. Takes over from the
+           celestial starfield above: same z-index,
+           later in the DOM, so it paints on top of
+           the black-hole video. Knobs live in
+           global.css §10; the keyboard tuner is in
+           the component. Non-homepages render
+           neither the canvas nor its script.
+      ========================================== -->
+
+      {blackhole && <GravitationalLens />}
+
     <!-- =========================================
          NEURAL NETWORK BACKGROUND (weakened)
     ========================================== -->
@@ -411,10 +426,13 @@ const websiteSchema = {
             "star-canvas",
           ) as HTMLCanvasElement;
 
-          const ctx = canvas?.getContext("2d");
+          const ctxRaw = canvas?.getContext("2d");
 
-          if (!canvas || !ctx) return;
+          if (!canvas || !ctxRaw) return;
           if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+          // Non-null alias: TS narrows consts only up to the first hoisted
+          // function declaration, so closures below need a plain type.
+          const ctx = ctxRaw;
 
           // Real-world stellar spectral colours: blue-white, white,
           // yellow, orange, red — weighted towards cooler stars.
@@ -660,10 +678,13 @@ const websiteSchema = {
             "starfield-canvas",
           ) as HTMLCanvasElement;
 
-          const ctx = canvas?.getContext("2d");
+          const ctxRaw = canvas?.getContext("2d");
 
-          if (!canvas || !ctx) return;
+          if (!canvas || !ctxRaw) return;
           if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+          // Non-null alias: TS narrows consts only up to the first hoisted
+          // function declaration, so closures below need a plain type.
+          const ctx = ctxRaw;
 
           // Real-world stellar spectral colours, weighted towards
           // abundant blue-white / white stars and rarer orange/red stars.
@@ -1014,6 +1035,14 @@ const websiteSchema = {
               requestAnimationFrame(animate);
               return;
             }
+            // The homepage gravitational lens replaces this field while it is
+            // active — skip the per-star work, the canvas is CSS-hidden too.
+            if (document.documentElement.getAttribute("data-lens") === "on") {
+              ctx.clearRect(0, 0, width, height);
+              requestAnimationFrame(animate);
+              return;
+            }
+
             const now = performance.now();
             const delta = Math.min((now - lastFrame) / 16.667, 2.5);
             lastFrame = now;

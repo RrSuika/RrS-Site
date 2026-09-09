@@ -172,6 +172,21 @@ const t = getTranslations(currentLanguage);
     <!-- SYSTEM STATUS -->
 
     <div class="status">
+        <!-- Lens tuner — homepages only (revealed by JS when #lens-canvas exists) -->
+        <button
+          id="lens-tune-btn"
+          class="lens-tune-btn"
+          type="button"
+          aria-label="Open gravitational lens tuner"
+          title="Gravitational lens tuner"
+          hidden
+        >
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3.2"></circle>
+            <path d="M19.1 14.9a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.55V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1.03H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.55-1.1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1.03-1.55V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1.03 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.55 1.03H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.8 1.87z"></path>
+          </svg>
+        </button>
+
       <span class="label">
         {t.system.status}
       </span>
@@ -391,6 +406,28 @@ const t = getTranslations(currentLanguage);
         toast.setAttribute("aria-hidden", "true");
       }, 3000);
     });
+
+    /*
+    =========================================================
+    LENS TUNER TRIGGER (homepages only)
+    =========================================================
+
+    The gravitational-lens canvas exists only on the three
+    homepages, so reveal the icon there. The panel itself is
+    owned by the lens component (window.__lensTune).
+    =========================================================
+    */
+
+    const lensTuneBtn = document.getElementById("lens-tune-btn");
+
+    if (lensTuneBtn && document.getElementById("lens-canvas")) {
+      lensTuneBtn.hidden = false;
+
+      lensTuneBtn.addEventListener("click", () => {
+        (window as typeof window & { __lensTune?: () => void }).__lensTune?.();
+      });
+    }
+
   </script>
 
   <!-- =====================================================
@@ -718,6 +755,8 @@ const t = getTranslations(currentLanguage);
     */
 
     .status {
+      position: relative;
+
       font-size: var(--text-scale-3xs);
 
       letter-spacing: var(--tracking-label);
@@ -728,6 +767,84 @@ const t = getTranslations(currentLanguage);
 
       align-items: center;
     }
+
+    /* Homepage lens-tuner trigger — hidden until JS finds #lens-canvas. */
+    .lens-tune-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      position: absolute;
+      right: calc(100% + 10px); /* out of flow → the middle nav never shifts */
+      top: 50%;
+      margin-top: -12px;
+
+      margin-right: 0;
+      background: none;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: #aaa;
+      cursor: pointer;
+      transition:
+        background 0.2s var(--ease-out),
+        border-color 0.2s var(--ease-out),
+        color 0.2s var(--ease-out),
+        transform 0.1s var(--spring-snappy);
+    }
+
+    .lens-tune-btn[hidden] {
+      display: none;
+    }
+
+    .lens-tune-btn:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--border);
+      color: var(--text); /* match nav links */
+    }
+
+    .lens-tune-btn:active {
+      transform: scale(0.9);
+    }
+
+    /* Fade in when the homepage finishes revealing the icon. */
+    .lens-tune-btn {
+      animation: lensIconIn 0.6s var(--ease-out) backwards;
+    }
+
+    @keyframes lensIconIn {
+      from {
+        opacity: 0;
+        translate: 0 -6px;
+        scale: 0.82;
+      }
+      to {
+        opacity: 1;
+        translate: 0 0;
+        scale: 1;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .lens-tune-btn {
+        animation: none;
+      }
+    }
+
+    /* The lens only runs in dark mode — hide the trigger in light mode. */
+    :root[data-theme="light"] .lens-tune-btn {
+      display: none;
+    }
+
+    /* Below 1100px the floating trigger could overlap the nav links — hide it. */
+    @media (max-width: 1100px) {
+      .lens-tune-btn {
+        display: none;
+      }
+    }
+
+
 
     .label {
       color: var(--text-dim);

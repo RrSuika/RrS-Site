@@ -485,7 +485,9 @@ img {
    §8  MOTION — page load + staggered cards
    ═══════════════════════════════════════════ */
 main {
-  animation: pageIn 0.65s var(--spring-gentle) both;
+  /* `backwards`, not `both`: a lingering transform on <main> breaks the
+     cards' backdrop-filter in Chrome (the blur would never show). */
+  animation: pageIn 0.65s var(--spring-gentle) backwards;
 }
 
 @keyframes pageIn {
@@ -505,7 +507,9 @@ main {
 .explore-card,
 .log,
 .frame {
-  animation: cardIn 0.55s var(--spring-gentle) both;
+  /* `backwards`, not `both`: same reason as pageIn above — a lingering
+     transform on the card itself also kills its backdrop-filter. */
+  animation: cardIn 0.55s var(--spring-gentle) backwards;
 }
 
 @keyframes cardIn {
@@ -844,6 +848,121 @@ html[data-neural="enabled"] #starfield-canvas,
 html[data-neural="enabled"] #star-canvas {
   display: none;
 }
+
+/* ── Gravitational-lens starfield (homepage only · dark mode · desktop) ──
+   Takes over from #starfield-canvas on the three homepages while the
+   black-hole video is active. Stars are ONE continuous inward stream —
+   each is born near the outer edge and falls monotonically toward the
+   hole until it fades out at the ring, then respawns outside (no
+   per-layer population loops). The bands below are speed segments along
+   that single stream, plus the black disc and the disk occlusion:
+
+     OUTER   rMid ≤ r < rOuter very slow inward drift
+     MIDDLE  rInner ≤ r < rMid  fast inward drift
+     INNER   rRing  ≤ r < rInner slows down the closer it gets to the ring
+     BLACK   r < rRing          nothing is drawn — the video's black disc
+                                shows through as pure black
+     DISK    diskInner ≤ rDraw < diskOuter  stars are hidden while their
+                                lensed position lands on the disk — they
+                                keep falling underneath and reappear
+                                inside diskInner, next to the ring
+
+   MANUAL TUNING — every knob is a unitless number. Press ` (backtick) or
+   open a homepage with ?lens=tune for the on-screen keyboard tuner, which
+   edits these live and copies the tuned values back as CSS.
+
+     --lens-cx                  lens centre X, fraction of viewport width
+     --lens-cy-px / --lens-cy-vh  lens centre Y = px + fraction × viewport
+                                height. 122 + 0.4358·vh is the user-tuned
+                                position of the black hole inside the video
+                                (the video BOX centre is 122px + 37.8vh;
+                                the black hole sits ~47px below it at 802px)
+     --lens-r-outer             outer edge of the field, × viewport height
+     --lens-r-mid               outer / middle boundary
+     --lens-r-inner             middle / inner boundary
+     --lens-r-ring              black-hole outer ring (inside = pure black)
+     --lens-disk-inner-w / -h   inner ellipse half-width / half-height, ×
+                                viewport height — each ring is independent
+     --lens-disk-outer-w / -h   outer ellipse half-width / half-height
+     --lens-disk-tilt           ellipse rotation in degrees (negative = right
+                                side up / left side down)
+     --lens-disk-dx / -dy       disk centre offset from the lens centre,
+                                × viewport height (dy negative = up, so the
+                                lower half is smaller and stars survive longer)
+     --lens-disk-feather        fade band at both disk edges, × viewport height
+     --lens-speed-outer         outer segment speed, viewport heights / second
+     --lens-speed-mid           middle segment speed
+     --lens-inner-ease          how sharply the inner segment slows at the ring
+     --lens-bulge               lensing push-out at the ring, × viewport height
+     --lens-stretch             tangential stretch at the ring (1 = none)
+     --lens-gap-boost           brightness multiplier for the stars in the thin
+                                circular band just outside the black-hole ring
+     --lens-photon-band         width of that band, × viewport height (keep it
+                                 inside the disk's inner ellipse so the band
+                                 stays a circle)
+     --lens-photon-size         star-size multiplier inside that band (smaller =
+                                a dense ring of tiny stars)
+     --lens-swirl               clockwise spiral drift at the ring, rad / s
+                                (scaled by rRing/r, so it tightens inward)
+     --lens-density             star-count multiplier                       */
+#lens-canvas {
+  --lens-cx: 0.7658;
+  --lens-cy-px: 122;
+  --lens-cy-vh: 0.4358;
+  --lens-r-outer: 1.7;
+  --lens-r-mid: 0.69;
+  --lens-r-inner: 0.4;
+  --lens-r-ring: 0.25;
+  --lens-disk-inner-w: 0.285;
+  --lens-disk-inner-h: 0.276;
+  --lens-disk-outer-w: 0.48;
+  --lens-disk-outer-h: 0.39;
+  --lens-disk-tilt: -15;
+  --lens-disk-dx: 0;
+  --lens-disk-dy: 0;
+  --lens-disk-feather: 0.03;
+  --lens-speed-outer: 0.02;
+  --lens-speed-mid: 0.03;
+  --lens-inner-ease: 6;
+  --lens-bulge: 0.01;
+  --lens-stretch: 3.4;
+  --lens-swirl: 0.08;
+  --lens-density: 1.5;
+  --lens-gap-boost: 8;
+  --lens-photon-band: 0.025;
+  --lens-photon-size: 0.45;
+
+  position: fixed;
+
+  inset: 0;
+
+  width: 100vw;
+  height: 100vh;
+
+  pointer-events: none;
+
+  z-index: 0;
+
+  opacity: 0.9;
+
+  /* Hidden until the lens script confirms desktop + dark + no reduced motion. */
+  display: none;
+}
+
+html[data-lens="on"] #lens-canvas {
+  display: block;
+}
+
+/* While the lens is active it replaces the celestial starfield. */
+html[data-lens="on"] #starfield-canvas {
+  display: none;
+}
+
+/* Light mode keeps the retro grid — no lens there. */
+:root[data-theme="light"] #lens-canvas {
+  display: none;
+}
+
 
 
 
