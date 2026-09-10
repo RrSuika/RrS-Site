@@ -128,9 +128,10 @@ const type = project.data.type.toUpperCase();
     background-size: 240px 240px;
 
     /* Frosted glass: blur + saturate whatever is behind the card
-       (the starfield / black-hole background). */
+       (the starfield / black-hole background). The -webkit- fallback for
+       Safari ≤ 17 lives in its own @supports rule below the .card block —
+       do NOT put the two declarations back side by side, see the note there. */
     backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
 
 
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -157,6 +158,20 @@ const type = project.data.type.toUpperCase();
       background-color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
       border-color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
       box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Safari ≤ 17 only understands the -webkit- form, but the build's CSS
+     minifier (lightningcss, via Vite) treats that prefix as an alias of
+     `backdrop-filter`: declared side by side in one rule, the pair is
+     collapsed and the LAST one is kept. That shipped WebKit-only frost,
+     which Chrome, Edge and Firefox ignore outright (verified: an
+     unprefixed-only box blurs, a -webkit-only box does not) — so production
+     lost the frost while the dev server, serving unminified CSS, kept it.
+     One declaration per rule gives the minifier nothing to merge. */
+  @supports (-webkit-backdrop-filter: blur(1px)) {
+    .card {
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+    }
   }
 
   .card:active {
