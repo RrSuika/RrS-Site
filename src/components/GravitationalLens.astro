@@ -39,6 +39,12 @@ import { getTranslations } from "../utils/translations";
  *
  * MANUAL TUNING
  *   All knobs are CSS custom properties on #lens-canvas (global.css §10).
+ *   The seven video-anchored geometry knobs — cyVh, the three boundary
+ *   radii, the disk-inner axes — are VIEWPORT-ADAPTIVE by default: while
+ *   the §10 CSS sits at the shipped baseline, the component derives them
+ *   from a two-point screen fit (section 2a) so the hole, the ring and the
+ *   disk line up with the video on any screen, not only the one the
+ *   profile was tuned on.
  *   Press ` (backtick) — or open a homepage with ?lens=tune — to show the
  *   keyboard tuner: 1–0 / TAB pick a target, arrows move it, C copies the
  *   tuned values back as CSS for global.css.
@@ -149,7 +155,9 @@ const lensTune = getTranslations(language).lensTune;
     });
 
     /* ══════════════════════════════════════════════════════════════
-       2. CONFIG — every knob is a unitless CSS custom property
+       2. CONFIG — every knob is a unitless CSS custom property.
+       Seven video-anchored knobs are viewport-adaptive at the shipped
+       baseline (see 2a); the rest are read verbatim.
     ═══════════════════════════════════════════════════════════════ */
     const FALLBACK = {
       cx: 0.7658, // lens centre X, fraction of viewport width
@@ -187,19 +195,115 @@ const lensTune = getTranslations(language).lensTune;
       return Number.isFinite(v) ? v : fb;
     };
 
+    /* ── 2a. VIEWPORT-ADAPTIVE DEFAULTS ─────────────────────────────────
+       The §10 values are ONE hand-tuned profile ("profile A", tuned on a
+       2K desktop window, 1661×802). The video box is 125% + object-fit
+       cover, so on any window with aspect ≥ 16:9 (width-bound — the normal
+       desktop case) every video-anchored feature scales with viewport
+       WIDTH. A second hand-tuned profile ("profile B", an FHD desktop
+       window, 1234×562) relates to A by px = m·W + b per feature, so each
+       SCALED knob below is derived from that two-point fit at the current
+       viewport instead of the static baseline: the hole, the ring and the
+       disk stay glued to the video on every screen, not only the one the
+       profile was tuned on. cx / cyPx are identical in both profiles (real
+       anchors); the remaining knobs are not video-anchored and stay
+       static. Height-bound windows (aspect < 16:9) keep the raw baseline —
+       there is no calibration data for them.
+
+       Precedence: an inline tuner value always wins verbatim (provenance
+       decides, not equality — nudging a knob back to its baseline number
+       still counts as an explicit override); a hand-edited §10 block that
+       differs from FALLBACK also wins verbatim (a deliberate freeze); only
+       CSS sitting exactly at the shipped baseline gets viewport-fitted.
+       Re-baselining the look = replace the §10 block AND the matching
+       FALLBACK / SCALED values here together. */
+    const round4 = (v: number) => Math.round(v * 1e4) / 1e4;
+    const BOX_CY = 0.378; // vh coefficient of --blackhole-y (the video box centre line)
+    const CAL_A = { W: 1661, H: 802 }; // viewport profile A was tuned on
+    const CAL_B = { W: 1234, H: 562 }; // viewport profile B was tuned on
+    // a = shipped baseline (= the matching FALLBACK entry, keep in sync),
+    // b = measured FHD profile value
+    const SCALED: Record<string, { a: number; b: number }> = {
+      "--lens-cy-vh": { a: FALLBACK.cyVh, b: 0.4398 },
+      "--lens-r-outer": { a: FALLBACK.rOuter, b: 1.81 },
+      "--lens-r-mid": { a: FALLBACK.rMid, b: 0.75 },
+      "--lens-r-inner": { a: FALLBACK.rInner, b: 0.44 },
+      "--lens-r-ring": { a: FALLBACK.rRing, b: 0.265 },
+      "--lens-disk-inner-w": { a: FALLBACK.diskInnerW, b: 0.3 },
+      "--lens-disk-inner-h": { a: FALLBACK.diskInnerH, b: 0.296 },
+    };
+    // css property name → shipped baseline value, for every knob
+    const FB_BY_PROP: Record<string, number> = {};
+    for (const key of Object.keys(FALLBACK)) {
+      const css = key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+      FB_BY_PROP[`--lens-${css}`] = FALLBACK[key as keyof Cfg];
+    }
+
+    // Has the tuner written this property inline? Inline always wins, even
+    // at a value equal to the baseline (provenance over equality).
+    const isInline = (prop: string) => canvas.style.getPropertyValue(prop) !== "";
+
+    // Fitted unitless value (× viewport height) for a SCALED knob at the
+    // current viewport: a px↔W two-point fit through the two profiles.
+    // Returns null when there is no valid width-bound viewport yet.
+    function fittedVal(prop: string, s: { a: number; b: number }): number | null {
+      if (W <= 0 || H <= 0 || W / H < 16 / 9) return null;
+      if (prop === "--lens-cy-vh") {
+        // Centre Y = cyPx + cyVh·H with cyPx fixed (122 in both profiles):
+        // cyVh encodes "video-box centre line (BOX_CY·H) plus an extra
+        // screen offset δ that tracks the video width". Fit δ, not cyVh,
+        // so the H part doesn't leak into the W fit.
+        const dA = (s.a - BOX_CY) * CAL_A.H;
+        const dB = (s.b - BOX_CY) * CAL_B.H;
+        const m = (dA - dB) / (CAL_A.W - CAL_B.W);
+        return round4(BOX_CY + (m * W + dB - m * CAL_B.W) / H);
+      }
+      const pA = s.a * CAL_A.H;
+      const pB = s.b * CAL_B.H;
+      const m = (pA - pB) / (CAL_A.W - CAL_B.W);
+      return round4((m * W + pB - m * CAL_B.W) / H);
+    }
+
+    // The value a knob renders with at the current viewport — also what
+    // the tuner HUD, COPY and nudge base themselves on. cs is an optional
+    // computed-style snapshot (readCfg reuses one across all knobs).
+    function effectiveVal(
+      prop: string,
+      fb: number,
+      cs?: CSSStyleDeclaration,
+    ): number {
+      const raw = parseFloat((cs ?? getComputedStyle(canvas)).getPropertyValue(prop));
+      const base = Number.isFinite(raw) ? raw : fb;
+      if (isInline(prop)) return base;
+      const s = SCALED[prop];
+      if (!s || Math.abs(base - fb) > 1e-9) return base;
+      return fittedVal(prop, s) ?? base;
+    }
+
+    // True when a SCALED knob currently renders the viewport fit rather
+    // than a verbatim value (the COPY footer warns about such snapshots).
+    function isAutoFitted(prop: string, fb: number): boolean {
+      if (isInline(prop) || !SCALED[prop]) return false;
+      const raw = parseFloat(getComputedStyle(canvas).getPropertyValue(prop));
+      const base = Number.isFinite(raw) ? raw : fb;
+      return Math.abs(base - fb) <= 1e-9 && fittedVal(prop, SCALED[prop]) !== null;
+    }
+
     function readCfg() {
       const cs = getComputedStyle(canvas);
       const f = FALLBACK;
       cfg = {
         cx: readNum(cs, "--lens-cx", f.cx),
         cyPx: readNum(cs, "--lens-cy-px", f.cyPx),
-        cyVh: readNum(cs, "--lens-cy-vh", f.cyVh),
-        rOuter: readNum(cs, "--lens-r-outer", f.rOuter),
-        rMid: readNum(cs, "--lens-r-mid", f.rMid),
-        rInner: readNum(cs, "--lens-r-inner", f.rInner),
-        rRing: readNum(cs, "--lens-r-ring", f.rRing),
-        diskInnerW: readNum(cs, "--lens-disk-inner-w", f.diskInnerW),
-        diskInnerH: readNum(cs, "--lens-disk-inner-h", f.diskInnerH),
+        // scaled knobs: viewport fit while at the shipped baseline,
+        // verbatim the moment an override (tuner or hand-edited CSS) exists
+        cyVh: effectiveVal("--lens-cy-vh", f.cyVh, cs),
+        rOuter: effectiveVal("--lens-r-outer", f.rOuter, cs),
+        rMid: effectiveVal("--lens-r-mid", f.rMid, cs),
+        rInner: effectiveVal("--lens-r-inner", f.rInner, cs),
+        rRing: effectiveVal("--lens-r-ring", f.rRing, cs),
+        diskInnerW: effectiveVal("--lens-disk-inner-w", f.diskInnerW, cs),
+        diskInnerH: effectiveVal("--lens-disk-inner-h", f.diskInnerH, cs),
         diskOuterW: readNum(cs, "--lens-disk-outer-w", f.diskOuterW),
         diskOuterH: readNum(cs, "--lens-disk-outer-h", f.diskOuterH),
         diskTilt: readNum(cs, "--lens-disk-tilt", f.diskTilt),
@@ -309,6 +413,10 @@ const lensTune = getTranslations(language).lensTune;
       canvas.style.width = `${W}px`;
       canvas.style.height = `${H}px`;
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      // Re-read the knobs now that W/H are known: the 2a viewport fit is a
+      // no-op while they are still 0, and this is also what re-fits after
+      // the window is dragged onto a different screen (resize → measure).
+      readCfg();
       geometry();
     }
 
@@ -936,9 +1044,10 @@ const lensTune = getTranslations(language).lensTune;
     ];
 
     const STEPS = [0.1, 0.25, 0.5, 1, 2, 4];
-    const SAVE_KEY = "rrsuika-lens-tune-v6"; // v6 = photon band (circular tiny stars)
+    const SAVE_KEY = "rrsuika-lens-tune-v7"; // v7 = nudged knobs only (see saveTune):
+    // defaults are viewport-fitted, so v6's full-state snapshots froze one
+    // screen's tuned numbers on every other screen
     const POS_KEY = "rrsuika-lens-tune-pos"; // panel position
-    const round4 = (v: number) => Math.round(v * 1e4) / 1e4;
 
     let tuneEl: HTMLElement | null = null;
     let tuneOn = false;
@@ -948,10 +1057,9 @@ const lensTune = getTranslations(language).lensTune;
     let clampHudDrag: (() => void) | null = null; // assigned in buildHud()
 
 
-    const currentVal = (prop: string) => {
-      const v = parseFloat(getComputedStyle(canvas).getPropertyValue(prop));
-      return Number.isFinite(v) ? v : 0;
-    };
+    // Effective value a knob renders with (2a viewport fit applied), so the
+    // HUD, COPY and nudge all operate on what is actually drawn.
+    const currentVal = (prop: string) => effectiveVal(prop, FB_BY_PROP[prop] ?? 0);
 
     // Translation key for a target (its explicit id, else its knob / first axis).
     const targetKey = (t: Target) => t.id ?? (t.dual ? t.dual[0] : (t.knob ?? ""));
@@ -1038,11 +1146,23 @@ const lensTune = getTranslations(language).lensTune;
       const px = (key: string) => Math.round(val(key) * H);
       const centreX = Math.round(val("cx") * W);
       const centreY = Math.round(currentVal("--lens-cy-px") + val("cyVh") * H);
+      const fitted = Object.keys(SCALED).some((prop) =>
+        isAutoFitted(prop, FB_BY_PROP[prop] ?? 0),
+      );
       const lines = [
         `/* gravitational lens — tuned on ${W}×${H} viewport (dpr ${DPR}) */`,
         `/* px: centre ${centreX},${centreY} · ring ${px("rRing")} · disk ${px("diskInnerW")}×${px("diskInnerH")}–${px("diskOuterW")}×${px("diskOuterH")} · inner ${px("rInner")} · mid ${px("rMid")} · outer ${px("rOuter")} */`,
-        "#lens-canvas {",
       ];
+      if (fitted) {
+        // Viewport-fitted defaults were inlined — a pasted block is a STATIC
+        // snapshot of this viewport, so re-baselining must touch the code
+        // tables too, not just the CSS.
+        lines.push(
+          "/* ⚠ viewport-fitted defaults inlined — a static freeze for this size.",
+          "   To re-baseline, update §10 AND FALLBACK / SCALED in GravitationalLens.astro. */",
+        );
+      }
+      lines.push("#lens-canvas {");
       for (const key of Object.keys(KNOB)) {
         const k = KNOB[key];
         if (seen.has(k.prop)) continue;
@@ -1093,12 +1213,18 @@ const lensTune = getTranslations(language).lensTune;
     }
 
     function saveTune() {
+      // Persist only knobs the tuner wrote inline. Defaults are
+      // viewport-fitted, so a full-state snapshot would freeze this
+      // screen's numbers on every other screen (the v6 bug this fixes).
       const data: Record<string, number> = {};
       for (const key of Object.keys(KNOB)) {
-        data[KNOB[key].prop] = round4(currentVal(KNOB[key].prop));
+        const prop = KNOB[key].prop;
+        const own = canvas.style.getPropertyValue(prop);
+        if (own !== "") data[prop] = parseFloat(own);
       }
       try {
-        localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+        if (Object.keys(data).length === 0) localStorage.removeItem(SAVE_KEY);
+        else localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       } catch (_) {
         /* storage unavailable — tuning still works for this session */
       }

@@ -871,6 +871,18 @@ html[data-neural="enabled"] #star-canvas {
    open a homepage with ?lens=tune for the on-screen keyboard tuner, which
    edits these live and copies the tuned values back as CSS.
 
+   VIEWPORT-ADAPTIVE (2026-09-10) — seven video-anchored knobs below (centre
+   Y, the three boundary radii, the ring, the disk-inner axes) are values
+   hand-tuned to the 2K desktop window this block was calibrated on
+   (1661×802). The video box scales with viewport WIDTH on any ≥16:9 window,
+   so while this block stays at the shipped baseline the lens component
+   (GravitationalLens.astro §2a) fits those knobs to the current viewport
+   between this profile and a second hand-tuned FHD profile (1234×562,
+   in its SCALED table) — the picture aligns on every screen without
+   re-tuning. Keep this block in sync with that component's FALLBACK twin;
+   a pasted per-screen snapshot freezes that screen's numbers everywhere
+   (the tuner COPY output's ⚠ note warns when it contains fitted values).
+
      --lens-cx                  lens centre X, fraction of viewport width
      --lens-cy-px / --lens-cy-vh  lens centre Y = px + fraction × viewport
                                 height. 122 + 0.4358·vh is the user-tuned
