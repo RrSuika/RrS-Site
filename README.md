@@ -62,6 +62,34 @@ npm run optimize-art  # regenerate art-optimized lossless webp assets (art only)
 
 Push to `main` → Cloudflare Pages builds and deploys automatically.
 
+## Disclaimer
+
+This is a personal portfolio. It is shared so others can read it and borrow ideas, not as professional advice.
+
+- **No warranty.** The hardware notes, pinouts, wiring tables, firmware and structures documented here are personal experiments. They are not safety-reviewed and may contain mistakes. If you build from them, verify everything yourself first, especially supply voltage, current limits, polarity and heat. Low-voltage DC can still start a fire.
+- **Parts and links go stale.** Part numbers and shop links reflect what I bought at the time. Listings change, revisions change, and the same link can point at a different board a month later.
+- **Third-party material.** Datasheets, libraries, trademarked names and quoted figures belong to their owners. Where a project leaned on someone else's work, it is listed under Sources and credits below.
+- **AI-assisted.** Some text, code and imagery were drafted with AI tools, then edited and verified by me. I only publish what I have run, measured or otherwise checked, but read it as my work with help, not as a reviewed source.
+
+> 中文说明：本站是个人作品集，内容供参考与交流，不构成专业建议。硬件接线、固件与结构方案都是个人实验，未经安全审查，可能有错。若据此搭建，请先自行核对供电电压、电流上限、极性与发热。标注的购买链接会随时间失效或指向不同版本的板子。第三方数据手册、开源库与商标归各自作者所有。部分文字、代码与图像由 AI 工具起草，再由我修改并实测验证。
+
+## Sources and credits
+
+What this site and its projects depend on. This list grows as I add content.
+
+### AI tools
+
+AI assistants were used as drafting and engineering aids: scaffolding firmware, working through wiring tables and pinouts, and editing article text and this repository's documentation. Everything published here was reviewed, corrected and verified against a real bench before release. Where a measurement or a photo is shown, it came off my own bench or internet resources.
+
+### Fonts
+
+- **JetBrains Mono**, **Saira Condensed**, **VT323** — served via Google Fonts.
+- **Smiley Sans Oblique (得意黑)** — self-hosted subsets under `public/fonts/dyh`.
+
+### Project references
+
+Per-lab material (datasheets, part-specific libraries such as Adafruit_SH110X / ESP32Encoder / U8g2, and vendor documentation) is credited inside the relevant lab entry.
+
 ## Links
 
 - Website: [rrsuika-studio.pages.dev](https://rrsuika-studio.pages.dev)

@@ -139,7 +139,13 @@ const translationAvailable = !!translation;
       </nav>
     </aside>
 
-    <article>
+    <article
+      data-code-copy={t.common.code.copy}
+      data-code-copied={t.common.code.copied}
+      data-code-expand={t.common.code.expand}
+      data-code-collapse={t.common.code.collapse}
+      data-code-lines={t.common.code.lines}
+    >
       <Content />
     </article>
   </div>
@@ -237,6 +243,131 @@ const translationAvailable = !!translation;
       };
       requestAnimationFrame(anim);
     }
+    // ── Full Code blocks: collapsible shell + one-click copy ──
+    // Lab entries end with a several-hundred-line code dump. Wrap it so the
+    // bar carries a copy button and the body starts collapsed, keeping the
+    // page scrollable. The heading is matched by its localised label because
+    // the markdown heading itself differs per language.
+    const codeHost = document.querySelector<HTMLElement>("article");
+    if (codeHost) {
+      const L = {
+        copy: codeHost.dataset.codeCopy || "Copy code",
+        copied: codeHost.dataset.codeCopied || "Copied",
+        expand: codeHost.dataset.codeExpand || "Show code",
+        collapse: codeHost.dataset.codeCollapse || "Hide code",
+        lines: codeHost.dataset.codeLines || "lines",
+      };
+      const FULL_CODE = /^(full code|完整代码|volledige code)$/i;
+
+      const writeClipboard = async (text: string): Promise<boolean> => {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch {
+          // the async clipboard API needs a secure context; older/plain-http
+          // hosts fall back to the legacy path
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.setAttribute("readonly", "");
+          ta.style.cssText =
+            "position:fixed;top:0;left:0;opacity:0;pointer-events:none;";
+          document.body.appendChild(ta);
+          ta.select();
+          let ok = false;
+          try {
+            ok = document.execCommand("copy");
+          } catch {
+            ok = false;
+          }
+          ta.remove();
+          return ok;
+        }
+      };
+
+      codeHost.querySelectorAll<HTMLElement>("h1, h2, h3").forEach((heading) => {
+        if (!FULL_CODE.test(heading.innerText.trim())) return;
+
+        // the block is the next <pre>, stopping if another heading comes first
+        let pre = heading.nextElementSibling as HTMLElement | null;
+        while (pre && pre.tagName !== "PRE") {
+          if (/^H[1-6]$/.test(pre.tagName)) return;
+          pre = pre.nextElementSibling as HTMLElement | null;
+        }
+        if (!pre) return;
+        const codeEl = pre;
+
+        const label = heading.innerText.trim();
+
+        const shell = document.createElement("div");
+        shell.className = "code-shell";
+
+        const bar = document.createElement("div");
+        bar.className = "code-bar";
+
+        const toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.className = "code-toggle";
+        toggle.setAttribute("aria-expanded", "false");
+
+        const chevron = document.createElement("span");
+        chevron.className = "code-chevron";
+        chevron.setAttribute("aria-hidden", "true");
+
+        const labelEl = document.createElement("span");
+        labelEl.className = "code-label";
+        labelEl.textContent = label;
+
+        const meta = document.createElement("span");
+        meta.className = "code-meta";
+        const lineCount = codeEl.querySelectorAll(".line").length;
+        if (lineCount) meta.textContent = `${lineCount} ${L.lines}`;
+
+        toggle.append(chevron, labelEl, meta);
+
+        const copyBtn = document.createElement("button");
+        copyBtn.type = "button";
+        copyBtn.className = "code-copy";
+        copyBtn.textContent = L.copy;
+
+        bar.append(toggle, copyBtn);
+
+        const body = document.createElement("div");
+        body.className = "code-body";
+        const clip = document.createElement("div");
+        clip.className = "code-clip";
+
+        codeEl.replaceWith(shell);
+        clip.appendChild(codeEl);
+        body.appendChild(clip);
+        shell.append(bar, body);
+
+        const setOpen = (open: boolean) => {
+          shell.classList.toggle("is-open", open);
+          toggle.setAttribute("aria-expanded", String(open));
+          // the markdown pre ships tabindex="0" for keyboard scrolling; a
+          // collapsed block must not stay reachable, so park it at -1
+          codeEl.setAttribute("tabindex", open ? "0" : "-1");
+        };
+        setOpen(false);
+
+        toggle.addEventListener("click", () =>
+          setOpen(!shell.classList.contains("is-open")),
+        );
+
+        let resetTimer = 0;
+        copyBtn.addEventListener("click", async () => {
+          if (!(await writeClipboard(codeEl.innerText))) return;
+          copyBtn.textContent = L.copied;
+          copyBtn.classList.add("is-copied");
+          window.clearTimeout(resetTimer);
+          resetTimer = window.setTimeout(() => {
+            copyBtn.textContent = L.copy;
+            copyBtn.classList.remove("is-copied");
+          }, 1600);
+        });
+      });
+    }
+
     const article = document.querySelector("article");
     const toc = document.querySelector<HTMLElement>("#toc-list");
 
@@ -827,6 +958,133 @@ const translationAvailable = !!translation;
     border-radius: var(--radius-lg);
 
     overflow-x: auto;
+  }
+
+  /*
+  ========================
+  FULL CODE BLOCK
+  ========================
+  */
+
+  article :global(.code-shell) {
+    margin: 32px 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--code-bg);
+    overflow: hidden;
+  }
+
+  article :global(.code-bar) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-right: 12px;
+    background: var(--panel-light);
+    border-bottom: 1px solid var(--border);
+  }
+
+  article :global(.code-shell:not(.is-open) .code-bar) {
+    border-bottom-color: transparent;
+  }
+
+  article :global(.code-toggle) {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    color: var(--text-soft);
+    font-family: var(--font-mono);
+    font-size: var(--text-scale-2xs);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    text-align: left;
+    transition: color 0.2s var(--ease-out);
+  }
+
+  article :global(.code-toggle:hover) {
+    color: var(--accent);
+  }
+
+  article :global(.code-chevron) {
+    flex: 0 0 auto;
+    width: 0;
+    height: 0;
+    border-left: 5px solid currentColor;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    transition: transform 0.25s var(--ease-out);
+  }
+
+  article :global(.code-shell.is-open .code-chevron) {
+    transform: rotate(90deg);
+  }
+
+  article :global(.code-label) {
+    font-weight: 700;
+  }
+
+  article :global(.code-meta) {
+    color: var(--text-dim);
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  article :global(.code-copy) {
+    flex: 0 0 auto;
+    padding: 6px 14px;
+    background: none;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-pill);
+    color: var(--text-soft);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--text-scale-2xs);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    transition:
+      color 0.2s var(--ease-out),
+      border-color 0.2s var(--ease-out);
+  }
+
+  article :global(.code-copy:hover) {
+    color: var(--accent);
+    border-color: var(--border-accent);
+  }
+
+  article :global(.code-copy.is-copied) {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  /*
+   * 0fr → 1fr animates to the block's real height, which max-height cannot do
+   * for a 500-line dump. Browsers without fr transitions still collapse and
+   * expand, just without the tween.
+   */
+  article :global(.code-body) {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.4s var(--ease-out);
+  }
+
+  article :global(.code-shell.is-open .code-body) {
+    grid-template-rows: 1fr;
+  }
+
+  article :global(.code-clip) {
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* the code keeps its own frame from the markdown theme; avoid a double box */
+  article :global(.code-shell pre) {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
   }
 
   /*

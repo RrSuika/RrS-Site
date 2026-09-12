@@ -99,6 +99,13 @@ export const translations = {
       category: "Category",
       tools: "Tools",
       contents: "Contents",
+      code: {
+        copy: "Copy code",
+        copied: "Copied",
+        expand: "Show code",
+        collapse: "Hide code",
+        lines: "lines",
+      },
     },
 
     language: {
@@ -639,6 +646,13 @@ export const translations = {
       category: "分类",
       tools: "工具",
       contents: "目录",
+      code: {
+        copy: "复制代码",
+        copied: "已复制",
+        expand: "展开代码",
+        collapse: "收起代码",
+        lines: "行",
+      },
     },
 
     language: {
@@ -1154,6 +1168,13 @@ export const translations = {
       category: "Categorie",
       tools: "Gereedschap",
       contents: "Inhoud",
+      code: {
+        copy: "Code kopiëren",
+        copied: "Gekopieerd",
+        expand: "Code tonen",
+        collapse: "Code verbergen",
+        lines: "regels",
+      },
     },
 
     language: {
