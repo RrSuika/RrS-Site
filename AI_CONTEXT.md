@@ -4,6 +4,8 @@
 > 接手任何新任务时：**先读本文件 → 再用快速索引（§11）定位文件 → 只读必要的源文件 → 动手。**
 > 与 `CLAUDE.md` 的分工：CLAUDE.md 是**规则与政策**（必须遵守的约束），本文件是**架构事实与原因**（"现在怎么组织的、为什么、去哪改"）。`AGENTS.md` 只讲开发服务器的工作方式。
 >
+> - 2026-09-15 v1.13（两个新条目按用户指示精修，三语言同步）：① 项目统称 **"HSV tests"**（en/zh/nl 均不得叫 "HSV station/色彩台/HSV-station"）；② 1.3" SH1106 OLED + EC11 是**一体化模块**，硬件清单按一件计；③ 0914 删掉"坑6 GPIO 32/33 编码器信号不稳"（用户确认该问题不存在，属 AI 源文虚构）；④ 删掉 "tcaSelect err=5 → 把 RST 接 3.3V" 的建议（RST 悬空即可，出问题先查 SDA/SCL 与杜邦线）；⑤ 0914 开头定位句改为"多路复用器省引脚、避免引脚不够用"；⑥ 引脚汇总表写明 **TRA→GPIO x，TRB→GPIO y**（用户要求小白能照着做，不再写 "25, 18" 这种模糊写法）；⑦ TRA/TRB 不能走 I2C、省引脚得换 I2C GPIO 扩展芯片（MCP23017）的说明保留并写明确；⑧ 0915 开头混乱的 ASCII 架构图换成与 A4988 接线一致的**纯文本句**（非代码块）："ESP32 到 A4988 的接线：GPIO 12 ── DIRECTION，…"。用户拒绝联网搜索（本条目原稿自带 MCP23017 内容，未再补充网络资料））
+> - 2026-09-15 v1.14（0915 条目图表再简化，三语言同步）：接线段的 fenced 代码块改列表后发现与上方表格**完全重复**，最终**整段删除**（表格已含全部接法，接线信息只保留开头的一句文本链："ESP32 到 A4988 的接线：GPIO 12 ── DIRECTION，…"）；"当前系统架构"的整段 box-drawing 大图删除，换成一行文本链："ESP32 ── TCA9548A 多路复用器 ── 3 个 OLED + EC11 一体化模块；另一侧 ESP32 ── A4988 电机驱动器 ── 42 步进电机"（电机为 **42** 步进电机，用户新提供的事实）。**新约定**：用户明确不喜欢 box-drawing ASCII 架构图与接线代码块，新条目里这类信息用一行文本链（A ── B ── C）表达，且不与表格重复）
 > - 2026-09-10 v1.11（**生产站卡片毛玻璃失效修复**：Vite 8 的 CSS 压缩器 lightningcss 把 `-webkit-backdrop-filter` 当作 `backdrop-filter` 的别名，同一条规则里成对出现即合并、**保留最后一条**；`ProjectCard.astro` 原本「无前缀在前、前缀在后」→ 产物只剩 `-webkit-` 版，而 Chrome/Edge/Firefox 都不认前缀版（headless 实测对照），于是生产站没有毛玻璃、dev（不压缩）却正常——**不是部署/缓存问题**（产物逐字节比对过）。修法：无前缀那条留在 `.card`，Safari ≤17 的兜底挪进紧随的独立 `@supports (-webkit-backdrop-filter: …)` 规则，一条规则一个声明，压缩器无从合并（已验产物两条并存）。见 §9 决策 22、§11）
 > - 2026-09-10 v1.10（引力透镜**视口自适应默认值**：§10 的 `--lens-*` 基线原为 2K 屏（视口 1661×802）单点烘焙，窗口拖到 1080p 屏（1234×562）后黑洞圈/中心与视频错位。因视频盒 125%+cover，凡宽高比 ≥16:9 的窗口视频特征都随**视口宽 W** 缩放，两屏手调档位完全符合同一律 → 对 7 个视频锚定旋钮（`cyVh`、`r-outer/r-mid/r-inner`、`r-ring`、`disk-inner-w/h`）做 px∝W 两点线性拟合（锚 A = 发货基线 = §10/FALLBACK，锚 B = 用户 1080p 实测档，组件 §2a `SCALED` 表）；CSS 恰在发货基线时自动按当前视口取值（≥16:9 才生效，其余保基线），tuner inline 值或 ≠FALLBACK 的手改 §10 逐字冻结（按来源不按数值判定）；`measure()` 每次量完 W/H 重读，拖窗换屏自动重拟合；HUD/COPY/nudge 走同一 effective 路径，COPY 含拟合值时输出 ⚠ 静态快照提示；localStorage 键 v6→v7 且**只存被调过的增量旋钮**（v6 全量快照会把某屏数字冻结到所有屏）。重新基线化 = global.css §10 与组件 FALLBACK/SCALED 两处同步改。见 §9 决策 20/21、§11）
 > - 2026-09-10 v1.9（引力透镜星空：新增 `src/components/GravitationalLens.astro` + `#lens-canvas`（样式在 global.css §10），只在三个首页、暗色、桌面端（≥769px）渲染并接管 `#starfield-canvas`。星空为**单股连续内流**（发布当日重构，弃分层独立循环）：每颗星自外场边缘出生后穿三档速度分段（外层极慢 → 中层快 → 内层越靠近黑洞越慢）单调内落，途中被吸积盘遮住时继续内落、离开盘内缘后重新露出，直到黑洞外圈淡出后重生回外场；`--lens-r-ring` 以内**不绘制任何星星**（纯黑，视频黑洞透出）。所有参数都是 `#lens-canvas` 上的无单位自定义属性；自带键盘调参工具（反引号或 `?lens=tune`：方向键调每个圈半径与黑洞中心，`C` 复制成 CSS，`R` 复位），调参只存浏览器 localStorage。增补：顺时针旋进（∝ rRing/r）、吸积盘遮罩环带（`--lens-disk-inner/outer`）、Shift ×10 / Alt ×0.1 粗调细调；默认值按用户 1661×802 实测烘焙；吸积盘遮罩升级为可旋转/压扁/二维移动的椭圆环 + 边缘羽化；方向键改为 ←→ 横轴 / ↑↓ 纵轴；调参窗改磨砂玻璃 + 可拖拽（限制在窗口内）+ 细滚动条 + en/zh/nl 本地化，导航栏齿轮入口带缓入动画；吸积盘内外边缘各自独立调横向/纵向半轴（`-inner-w/h`、`-outer-w/h`）；默认值按用户 1661×802 实测更新，新增 `--lens-gap-boost` 提亮「盘内边→黑洞圈」之间的星；再增 `--lens-photon-band` / `--lens-photon-size`：黑洞圈外一圈**圆形**（不做切向拉伸）、更小更亮的密集小星星带（调参键升到 v6）。见 §9 决策 20、§10、§11）
@@ -145,7 +147,7 @@ const translation = findTranslation(entries, entry, "zh" | "en");
 - 定义：`src/content.config.ts`（55 行，全文件即 schema）。
 - Loader：`glob({ pattern: "**/*.md", base: "./src/content/entries" })`。
 - **URL slug = 条目文件夹名**（`entry.id` 形如 `{文件夹名}/en`，代码里 `entry.id.split("/")[0]` 取 slug）。
-- 每个条目文件夹 = `en.md` + `cn.md` + 同目录图片。**23/23 个文件夹都有双语言文件，无缺失。**
+- 每个条目文件夹 = `en.md` + `cn.md` + `nl.md` + 同目录图片。**25/25 个文件夹都有 en/zh/nl 三语言文件，无缺失。**
 
 ### 4.2 Schema 全部字段（`src/content.config.ts` 逐字为准）
 
@@ -165,11 +167,11 @@ const translation = findTranslation(entries, entry, "zh" | "en");
 | `lang`           | enum `["en","zh"]`                       | ✓    | 条目的语言，决定挂到哪个语言的路由/列表                                                                                                                                                                                     |
 | `translationKey` | string                                   | ✓    | en/cn 配对键（通常=文件夹名；**唯一例外** zoem-bike 文件夹用 `zoem-bike-cargo-box`）                                                                                                                                        |
 
-### 4.3 条目清单（23 个，按 type 统计）
+### 4.3 条目清单（25 个，按 type 统计）
 
 | type       | 数量 | 条目                                                                                                                                                                                                                                                                         |
 | ---------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lab`      | 10   | 3d-printing-abs-material-test、esp32-ec11-encoder-oled、esp32-ec11-stepper-motor、esp32-inmp441-noise-monitor、esp32-rgbww-color-wheel、esp32-rgbww-fcob-comm、esp32-serial-test、esp32-wifi-led-brightness-control、studio-electrical-optimization、tinkercad-3ch-led-strip |
+| `lab`      | 12   | 3d-printing-abs-material-test、esp32-a4988-stepper-motor、esp32-ec11-encoder-oled、esp32-ec11-stepper-motor、esp32-inmp441-noise-monitor、esp32-multi-oled-encoder-hsv、esp32-rgbww-color-wheel、esp32-rgbww-fcob-comm、esp32-serial-test、esp32-wifi-led-brightness-control、studio-electrical-optimization、tinkercad-3ch-led-strip |
 | `note`     | 6    | button-debounce-pullup-pulldown、electronics-fundamentals-notes、isolation-gpio-driver-mosfet-bjt-relay-optocoupler、power-supply-ldo-buck-boost、signal-amplifier-opamp-comparator、signal-filter-rc-high-low-pass                                                          |
 | `art`      | 4    | fashion-design、food-art、illustrations、product-posters                                                                                                                                                                                                                     |
 | `projects` | 3    | body-armor-protective-vest、light-diffusion-test-platform、zoem-bike-bakfiets                                                                                                                                                                                                |
@@ -185,8 +187,8 @@ const translation = findTranslation(entries, entry, "zh" | "en");
 
 **新增项目（projects）/ 实验室记录（lab）：**
 
-1. 建文件夹 `src/content/entries/{kebab-case-slug}/`（slug 即 URL，双语言共用）。
-2. 写 `en.md`（`lang: en`）与 `cn.md`（`lang: zh`），两文件 `translationKey` 相同（通常=文件夹名）。
+1. 建文件夹 `src/content/entries/{kebab-case-slug}/`（slug 即 URL，多语言共用）。
+2. 写 `en.md`（`lang: en`）、`cn.md`（`lang: zh`）与 `nl.md`（`lang: nl`），三个文件 `translationKey` 相同（通常=文件夹名）。
 3. frontmatter 必填：`title`、`date`、`type`、`lang`、`translationKey`；建议：`description`、`category`、`tags`、`tools`、`cover`。
 4. 图片放同文件夹，frontmatter 引用裸文件名。
 5. 完成;路由、列表页、sitemap、首页 SYS.LOG 全部自动生效（首页精选除外，需手动加 `featuredKeys`，§7.2）。
