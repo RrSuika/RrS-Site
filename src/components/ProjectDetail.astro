@@ -1,6 +1,6 @@
 ---
 import { getImage } from "astro:assets";
-import { getProjectImageMeta } from "../utils/images";
+import { getProjectImageMeta, getProjectImageUrl } from "../utils/images";
 import { getLanguageFromPath, languageDateLocales } from "../utils/i18n";
 import { getTranslations } from "../utils/translations";
 
@@ -35,7 +35,7 @@ const cover =
 const coverWidth = optimizedCover?.attributes.width as number | undefined;
 const coverHeight = optimizedCover?.attributes.height as number | undefined;
 
-const date = project.data.date.toLocaleDateString(
+const date = project.data.dateLabel ?? project.data.date.toLocaleDateString(
   languageDateLocales[language],
   {
     year: "numeric",
@@ -44,6 +44,7 @@ const date = project.data.date.toLocaleDateString(
 );
 
 const translationAvailable = !!translation;
+const gallery = project.data.gallery ?? [];
 ---
 
 <main class="project">
@@ -100,6 +101,24 @@ const translationAvailable = !!translation;
   </section>
 
   {
+    gallery.length > 0 && (
+      <section class="project-gallery">
+        {gallery.map((item: { file: string; title: string }) => {
+          const src = getProjectImageUrl(projectId, item.file);
+
+          return src ? (
+            <figure>
+              <img src={src} alt={item.title} loading="lazy" decoding="async" />
+              <figcaption>{item.title}</figcaption>
+            </figure>
+          ) : null;
+        })}
+      </section>
+    )
+  }
+
+
+  {
     project.data.wip && (
       <section class="wip-notice">
         <div class="notice-code">SYS_STATUS // {t.card.wip}</div>
@@ -153,6 +172,14 @@ const translationAvailable = !!translation;
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
+
+    // ── If the markdown defines a gallery slot, move the frontmatter gallery there ──
+    const projectGallery = document.querySelector<HTMLElement>(".project-gallery");
+    const gallerySlot = document.querySelector<HTMLElement>(".project-gallery-slot");
+    if (projectGallery && gallerySlot) {
+      gallerySlot.replaceWith(projectGallery);
+    }
+
     // ── Image click → fullscreen overlay (with click-vs-drag discrimination) ──
     const openOverlay = (src: string) => {
       const overlay = document.createElement("div");
@@ -164,7 +191,7 @@ const translationAvailable = !!translation;
       overlay.addEventListener("click", () => overlay.remove());
       document.body.appendChild(overlay);
     };
-    document.querySelectorAll<HTMLImageElement>("article img").forEach(img => {
+    document.querySelectorAll<HTMLImageElement>("article img, .project-gallery img").forEach(img => {
       if (img.closest(".drawer-stack")) return; // drawer stacks have their own interaction
       let pressX = 0, pressY = 0;
       img.addEventListener("mousedown", (e) => { pressX = e.clientX; pressY = e.clientY; });
@@ -367,6 +394,101 @@ const translationAvailable = !!translation;
         });
       });
     }
+
+    // ── Group V1 / V2 / V3 sections into a side-by-side comparison grid ──
+    const articleForVersions = document.querySelector<HTMLElement>("article");
+    if (articleForVersions) {
+      const versionHeadings = Array.from(
+        articleForVersions.querySelectorAll<HTMLHeadingElement>("h1"),
+      ).filter((heading) => /^V[123][:：]/.test(heading.textContent?.trim() ?? ""));
+
+      if (versionHeadings.length === 3) {
+        const columns = versionHeadings.map((heading) => {
+          const column = document.createElement("section");
+          column.className = "version-column";
+          heading.parentNode?.insertBefore(column, heading);
+          column.appendChild(heading);
+
+          let next = column.nextElementSibling;
+          while (next && next.tagName !== "H1") {
+            const node = next;
+            next = next.nextElementSibling;
+            column.appendChild(node);
+          }
+
+          return column;
+        });
+
+        // Wrap every H2 section in each version column. Then align matching
+        // section indexes across columns so 遇到的问题 / AI 做了什么 /
+        // 人工做了什么 / 这一版学到的 all start at the same height.
+        const sectionWrappers: HTMLElement[][] = columns.map((column) => {
+          const headings = Array.from(
+            column.querySelectorAll<HTMLElement>("h2"),
+          );
+
+          return headings.map((heading) => {
+            const wrapper = document.createElement("div");
+            wrapper.className = "version-section";
+
+            let next = heading.nextElementSibling;
+            while (next && next.tagName !== "H2") {
+              const node = next;
+              next = next.nextElementSibling;
+              wrapper.appendChild(node);
+            }
+
+            heading.after(wrapper);
+            return wrapper;
+          });
+        });
+
+        const grid = document.createElement("div");
+        grid.className = "versions-grid";
+
+        const anchor = columns[0]!.previousElementSibling;
+        columns.forEach((column) => grid.appendChild(column));
+
+        if (anchor) {
+          anchor.after(grid);
+        } else {
+          articleForVersions.prepend(grid);
+        }
+
+        const alignVersionSections = () => {
+          const maxSections = Math.max(
+            0,
+            ...sectionWrappers.map((wrappers) => wrappers.length),
+          );
+
+          sectionWrappers.flat().forEach((wrapper) => {
+            wrapper.style.minHeight = "";
+          });
+
+          for (let index = 0; index < maxSections; index += 1) {
+            const wrappers = sectionWrappers
+              .map((list) => list[index])
+              .filter((wrapper): wrapper is HTMLElement => Boolean(wrapper));
+
+            const maxHeight = Math.max(
+              ...wrappers.map((wrapper) => wrapper.offsetHeight),
+            );
+
+            wrappers.forEach((wrapper) => {
+              wrapper.style.minHeight = `${maxHeight}px`;
+            });
+          }
+        };
+
+        requestAnimationFrame(alignVersionSections);
+        window.addEventListener("load", alignVersionSections);
+
+        if (document.fonts?.ready) {
+          document.fonts.ready.then(alignVersionSections);
+        }
+      }
+    }
+
 
     const article = document.querySelector("article");
     const toc = document.querySelector<HTMLElement>("#toc-list");
@@ -1488,4 +1610,106 @@ const translationAvailable = !!translation;
     background: rgba(0, 0, 0, 0.06);
     border-radius: var(--radius-sm);
   }
+
+  /* --- Project gallery (frontmatter-driven, e.g. legacy/input source images) --- */
+  .project-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin: 36px 0 10px;
+  }
+
+  .project-gallery figure {
+    margin: 0;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .project-gallery img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+  }
+
+  .project-gallery figcaption {
+    padding: 10px 14px;
+    font-family: var(--font-mono);
+    font-size: var(--text-scale-3xs);
+    color: var(--text-dim);
+  }
+
+
+  /* --- Readability: more breathing room between paragraphs and list items --- */
+  :global(article p) { margin-bottom: 30px; }
+  :global(article ul),
+  :global(article ol) { margin-bottom: 30px; }
+  :global(article li) { margin-bottom: 14px; }
+
+  /* --- V1 / V2 / V3 comparison columns (created at runtime) --- */
+  :global(.versions-grid) {
+    width: calc(100% + clamp(0px, 50vw - 615px, 240px));
+    max-width: calc(100vw - 80px);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    margin: 30px 0 10px;
+    align-items: start;
+  }
+
+  :global(.version-column) {
+    min-width: 0;
+    padding: 20px 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.025);
+    font-size: 0.84em;
+    line-height: 1.7;
+    box-sizing: border-box;
+  }
+
+  :global(.version-section) {
+    display: flow-root;
+  }
+
+  :global(.version-column h1) {
+    margin-top: 0 !important;
+    font-size: var(--text-scale-article-h3) !important;
+  }
+
+  :global(.version-column h2) {
+    margin-top: 26px !important;
+    font-size: 0.98em !important;
+    border-top: none !important;
+    padding-top: 0 !important;
+  }
+
+  :global(.version-column h3) {
+    margin-top: 20px !important;
+    font-size: 0.95em !important;
+    border-top: none !important;
+    padding-top: 0 !important;
+  }
+
+  /* Compact the dense comparison columns */
+  :global(.version-column p) { margin-bottom: 18px; }
+  :global(.version-column ul),
+  :global(.version-column ol) {
+    margin-bottom: 18px;
+    padding-left: 22px;
+  }
+  :global(.version-column li) { margin-bottom: 8px; }
+
+  @media (max-width: 1000px) {
+    :global(.versions-grid) {
+      grid-template-columns: 1fr;
+    }
+
+    :global(.version-section) {
+      min-height: 0 !important;
+    }
+  }
+
 </style>

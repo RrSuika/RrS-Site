@@ -37,7 +37,7 @@ const image =
 const imageWidth = optimizedCover?.attributes.width as number | undefined;
 const imageHeight = optimizedCover?.attributes.height as number | undefined;
 
-const date = project.data.date.toLocaleDateString(
+const date = project.data.dateLabel ?? project.data.date.toLocaleDateString(
   languageDateLocales[language],
   {
     year: "numeric",

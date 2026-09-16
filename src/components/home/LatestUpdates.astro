@@ -19,7 +19,7 @@ const t = getTranslations(language);
     <div class="logs">
       {
         entries.map((entry, index) => {
-          const date = entry.data.date.toLocaleDateString(
+          const date = entry.data.dateLabel ?? entry.data.date.toLocaleDateString(
             languageDateLocales[language],
             {
               year: "numeric",

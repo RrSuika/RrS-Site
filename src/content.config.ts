@@ -15,6 +15,8 @@ const entries = defineCollection({
 
     date: z.coerce.date(),
 
+    dateLabel: z.string().optional(),
+
     description: z.string().optional(),
 
     cover: z.string().optional(),

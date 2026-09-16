@@ -1,12 +1,43 @@
 import type { ImageMetadata } from "astro";
 
-const images = import.meta.glob(
+const entryImages = import.meta.glob(
   "/src/content/entries/**/*.{png,jpg,jpeg,webp}",
   {
     eager: true,
     import: "default",
   },
 );
+
+// Legacy fallback: originals kept in `输入/`. The prepare-images script copies
+// optimized WebP copies into the entry folder; these globs keep the page
+// rendering until that script has been run.
+const inputImages = import.meta.glob(
+  [
+    "/输入/Cover.png",
+    "/输入/V1 1.png",
+    "/输入/V1 2.png",
+    "/输入/V1 3.png",
+    "/输入/V2.png",
+    "/输入/V3.png",
+  ],
+  {
+    eager: true,
+    import: "default",
+  },
+);
+
+// Frontmatter uses the prepared WebP names; until the one-time prepare script
+// has run, keep a fallback to the original files in `输入/`.
+const inputImageAliases: Record<string, string> = {
+  "cover.webp": "Cover.png",
+  "v1-1.webp": "V1 1.png",
+  "v1-2.webp": "V1 2.png",
+  "v1-3.webp": "V1 3.png",
+  "v2.webp": "V2.png",
+  "v3.webp": "V3.png",
+};
+
+
 
 export type ProjectImage = ImageMetadata | string;
 
@@ -24,18 +55,29 @@ export function getProjectImageMeta(
     return `/art/fashion-design/${filename}`;
   }
 
-  const key = Object.keys(images).find(
+  const entryKey = Object.keys(entryImages).find(
     (path) =>
       path.includes(`/entries/${id}/`) &&
       path.endsWith(filename),
   );
 
-  if (!key) {
+  const inputFilename = inputImageAliases[filename] ?? filename;
+
+  const inputKey = Object.keys(inputImages).find((path) =>
+    decodeURIComponent(path).replace(/\\/g, "/").endsWith(`/输入/${inputFilename}`),
+  );
+
+  if (entryKey) {
+    return entryImages[entryKey] as ProjectImage;
+    // entry image already returned above
+  }
+
+  if (!inputKey) {
     console.warn("Image not found:", id, filename);
     return null;
   }
 
-  return images[key] as ProjectImage;
+  return inputImages[inputKey] as ProjectImage;
 }
 
 /**
