@@ -58,7 +58,7 @@ Below is the timeline: what I did, what went wrong, where AI helped, and what AI
 
 | Stage | What I wanted most | Key additions | Biggest takeaway | Biggest problem |
 | --- | --- | --- | --- | --- |
-| V1 | A site that opens and can be read | Basic personal site: home, about, projects, contact | Ship first, polish later | It looked like a pile of unrelated pieces |
+| V1 | A site that opens and can be read | Basic personal site: home, about, projects, contact | Ship first, polish later | It looked like a puzzle, and the styles clashed. |
 | V2 | A site with a memorable identity | Neural network background + hacker terminal | Style can become part of the content | Effects stole attention, hurt performance and readability |
 | V3 | A complete visual world | Starfield + black hole + gravitational lensing | Visuals became storytelling, not decoration | Performance, compatibility, credits, beauty vs. readability |
 | Now | A site that is steadier, faster, easier to read | Better content, performance and multilingual support | Still documenting and refining | It is not finished |

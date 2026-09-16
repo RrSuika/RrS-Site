@@ -444,7 +444,11 @@ const gallery = project.data.gallery ?? [];
         });
 
         const grid = document.createElement("div");
-        grid.className = "versions-grid";
+        // NOT "versions-grid": that class belongs to the markdown-authored
+        // .version-cell grid (zoem-bike-bakfiets, 4 columns). Sharing it made
+        // this 3-column grid inherit repeat(4, 1fr) — a quarter-width column
+        // plus a permanently empty fourth slot.
+        grid.className = "version-compare-grid";
 
         const anchor = columns[0]!.previousElementSibling;
         columns.forEach((column) => grid.appendChild(column));
@@ -1648,10 +1652,13 @@ const gallery = project.data.gallery ?? [];
   :global(article ol) { margin-bottom: 30px; }
   :global(article li) { margin-bottom: 14px; }
 
-  /* --- V1 / V2 / V3 comparison columns (created at runtime) --- */
-  :global(.versions-grid) {
-    width: calc(100% + clamp(0px, 50vw - 615px, 240px));
-    max-width: calc(100vw - 80px);
+  /* --- V1 / V2 / V3 comparison columns (created at runtime) ---
+     ⚠ This style block is `is:global`, so :global(...) must NOT be used here.
+     Astro only unwraps :global() in scoped blocks; inside is:global it is
+     emitted verbatim, and :global(.x) is not a valid selector, so the browser
+     drops the whole rule. Every rule below stayed dead until 2026-09-17 —
+     which is why widening .versions-grid appeared to do nothing. */
+  .version-compare-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 18px;
@@ -1659,7 +1666,7 @@ const gallery = project.data.gallery ?? [];
     align-items: start;
   }
 
-  :global(.version-column) {
+  .version-column {
     min-width: 0;
     padding: 20px 18px;
     border: 1px solid var(--border);
@@ -1670,44 +1677,54 @@ const gallery = project.data.gallery ?? [];
     box-sizing: border-box;
   }
 
-  :global(.version-section) {
+  .version-section {
     display: flow-root;
   }
 
-  :global(.version-column h1) {
+  .version-column h1 {
     margin-top: 0 !important;
     font-size: var(--text-scale-article-h3) !important;
   }
 
-  :global(.version-column h2) {
+  .version-column h2 {
     margin-top: 26px !important;
     font-size: 0.98em !important;
     border-top: none !important;
     padding-top: 0 !important;
   }
 
-  :global(.version-column h3) {
+  .version-column h3 {
     margin-top: 20px !important;
     font-size: 0.95em !important;
     border-top: none !important;
     padding-top: 0 !important;
   }
 
+  /* The accent bar is offset (h2 30px / h3 22px) to clear the article
+     heading's padding-top; these headings have padding-top: 0, so the bar
+     must sit at the top too — otherwise every section after the first one
+     shows its bar ~30px too low. Needs !important to beat the scoped
+     `article[cid] h2[cid]::before` rule above (0,2,2 > 0,1,1). */
+  .version-column h2::before,
+  .version-column h3::before {
+    top: 0 !important;
+  }
+
   /* Compact the dense comparison columns */
-  :global(.version-column p) { margin-bottom: 18px; }
-  :global(.version-column ul),
-  :global(.version-column ol) {
+  .version-column p { margin-bottom: 18px; }
+  .version-column ul,
+  .version-column ol {
     margin-bottom: 18px;
     padding-left: 22px;
   }
-  :global(.version-column li) { margin-bottom: 8px; }
+  .version-column li { margin-bottom: 8px; }
 
   @media (max-width: 1000px) {
-    :global(.versions-grid) {
+    .version-compare-grid {
       grid-template-columns: 1fr;
     }
 
-    :global(.version-section) {
+    .version-section {
       min-height: 0 !important;
     }
   }

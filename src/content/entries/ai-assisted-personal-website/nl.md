@@ -58,7 +58,7 @@ Hieronder staat de tijdlijn: wat ik deed, wat fout ging, waar AI hielp en wat AI
 
 | Fase | Wat ik het liefst wilde | Belangrijkste toevoegingen | Grootste les | Grootste probleem |
 | --- | --- | --- | --- | --- |
-| V1 | Een site die opent en leesbaar is | Basiswebsite: home, over mij, projecten, contact | Eerst live zetten, daarna perfectioneren | Het leek een verzameling losse stukjes |
+| V1 | Een site die opent en leesbaar is | Basiswebsite: home, over mij, projecten, contact | Eerst live zetten, daarna perfectioneren | Het leek een puzzel en de stijlen botsten met elkaar. |
 | V2 | Een site met een herkenbare identiteit | Neurale achtergrond + hackerterminal | Stijl kan onderdeel van de inhoud worden | Effecten trokken aandacht, prestaties en leesbaarheid leden |
 | V3 | Een complete visuele wereld | Sterrenveld + zwart gat + zwaartekrachtlens | Beeld werd verhaal, niet alleen decoratie | Prestaties, compatibiliteit, credits, schoonheid versus leesbaarheid |
 | Nu | Een stabielere, snellere en leesbaardere site | Betere inhoud, prestaties en meertaligheid | Nog steeds documenteren en verfijnen | Het is niet af |

@@ -306,6 +306,7 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 - **Hero 条形码与标题同色（2026-09-09 用户要求）**：`.barcode` 的条纹颜色走 `--barcode-ink`（暗色 = `--text`、亮色 = `--text-bright`），与 FUNCTIONAL 标题逐字同色；原来是写死的 `#fff`，在暖白标题旁边偏冷偏灰。以后改色请改这两个变量，不要写死 `#fff`。
 - 通用模式：`.tag-chip`（pill 筛选按钮，§12 共享实现）、`.data-tag`（mono 大写数据标签）、`.skip-link`、hover 用 `--ease-out`、按下 `--spring-snappy`；入场动画 `pageIn`/`cardIn` + 各网格容器 nth-child stagger（§8）；`prefers-reduced-motion` 全局降级（§9，并隐藏粒子画布）。
 - 页面局部样式：写在各自 `.astro` 的 `<style>` 内（自动作用域）；少数 `is:global`（如 ProjectDetail 的 article 排版）。**全局设计系统级 CSS 只应进 global.css。**
+- ⚠️ **`<style is:global>` 里一律写裸选择器，不要写 `:global(...)`**：Astro 只在**作用域**样式块里剥离 `:global()`；`is:global` 块会被原样输出，而 `:global(.x)` 不是合法 CSS 选择器，浏览器**整条规则丢弃**（静默失效，dev 与 build 一样）。详见 §10。
 
 ---
 
@@ -385,6 +386,9 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 | 🟢   | zh/notes 页未用翻译键                  | 已修复（2026-08-14）：改用 `t.sections.notes.*`，zh 翻译描述补句号与 en 对齐。两版样式覆盖的细微漂移仍存在，见 🔴 清单。                                                                              |
 | 🟡   | about 页多文件臃肿且实现漂移           | en/zh/nl 三份独立实现（各 ~4000+ 行），canvas 动画脚本三份维护，动画参数与样式有独立差异。重构（共享模板）需要用户同意;这是当前最大的维护成本点。                                                     |
 | 🟢   | README.md 是 Astro 模板默认 README     | 已修复（2026-08-14）：重写为面向访客的项目介绍（中英双语，由浅入深）。                                                                                                                                |
+| 🟢   | `is:global` 块里的 `:global()` 全线失效 | 已定位并修复（2026-09-17）：`ProjectDetail.astro` 第二个样式块是 `<style is:global>`，Astro 对它不做作用域转换，`:global(...)` 被原样输出、浏览器整条丢弃。受影响的是 V1/V2/V3 对比网格的**全部**样式（含宽度、卡片边框、内边距、标题压缩）和 `article p/ul/ol/li` 三条间距规则 —— 所以 2026-09 那几次"把对比区拉宽"改 `:global(.versions-grid){width:...}` 全都毫无效果（改的是死规则）。修复方式：该块内剥掉所有 `:global()`。**规则：`is:global` 块只写裸选择器。** 复活后暴露一处配套缺陷：黄色竖条 `article h2::before` 的 `top: 30px` 是为正文 h2 的 `padding-top: 30px` 留的，而列内 h2/h3 的 `padding-top` 被压成 0 → 每个卡片里**第二个及以后**的小标题竖条低 30px（`:first-of-type` 那条 `top: 0` 恰好看不出问题）。已补 `.version-column h2/h3::before { top: 0 !important }`。 |
+| 🟢   | `.versions-grid` 类名撞车              | 已修复（2026-09-17）：markdown 手写的 `.version-cell` 四列网格（zoem-bike-bakfiets）占用 `versions-grid`，运行时生成的 V1/V2/V3 三列对比网格**正好同名** → 继承 `repeat(4,1fr)`，每列只剩 1/4 宽、右侧还常驻一个空槽（对比区看起来比上面时间线表格窄一截的根因）。运行时那个已改名 `version-compare-grid`（JS + CSS），zoem 页 4×194px 不受影响。 |
+| 🟡   | `article` 正文间距规则仍然无效         | `:global(article p){margin-bottom:30px}`、`…ul/ol{30px}`、`…li{14px}` 三条同上被 `is:global` bug 干掉；**即使剥掉 `:global()` 也仍输给作用域版** `article[data-astro-cid] p[data-astro-cid]{margin-bottom:20px}`（0,2,2 > 0,0,2）。当前实际值 = 段落 20px / 列表项 8px，改成 30px/14px 需用户确认（全站详情页都会变）。 |
 | 🟢   | og-card 脚本依赖 sharp 传递依赖        | 已修复（2026-08-14）：sharp 声明为 devDependency（^0.35.3），新增 `npm run og-card` 脚本（已运行验证）。                                                                                              |
 | 🟢   | `输入/` 与 .gitignore 不一致           | 已解决（2026-08-14）：`git rm -r --cached 输入` 取消跟踪（本地文件保留）。该目录重新定义为**用户给 AI 的投递箱**，永不提交（§12 规则 13）。                                                           |
 | 🟡   | Navbar 无当前页高亮                    | 无 `aria-current`/active 样式。属功能缺失而非 bug；加高亮属合理新需求。                                                                                                                               |
