@@ -124,6 +124,26 @@ export const translations = {
       archive: "ARCHIVE:",
     },
 
+    /* Cassette shelf (projects / lab listing pages) */
+    shelf: {
+      eyebrow: "TAPE_LIBRARY //",
+      instructions: "drag to pull a tape · click to inspect the record",
+      inspect: "INSPECT FILE >",
+      selected: "SELECTED",
+      counter: "ARCHIVE FILE",
+      brief: "TAPE LABEL",
+      category: "CATEGORY",
+      filed: "FILED",
+      tags: "TAGS",
+      prev: "Previous tape",
+      next: "Next tape",
+      replay: "REPLAY INTRO",
+      skip: "SKIP",
+      booting: "MOUNTING ARCHIVE",
+      empty: "NO TAPES MATCH THIS FILTER",
+      loaded: "TAPES LOADED",
+    },
+
     detail: {
       wip: "DESIGN FINALIZED — PROCUREMENT & BUILD PENDING",
     },
@@ -671,6 +691,26 @@ export const translations = {
       archive: "档案:",
     },
 
+    /* 磁带盒书架（projects / lab 列表页） */
+    shelf: {
+      eyebrow: "磁带库 //",
+      instructions: "左右拖动抽出磁带 · 点击查看档案",
+      inspect: "打开档案 >",
+      selected: "当前选中",
+      counter: "档案文件",
+      brief: "磁带标签",
+      category: "分类",
+      filed: "归档",
+      tags: "标签",
+      prev: "上一盘磁带",
+      next: "下一盘磁带",
+      replay: "重播开场",
+      skip: "跳过",
+      booting: "正在装填档案",
+      empty: "没有符合该筛选的磁带",
+      loaded: "磁带已就位",
+    },
+
     detail: {
       wip: "设计已定稿 —— 采购与搭建进行中",
     },
@@ -1191,6 +1231,26 @@ export const translations = {
       imageStream: "IMAGE_STREAM // ACTIEF",
       category: "CATEGORIE:",
       archive: "ARCHIEF:",
+    },
+
+    /* Cassetteplank (projects / lab overzichtspagina's) */
+    shelf: {
+      eyebrow: "TAPE_BIBLIOTHEEK //",
+      instructions: "sleep om een tape te pakken · klik om het dossier te openen",
+      inspect: "DOSSIER OPENEN >",
+      selected: "GESELECTEERD",
+      counter: "ARCHIEFDOSSIER",
+      brief: "TAPELABEL",
+      category: "CATEGORIE",
+      filed: "GEARCHIVEERD",
+      tags: "TAGS",
+      prev: "Vorige tape",
+      next: "Volgende tape",
+      replay: "INTRO HERHALEN",
+      skip: "OVERSLAAN",
+      booting: "ARCHIEF LADEN",
+      empty: "GEEN TAPES VOOR DIT FILTER",
+      loaded: "TAPES GELADEN",
     },
 
     detail: {

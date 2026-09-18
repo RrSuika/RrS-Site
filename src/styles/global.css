@@ -1564,3 +1564,253 @@ html[lang="nl"] body .hero h1 {
     animation: none;
   }
 }
+
+/* ═══════════════════════════════════════════
+   §15  THEME REVEAL (a wave of page copies)
+   The toggle reveals the incoming theme with one circle per click, each
+   growing from its own point (see src/scripts/theme-transition.ts). What
+   moves inside that circle is a real copy of the page, not a fill colour —
+   so a ripple never hides content and the hand-over at the end has nothing
+   to hide. The stack is appended to <html> by that script, so it is absent
+   until the toggle is used.
+   ═══════════════════════════════════════════ */
+
+/* Above the navbar (100) — a reveal that stops at the header is two gestures —
+   and below nothing that matters, since the copies carry their own rendering of
+   every overlay the page has. */
+.theme-stack {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+}
+
+/* One full-page copy, locked to the theme in its own `data-theme`. The
+   background is the theme's own token, so a copy still covers the viewport
+   where the page itself is shorter than it.
+
+   ⚠️ `backdrop-filter` is not decoration here — it is what stops a copy's
+   frosted panels from sampling the page BEHIND the copy. `backdrop-filter`,
+   however small, makes this layer a backdrop root, so the shelf panel and the
+   cards blur the copy's own dark background instead of the live page's, which
+   by then is already the incoming theme. Measured: with it the shelf panel went
+   from rgb(206,203,198) — a light frosted sheet inside a dark copy — to
+   matching the live panel. `blur(0)` paints nothing; it only isolates. */
+.theme-ripple {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  backdrop-filter: blur(0px);
+  pointer-events: none;
+}
+
+/* Deliberately NO `animation-play-state` / `animation-delay` override here.
+   All three variants were measured against a live render of the same theme:
+   untouched 2.8 mean |Δ|, paused-at-frame-0 37, pushed-past-the-end 106. A copy
+   restarts its animations when it is inserted, so pausing lands on keyframe 0
+   (an entrance animation's *pre* state) and a negative delay lands wherever the
+   keyframes happen to be — on this page an infinite glow's bright phase, which
+   is why the copies went pale. The shelf's entrance is JS-driven, so a copy has
+   no entrance to replay and the leftover difference is only the phase of a few
+   idle animations. */
+
+/* The frame a burst lands in: the theme swap happens with every transition off,
+   so the live page is already settled when the copies come down (see
+   `applyInstant` in src/scripts/theme-transition.ts). `!important` because the
+   themed rules it has to beat are 3-class selectors. */
+html.theme-land,
+html.theme-land *,
+html.theme-land *::before,
+html.theme-land *::after {
+  transition: none !important;
+}
+
+/* Backstop only: with reduced motion the script never builds a copy at all, so
+   this covers the preference being switched on mid-burst. */
+@media (prefers-reduced-motion: reduce) {
+  .theme-ripple {
+    display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   §16  SITE INTRO / PRELOADER
+   Two paper halves with a hairline seam, a rail that fills, a counter. It
+   covers everything, waits for the page to be able to draw, then opens like a
+   document. The inline guard in Layout.astro's <head> tags the document either
+   `is-intro` (play) or `is-intro-skip` (hide) before the first paint, so no
+   script — and no JS at all — means no cover rather than a blank page. Palette
+   is its own: the intro is white paper in BOTH themes — a dark site that opens
+   on a white document is the reference's own move — but the rail takes the live
+   accent, so it agrees with the theme the visitor will land in.
+   ═══════════════════════════════════════════ */
+
+.site-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483200; /* above the theme-reveal stack, below nothing */
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+
+  /* ⚠️ The cover takes the theme the visitor is about to land in, and it can:
+     the boot script in <head> sets `data-theme` before the first paint. A dark
+     site opening on a sheet of white paper was the reference's own move, but on
+     this site it read as a flashbang — the intro is the first frame of the
+     page, so it has to be the first frame of the palette too. Tokens below are
+     the light set; the dark block follows the same roles. */
+  --intro-paper: #f1ece1;
+  --intro-ink: #16161a;
+  --intro-rail: rgba(22, 22, 26, 0.16);
+  --intro-dim: rgba(22, 22, 26, 0.5);
+  --intro-accent: var(--accent, #c07020);
+
+  font-family: var(--font-mono);
+  color: var(--intro-ink);
+}
+
+:root[data-theme="dark"] .site-intro {
+  --intro-paper: #0a0a11;
+  --intro-ink: #f2ece0;
+  --intro-rail: rgba(242, 236, 224, 0.18);
+  --intro-dim: rgba(242, 236, 224, 0.52);
+  --intro-accent: var(--accent, #e8943a);
+}
+
+/* Not this document's turn (see the guard in Layout.astro). */
+html.is-intro-skip .site-intro {
+  display: none;
+}
+
+/* Scrolling under the cover would move the page the visitor has not seen yet. */
+html.is-intro {
+  overflow: hidden;
+}
+
+.site-intro__half {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: var(--intro-paper);
+  transition: transform 0.62s cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+.site-intro__half--top {
+  top: 0;
+  border-bottom: 1px solid var(--intro-accent);
+}
+
+.site-intro__half--bottom {
+  bottom: 0;
+}
+
+.site-intro.is-leaving .site-intro__half--top {
+  transform: translateY(-100.5%);
+}
+
+.site-intro.is-leaving .site-intro__half--bottom {
+  transform: translateY(100.5%);
+}
+
+/* Registration marks: four thin crosses, the print-shop tell that says this is
+   a document rather than a splash screen. */
+.site-intro__tick {
+  position: absolute;
+  z-index: 2;
+  width: 13px;
+  height: 13px;
+  opacity: 0.45;
+}
+
+.site-intro__tick::before,
+.site-intro__tick::after {
+  content: "";
+  position: absolute;
+  background: var(--intro-ink);
+}
+
+.site-intro__tick::before {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+}
+
+.site-intro__tick::after {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+}
+
+.site-intro__tick--tl {
+  top: 28px;
+  left: 28px;
+}
+
+.site-intro__tick--tr {
+  top: 28px;
+  right: 28px;
+}
+
+.site-intro__tick--bl {
+  bottom: 28px;
+  left: 28px;
+}
+
+.site-intro__tick--br {
+  bottom: 28px;
+  right: 28px;
+}
+
+.site-intro__body {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  text-align: center;
+  transition:
+    opacity 0.3s var(--ease-out),
+    transform 0.3s var(--ease-out);
+}
+
+.site-intro.is-leaving .site-intro__body {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.site-intro__mark {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.44em;
+  /* The tracking adds a phantom space after the last letter; pull it back so the
+     wordmark stays optically centred. */
+  text-indent: 0.44em;
+  text-transform: uppercase;
+}
+
+.site-intro__rail {
+  width: min(44vw, 260px);
+  height: 1px;
+  background: var(--intro-rail);
+  overflow: hidden;
+}
+
+.site-intro__fill {
+  display: block;
+  height: 100%;
+  background: var(--intro-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.site-intro__pct {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--intro-dim);
+  font-variant-numeric: tabular-nums;
+}

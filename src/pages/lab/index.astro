@@ -1,7 +1,7 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import { getCollection } from "astro:content";
-import ProjectCard from "../../components/ProjectCard.astro";
+import CassetteShelf from "../../components/CassetteShelf.astro";
 import { getLanguageFromPath } from "../../utils/i18n";
 import { getTranslations } from "../../utils/translations";
 
@@ -13,7 +13,7 @@ const labEntries = entries
   .filter((e) => e.data.type === "lab" && e.data.lang === language)
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
-// Curated filter tags — meaningful, non-overlapping categories
+// Curated filter tags — narrowed inside CassetteShelf to the ones that exist
 const filterTags = [
   "ESP32",
   "Arduino",
@@ -24,110 +24,17 @@ const filterTags = [
   "3D Printing",
   "Electrical Safety",
 ];
-
-// Only show tags that actually exist in lab entries
-const allTags = new Set(labEntries.flatMap((e) => e.data.tags || []));
-const topTags = filterTags
-  .filter((t) => allTags.has(t))
-  .map((t) => [t, labEntries.filter((e) => (e.data.tags || []).includes(t)).length] as const);
 ---
 
-<Layout title={`${t.sections.lab.title} | RrSuika Studio`} description={t.sections.lab.description}>
-  <main class="lab-page">
-    <header class="lab-header">
-      <h1>{t.sections.lab.title}</h1>
-      <p>{t.sections.lab.description}</p>
-    </header>
-
-    <div class="tag-bar" id="tag-bar">
-      <button class="tag-chip active" data-tag="">ALL</button>
-      {topTags.map(([tag, count]) => (
-        <button class="tag-chip" data-tag={tag}>
-          {tag}<span class="tag-count">{count}</span>
-        </button>
-      ))}
-    </div>
-
-    <div class="grid" id="lab-grid">
-      {labEntries.map((entry) => (
-        <div class="project-wrapper" data-tags={JSON.stringify(entry.data.tags || [])}>
-          <ProjectCard project={entry} />
-        </div>
-      ))}
-    </div>
-  </main>
+<Layout
+  title={`${t.sections.lab.title} | RrSuika Studio`}
+  description={t.sections.lab.description}
+>
+  <CassetteShelf
+    entries={labEntries}
+    kind="lab"
+    filterTags={filterTags}
+    title={t.sections.lab.title}
+    description={t.sections.lab.description}
+  />
 </Layout>
-
-<script>
-  const chips = document.querySelectorAll<HTMLButtonElement>(".tag-chip");
-  const wrappers = document.querySelectorAll<HTMLElement>(".project-wrapper");
-
-  let activeTag = "";
-
-  chips.forEach((chip) => {
-    chip.addEventListener("click", () => {
-      const tag = chip.dataset.tag || "";
-
-      // Toggle UI
-      chips.forEach((c) => c.classList.remove("active"));
-      chip.classList.add("active");
-      activeTag = tag;
-
-      // Filter
-      wrappers.forEach((w) => {
-        const tags: string[] = JSON.parse(w.dataset.tags || "[]");
-        if (!activeTag || tags.includes(activeTag)) {
-          w.style.display = "";
-        } else {
-          w.style.display = "none";
-        }
-      });
-    });
-  });
-</script>
-
-<style>
-  .lab-page {
-    max-width: var(--container-wide);
-    margin: auto;
-    padding: 0 40px 80px;
-  }
-
-  .lab-header {
-    margin-bottom: 30px;
-  }
-
-  .lab-header h1 {
-    font-size: var(--text-scale-h1);
-    line-height: 1.2;
-  }
-
-  .lab-header p {
-    font-size: 20px;
-    color: #666;
-    margin-top: 8px;
-  }
-
-  /* ── Tag chips: global styles in global.css §12 ── */
-
-  /* ── Grid ── */
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: var(--grid-gap);
-  }
-
-  @media (max-width: 1200px) {
-    .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  }
-
-  @media (max-width: 900px) {
-    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-
-  @media (max-width: 700px) {
-    .lab-page { padding: 0 16px 60px; }
-    .grid { grid-template-columns: 1fr; }
-    .lab-header h1 { font-size: 42px; }
-  }
-</style>

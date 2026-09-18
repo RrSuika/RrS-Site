@@ -114,6 +114,95 @@ const websiteSchema = {
       html:not([data-theme]) body { visibility: hidden; }
     </style>
 
+    <!--
+      SITE INTRO GUARD — decides, before a single pixel is painted, whether this
+      document shows the intro. It has to be here and not in the module script:
+      a module runs after the body is parsed, which is late enough that a link
+      navigation would flash the cover for a few hundred ms before removing it.
+
+        first page of the session → show     (no flag yet)
+        F5 / reload              → show     (navigation.type === "reload")
+        a link inside the site   → skip     (flag set, type is "navigate")
+        back/forward, reduced motion → skip
+
+      Three things travel through `window` for the rest of the page:
+        `__rrsIntroGate`    resolved when the cover opens (or immediately when
+                            skipped) — the shelf holds its own entrance on it
+        `__rrsIntroResolve` called by src/scripts/site-intro.ts, and by the
+                            safety net below, so the gate can never hang
+        `__rrsIntroFallback` set if the safety net had to open the cover itself
+    -->
+    <script is:inline>
+      (() => {
+        var KEY = "rrsuika-intro-seen";
+        var root = document.documentElement;
+        var skip = false;
+        var resolveGate = () => {};
+
+        try {
+          skip = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        } catch (_) {}
+
+        if (!skip) {
+          var type = "navigate";
+          try {
+            var entry = performance.getEntriesByType("navigation")[0];
+            type = (entry && entry.type) || "navigate";
+          } catch (_) {}
+          if (type === "back_forward") {
+            skip = true;
+          } else if (type !== "reload") {
+            try {
+              skip = sessionStorage.getItem(KEY) === "1";
+            } catch (_) {
+              skip = false;
+            }
+          }
+        }
+
+        if (skip) {
+          root.classList.add("is-intro-skip");
+          window.__rrsIntroGate = Promise.resolve();
+          // Take the markup out of the document too: `display: none` is enough
+          // for the eye, but a full-page cover has no business staying in the
+          // DOM of every page of the session.
+          document.addEventListener(
+            "DOMContentLoaded",
+            () => {
+              document.getElementById("site-intro")?.remove();
+            },
+            { once: true },
+          );
+          return;
+        }
+
+        root.classList.add("is-intro");
+        try {
+          sessionStorage.setItem(KEY, "1");
+        } catch (_) {}
+
+        window.__rrsIntroGate = new Promise((resolve) => {
+          resolveGate = resolve;
+        });
+        window.__rrsIntroResolve = () => {
+          if (window.__rrsIntroResolveDone) return;
+          window.__rrsIntroResolveDone = true;
+          resolveGate();
+        };
+
+        // Safety net: the cover must never outlive the script that opens it.
+        setTimeout(() => {
+          var el = document.getElementById("site-intro");
+          if (!el || el.classList.contains("is-leaving")) return;
+          window.__rrsIntroFallback = true;
+          el.classList.add("is-leaving");
+          root.classList.remove("is-intro");
+          window.__rrsIntroResolve();
+          setTimeout(() => el.remove(), 900);
+        }, 6000);
+      })();
+    </script>
+
     <meta charset="UTF-8" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -188,6 +277,43 @@ const websiteSchema = {
   </head>
 
   <body class:list={{ "art-route": isArtRoute }}>
+    <!-- =========================================
+         SITE INTRO / PRELOADER
+
+         Shown when this document is the first page of the session or a
+         reload (F5) — never on an in-page link navigation. The decision is
+         made by the inline guard in <head> (see SITE INTRO GUARD), which
+         adds `is-intro` here or `is-intro-skip`; this markup therefore
+         carries no `hidden` attribute, and `<noscript>` below covers JS
+         being off. It doubles as the preload gate: it stays up until the
+         heavy layers (black-hole video, starfield, fonts, images) can
+         actually draw, then opens like a document.
+    ========================================== -->
+
+    <div class="site-intro" id="site-intro" role="status" aria-live="polite">
+      <span class="site-intro__half site-intro__half--top" aria-hidden="true"></span>
+      <span class="site-intro__half site-intro__half--bottom" aria-hidden="true"></span>
+
+      <span class="site-intro__tick site-intro__tick--tl" aria-hidden="true"></span>
+      <span class="site-intro__tick site-intro__tick--tr" aria-hidden="true"></span>
+      <span class="site-intro__tick site-intro__tick--bl" aria-hidden="true"></span>
+      <span class="site-intro__tick site-intro__tick--br" aria-hidden="true"></span>
+
+      <div class="site-intro__body">
+        <p class="site-intro__mark">RrSuika Studio</p>
+        <div class="site-intro__rail" aria-hidden="true">
+          <span class="site-intro__fill"></span>
+        </div>
+        <p class="site-intro__pct" aria-hidden="true"><span id="site-intro-pct">0</span></p>
+      </div>
+    </div>
+
+    <noscript>
+      <style is:global>
+        .site-intro { display: none !important; }
+      </style>
+    </noscript>
+
     <!-- =========================================
          SKIP LINK — keyboard navigation
     ========================================== -->
@@ -1396,15 +1522,24 @@ const websiteSchema = {
 
     <!-- ── Theme toggle (init is in <head> to prevent flash) ── -->
     <script>
+      import { toggleThemeWithReveal } from "../scripts/theme-transition";
+      import { initSiteIntro } from "../scripts/site-intro";
+
       (() => {
-        var KEY = "rrsuika-theme";
-        (window as typeof window & { __toggleTheme?: () => void }).__toggleTheme = function () {
-          var cur = document.documentElement.getAttribute("data-theme");
-          var next = cur === "light" ? "dark" : "light";
-          document.documentElement.setAttribute("data-theme", next);
-          try { localStorage.setItem(KEY, next); } catch (_) {}
-        };
+        (window as typeof window & { __toggleTheme?: (event?: MouseEvent) => void }).__toggleTheme =
+          function (event?: MouseEvent) {
+            // Only a real click gives usable coordinates; keyboard/other callers
+            // fall through to the button-centre default.
+            var x = event?.clientX;
+            var y = event?.clientY;
+            var hasPoint = Number.isFinite(x) && Number.isFinite(y);
+            toggleThemeWithReveal(hasPoint ? { x: x as number, y: y as number } : undefined);
+          };
       })();
+
+      // The intro owns the first paint; it resolves `window.__rrsIntroGate` when
+      // it opens, which the shelf waits on before starting its own entrance.
+      initSiteIntro();
     </script>
     <!-- ── Mobile notice dismiss: click × (session-scoped) ── -->
     <script>

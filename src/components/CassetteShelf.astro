@@ -1,0 +1,4273 @@
+---
+/**
+ * CassetteShelf — the /projects and /lab listing experience.
+ *
+ * The cards used to be a flat grid. They are now cassettes standing on an
+ * archive shelf: they rise into place, the selected one is pulled out toward
+ * the viewer and turned 15° so its cover, left spine and bottom edge read in
+ * 3D, and the neighbours recede and tilt into an inverted-triangle composition
+ * that funnels the eye to the centre.
+ *
+ * Two references drove this (both in `输入/`, reference only — none of their
+ * code is used here):
+ *   · 磁带盒主体动画.html — the cassette anatomy, the pull/flip choreography and
+ *                           the drag state machine
+ *   · 磁带盒启动动画.html — the bookshelf intro (staggered left→right rise from
+ *                           below, then the centre pull + rear retreat)
+ * The motion *feel* — critically damped release that keeps the pointer's
+ * velocity, the layered idle breath, chunky solid affordances and hairline
+ * rules — follows RhineLabUI (github.com/LBEILC/RhineLabUI), ported by hand:
+ * their scene is three.js, ours is CSS 3D.
+ *
+ * Implementation is CSS 3D (`transform-style: preserve-3d`), NOT three.js:
+ * no new dependency, the cover art keeps flowing through `astro:assets`, the
+ * copy stays real DOM (three languages + SEO + a11y), and the whole thing
+ * follows the site's theme tokens and frosted-glass language.
+ *
+ * ⚠️ preserve-3d hygiene: any ancestor of a `.cas-f` face must not gain
+ * `overflow:hidden`, `opacity < 1`, `filter`, `clip-path` or a `transform`
+ * that is not part of the 3D chain — each of those forces `flat` and the box
+ * collapses. Per-tape fades therefore ride on the `--cas-o` variable, which is
+ * consumed by the faces (leaves), never by the cassette element itself.
+ *
+ * ⚠️ The row is a FRACTIONAL-SLOT renderer, and that is what the previous
+ * version got wrong. Each tape carries a continuous slot (`pos`, e.g. 1.37)
+ * and every painted frame is a pure function of it, so a swap *glides*. Tapes
+ * only appear or disappear where they are already off-stage, and a recycled
+ * tape is teleported to a park slot that is outside the frame at every window
+ * size before it is ever shown. Nothing pops in at the edge; nothing blinks
+ * out of it.
+ */
+import { getImage } from "astro:assets";
+import { getProjectImageMeta } from "../utils/images";
+import { getLanguageFromPath, languageDateLocales } from "../utils/i18n";
+import { buildEntryUrl } from "../utils/routes";
+import { getTranslations } from "../utils/translations";
+
+/** Only the entry fields this shelf consumes — structural, like routes.ts. */
+interface ShelfEntry {
+  id: string;
+  data: {
+    title: string;
+    date: Date;
+    dateLabel?: string;
+    description?: string;
+    cover?: string;
+    type: string;
+    category?: string;
+    collaboration?: string;
+    tags?: string[];
+    wip?: boolean;
+    lang: "en" | "zh" | "nl";
+  };
+}
+
+interface Props {
+  entries: ShelfEntry[];
+  kind: "projects" | "lab";
+  filterTags: string[];
+  title: string;
+  description: string;
+}
+
+const { entries, kind, filterTags, title, description } = Astro.props as Props;
+
+const language = getLanguageFromPath(Astro.url.pathname);
+const t = getTranslations(language);
+
+// Tri-colour identity cycled per cassette — reuses the site stripe tokens
+// instead of inventing palette values.
+const ACCENTS = ["red", "yellow", "teal"] as const;
+
+const items = await Promise.all(
+  entries.map(async (entry, i) => {
+    const slug = entry.id.split("/")[0];
+
+    const coverMeta = entry.data.cover
+      ? getProjectImageMeta(slug, entry.data.cover)
+      : null;
+
+    const optimized =
+      coverMeta && typeof coverMeta !== "string"
+        ? await getImage({
+            src: coverMeta,
+            width: 960,
+            format: "webp",
+            quality: 88,
+          })
+        : null;
+
+    const image =
+      optimized?.src ?? (typeof coverMeta === "string" ? coverMeta : null);
+
+    const date = entry.data.dateLabel ?? entry.data.date.toLocaleDateString(
+      languageDateLocales[language],
+      { year: "numeric", month: "short" },
+    );
+
+    // The shared status strings still carry their legacy glyphs ("— ONLINE" /
+    // "— WIP") because ProjectCard.astro prints them verbatim. The shelf draws
+    // its own mark, so the glyph is stripped here rather than forking the
+    // shared translation table.
+    const status = (entry.data.wip ? t.card.wip : t.card.online).replace(
+      /^[^\p{L}\p{N}]+/u,
+      "",
+    );
+
+    return {
+      slug,
+      url: buildEntryUrl(entry, entry.data.lang),
+      title: entry.data.title as string,
+      description: (entry.data.description ?? "") as string,
+      category: (entry.data.category ?? "") as string,
+      type: entry.data.type.toUpperCase() as string,
+      tags: (entry.data.tags ?? []) as string[],
+      team: Boolean(entry.data.collaboration),
+      wip: Boolean(entry.data.wip),
+      date,
+      status,
+      image,
+      width: optimized?.attributes.width as number | undefined,
+      height: optimized?.attributes.height as number | undefined,
+      accent: ACCENTS[i % ACCENTS.length],
+      index: String(i + 1).padStart(2, "0"),
+    };
+  }),
+);
+
+// ── Curated filter tag list, narrowed to tags that actually exist ──
+const allTags = new Set(items.flatMap((item) => item.tags));
+const topTags = filterTags
+  .filter((tag) => allTags.has(tag))
+  .map(
+    (tag) =>
+      [tag, items.filter((item) => item.tags.includes(tag)).length] as const,
+  );
+
+/**
+ * Slots painted either side of the selection. Six reaches the screen edge on
+ * both sides, so the row always reads as a full shelf rather than a handful of
+ * tapes adrift in the middle; the script recomputes it from the ring length.
+ * Declared in the frontmatter (not the client script) because the blank-cassette
+ * markup needs the count at build time.
+ */
+const MAX_SLOT_COUNT = 4;
+/** Blanks to author: enough to fill both ends of a short shelf. */
+const MAX_FILLERS = MAX_SLOT_COUNT * 2;
+
+const brand = "RrSuika";
+
+/**
+ * Cover art to warm on the FIRST page view of a session only.
+ *
+ * The gate is deliberately client-side. `Astro.session` needs a session-capable
+ * adapter and this site is `output: "static"` with none, so there is no server
+ * state to consult; sessionStorage is the only thing that actually persists
+ * here. The tags are handed to a tiny inline script instead of rendered as
+ * `<link rel="preload">` because a preload is a *priority hint* — firing a
+ * dozen of them on every navigation would re-fetch the whole shelf for nothing
+ * on a repeat visit, while the browser's HTTP cache already has them.
+ */
+const coverUrls = items
+  .map((item) => item.image)
+  .filter((src): src is string => Boolean(src))
+  .slice(0, 24);
+---
+
+<div class="shelf-page" data-mode="3d">
+  <div
+    class="shelf-warm"
+    id="shelf-warm"
+    data-covers={JSON.stringify(coverUrls)}
+    hidden
+  >
+  </div>
+
+  <div class="shelf-head">
+    <h1>
+      <span class="shelf-eyebrow">{t.shelf.eyebrow}</span>
+      {title}
+    </h1>
+
+    {
+      topTags.length > 0 && (
+        <div class="tag-bar shelf-tag-bar" id="shelf-tag-bar">
+          <button class="tag-chip active" data-tag="">
+            ALL
+          </button>
+          {topTags.map(([tag, count]) => (
+            <button class="tag-chip" data-tag={tag}>
+              {tag}
+              <span class="tag-count">{count}</span>
+            </button>
+          ))}
+        </div>
+      )
+    }
+  </div>
+
+  <section
+    class="shelf"
+    id="cassette-shelf"
+    data-kind={kind}
+    data-loaded-label={t.shelf.loaded}
+    aria-label={title}
+  >
+    <div class="shelf-stage" id="shelf-stage">
+      <div class="shelf-atmos" aria-hidden="true"></div>
+      <div class="shelf-scrim" aria-hidden="true"></div>
+      <div class="shelf-floor" aria-hidden="true"></div>
+
+      <div class="shelf-track" id="shelf-track">
+        {
+          items.map((item) => (
+            <a
+              class="cas"
+              href={item.url}
+              data-index={item.index}
+              data-title={item.title}
+              data-desc={item.description}
+              data-category={item.category}
+              data-date={item.date}
+              data-type={item.type}
+              data-tags={JSON.stringify(item.tags)}
+              data-status={item.status}
+              data-wip={item.wip ? "1" : "0"}
+              draggable="false"
+              style={`--cas-accent:var(--stripe-${item.accent});--cas-accent-soft:var(--stripe-${item.accent}-soft)`}
+              aria-label={item.title}
+            >
+              {/* ── FRONT: the cover fills the shell; the deck reads on top ── */}
+              <div class="cas-f cas-front">
+                <div class="cas-label">
+                  {item.image ? (
+                    <img
+                      src={item.image}
+                      alt=""
+                      width={item.width}
+                      height={item.height}
+                      loading="eager"
+                      decoding="async"
+                      draggable="false"
+                    />
+                  ) : (
+                    <div class="cas-label-fallback" aria-hidden="true" />
+                  )}
+
+                  <div class="cas-label-scrim" aria-hidden="true" />
+
+                  <div class="cas-label-head">
+                    <span class="cas-node">
+                      {t.card.projectNode} {item.type}
+                    </span>
+                    <span class="cas-deck-idx">{item.index}</span>
+                  </div>
+
+                  <h2 class="cas-title">{item.title}</h2>
+
+                  {/* The tape window sits *over* the cover: a real cassette is
+                      a clear shell wrapped around a printed J-card, so the
+                      artwork keeps filling the whole face and the reels read
+                      through the plastic. */}
+                  <div class="cas-window" aria-hidden="true">
+                    <span class="cas-reel">
+                      <span class="cas-reel-spokes" />
+                      <span class="cas-reel-ring" />
+                      <span class="cas-reel-hub" />
+                    </span>
+
+                    {/* Between the hubs, as on the real moulding: a recessed well
+                        with the tape's technical mark. One line, generously
+                        tracked — a wall of 5px micro-type reads as printed noise
+                        at this size, which is what made the first version look
+                        cheap. */}
+                    <span class="cas-plate">
+                      <span class="cas-plate-tick" />
+                      <span class="cas-plate-mark">TYPE II · C-90</span>
+                    </span>
+
+                    <span class="cas-reel">
+                      <span class="cas-reel-spokes" />
+                      <span class="cas-reel-ring" />
+                      <span class="cas-reel-hub" />
+                    </span>
+
+                    {/* The tape path: the ribbon runs hub to hub behind the
+                        bottom of the window, over two guide rollers. */}
+                    <span class="cas-path">
+                      <span class="cas-path-ribbon" />
+                      <span class="cas-path-roller" />
+                      <span class="cas-path-roller" />
+                    </span>
+                  </div>
+
+                  {/* Moulded shell mark: embossed, not printed. */}
+                  <span class="cas-mould" aria-hidden="true">{brand} TYPE II</span>
+
+                  <div class="cas-deck-meta" aria-hidden="true">
+                    <span class="cas-deck-date">{item.date}</span>
+                    {item.team && (
+                      <span class="cas-deck-team">{t.card.team.replace(/\//g, "")}</span>
+                    )}
+                  </div>
+
+                  <span class="cas-hairline" aria-hidden="true" />
+                  <span class="cas-accent-bar" aria-hidden="true" />
+                </div>
+              </div>
+
+              {/* ── LEFT SPINE ── */}
+              <div class="cas-f cas-left">
+                <span class="cas-spine-stripe" aria-hidden="true" />
+                <span class="cas-spine-brand">{brand}</span>
+                <span class="cas-spine-title">{item.title}</span>
+                <span class="cas-spine-idx">{item.index}</span>
+              </div>
+
+              {/* ── RIGHT SPINE (mirrored, for the left-hand neighbours) ── */}
+              <div class="cas-f cas-right">
+                <span class="cas-spine-stripe" aria-hidden="true" />
+                <span class="cas-spine-brand">{brand}</span>
+                <span class="cas-spine-title">{item.title}</span>
+                <span class="cas-spine-idx">{item.index}</span>
+              </div>
+
+              {/* ── SHELL EDGES ── */}
+              <div class="cas-f cas-top" />
+              <div class="cas-f cas-bottom">
+                <span class="cas-bottom-edge" aria-hidden="true" />
+              </div>
+              <div class="cas-f cas-back" />
+
+              <p class="cas-sr">{item.description}</p>
+            </a>
+          ))
+        }
+
+        {/* ── BLANK CASSETTES ──
+            Scenery for a short shelf: when a filter (or a small archive) leaves
+            fewer tapes than fill the frame, these pad both ends so the row still
+            reaches both screen edges and the selection stays centred. They
+            carry no link and no copy, and the walkable range excludes them. */}
+        <div class="shelf-fillers" data-fillers hidden>
+          {Array.from({ length: MAX_FILLERS }).map(() => (
+            <a class="cas cas-blank" aria-hidden="true" tabindex="-1">
+              <div class="cas-f cas-front">
+                <div class="cas-label">
+                  <div class="cas-label-fallback" aria-hidden="true" />
+                  <div class="cas-label-scrim" aria-hidden="true" />
+                  <span class="cas-blank-mark" aria-hidden="true" />
+                  <span class="cas-window" aria-hidden="true">
+                    <span class="cas-reel">
+                      <span class="cas-reel-spokes" />
+                      <span class="cas-reel-ring" />
+                      <span class="cas-reel-hub" />
+                    </span>
+                    <span class="cas-plate cas-plate-blank" aria-hidden="true" />
+                    <span class="cas-reel">
+                      <span class="cas-reel-spokes" />
+                      <span class="cas-reel-ring" />
+                      <span class="cas-reel-hub" />
+                    </span>
+                    <span class="cas-path">
+                      <span class="cas-path-ribbon" />
+                      <span class="cas-path-roller" />
+                      <span class="cas-path-roller" />
+                    </span>
+                  </span>
+                </div>
+              </div>
+              <div class="cas-f cas-left">
+                <span class="cas-spine-stripe" aria-hidden="true" />
+                <span class="cas-spine-brand">{brand}</span>
+              </div>
+              <div class="cas-f cas-right">
+                <span class="cas-spine-stripe" aria-hidden="true" />
+                <span class="cas-spine-brand">{brand}</span>
+              </div>
+              <div class="cas-f cas-top" />
+              <div class="cas-f cas-bottom">
+                <span class="cas-bottom-edge" aria-hidden="true" />
+              </div>
+              <div class="cas-f cas-back" />
+            </a>
+          ))}
+        </div>
+      </div>
+
+      {/* ── HUD ── */}
+      <div class="shelf-hud">
+        <div class="shelf-hud-row">
+          <div class="shelf-counter">
+            <strong id="shelf-current">01</strong>
+            <span>/ <span id="shelf-total">{String(items.length).padStart(2, "0")}</span></span>
+            <em>{t.shelf.counter}</em>
+          </div>
+
+          <span class="shelf-hud-rule" aria-hidden="true"></span>
+
+          <div class="shelf-hud-state">
+            <i class="shelf-dot" aria-hidden="true"></i>
+            <span id="shelf-hud-state">
+              {String(items.length).padStart(2, "0")} {t.shelf.loaded}
+            </span>
+          </div>
+        </div>
+
+        <p class="shelf-hud-desc">{description}</p>
+      </div>
+
+      <aside class="shelf-panel" id="shelf-panel" data-wip="0">
+        <div class="shelf-panel-kicker">
+          <span id="shelf-panel-category">{t.shelf.brief}</span>
+          <span class="shelf-panel-status">
+            <i class="shelf-status-mark" aria-hidden="true"></i>
+            <b id="shelf-panel-status"></b>
+          </span>
+        </div>
+
+        <h2 class="shelf-panel-title" id="shelf-panel-title"></h2>
+
+        <p class="shelf-panel-desc" id="shelf-panel-desc"></p>
+
+        <div class="shelf-panel-tags" id="shelf-panel-tags"></div>
+
+        <div class="shelf-panel-foot">
+          <span id="shelf-panel-date"></span>
+        </div>
+
+        {/* The way in. Routing it through the same launcher as a click on the
+            tape keeps one transition, whichever affordance is used. */}
+        <button class="shelf-open" id="shelf-open" type="button">
+          <span class="shelf-open-label">{t.shelf.inspect}</span>
+          <span class="shelf-open-arrow" aria-hidden="true"></span>
+        </button>
+      </aside>
+
+      <button class="shelf-nav left" id="shelf-prev" aria-label={t.shelf.prev}>
+        <span class="shelf-arrow">
+          <svg viewBox="0 0 14 26" aria-hidden="true" focusable="false">
+            <path d="M12 2 L2 13 L12 24" />
+          </svg>
+        </span>
+      </button>
+
+      <button class="shelf-nav right" id="shelf-next" aria-label={t.shelf.next}>
+        <span class="shelf-arrow">
+          <svg viewBox="0 0 14 26" aria-hidden="true" focusable="false">
+            <path d="M2 2 L12 13 L2 24" />
+          </svg>
+        </span>
+      </button>
+
+      <div class="shelf-foot">
+        <span class="shelf-hint">{t.shelf.instructions}</span>
+        <button class="shelf-replay" id="shelf-replay" type="button">
+          {t.shelf.replay}
+        </button>
+      </div>
+
+      <p class="shelf-empty" id="shelf-empty" hidden>{t.shelf.empty}</p>
+
+      <span class="shelf-sr" id="shelf-status" role="status" aria-live="polite"></span>
+
+      <div class="shelf-intro" id="shelf-intro">
+        <div class="shelf-intro-mark">
+          <span class="shelf-intro-brand">{brand} / {title}</span>
+          <span class="shelf-intro-bar" aria-hidden="true"><i></i></span>
+          <span class="shelf-intro-state" id="shelf-intro-state">
+            {t.shelf.booting}
+          </span>
+          <span class="shelf-intro-skip">{t.shelf.skip}</span>
+        </div>
+      </div>
+
+      <div class="shelf-veil" id="shelf-veil" aria-hidden="true"></div>
+    </div>
+  </section>
+</div>
+
+{/* First page view of a session: warm every cover so the first tag-filter
+    swap — and the first tape step — never wait on the network. Repeat views
+    skip it; the covers are already in the HTTP cache. */}
+<script is:inline>
+  (() => {
+    const el = document.getElementById("shelf-warm");
+    if (!el) return;
+    let seen = false;
+    try {
+      seen = sessionStorage.getItem("rrsuika-shelf-warm") === "1";
+      sessionStorage.setItem("rrsuika-shelf-warm", "1");
+    } catch {
+      /* private mode — preload every time, which is the safe direction */
+    }
+    if (seen) return;
+
+    let urls = [];
+    try {
+      urls = JSON.parse(el.dataset.covers || "[]");
+    } catch {
+      urls = [];
+    }
+
+    for (const href of urls) {
+      const link = document.createElement("link");
+      link.rel = "preload";
+      link.as = "image";
+      link.href = href;
+      document.head.appendChild(link);
+    }
+  })();
+</script>
+
+<style>
+  /* ══════════════════════════════════════════
+     PAGE SHELL — the shelf owns the first screen
+     ══════════════════════════════════════════ */
+
+  .shelf-page {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 76px); /* 76px = sticky navbar */
+    min-height: calc(100svh - 76px);
+    /* No bottom padding: the shelf runs all the way down to the footer rule. */
+  }
+
+  /* The global footer carries a 120px section gap, which on these six pages
+     shows up as a band of dead space between the bottom of the shelf and the
+     footer rule. The shelf is sized to end exactly at the fold, so zero it and
+     the two butt up against each other.
+     `!important` is deliberate: Footer.astro styles itself through a scoped
+     class selector (0,2,0) that a plain class override cannot beat. */
+  :global(.footer) {
+    margin-top: 0 !important;
+  }
+
+  .shelf-head {
+    flex: 0 0 auto;
+    width: 100%;
+    /* ⚠️ Deliberately NOT `--container-wide` + `margin: 0 auto`: the HUD's
+       counter sits at 34px from the viewport edge, and centring a 1400px block
+       inside a 1600px window put the eyebrow 100px to the right of it — two
+       left edges that visibly disagree on a wide screen. The header uses the
+       same gutter as the HUD, the panel and the foot, so there is one left
+       edge for the whole page. */
+    padding: 18px 34px 0;
+
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 30px;
+  }
+
+  .shelf-head h1 {
+    flex: 0 0 auto;
+    font-size: 32px;
+    line-height: 1.1;
+    letter-spacing: var(--tracking-tight);
+    margin: 0;
+  }
+
+  .shelf-eyebrow {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: var(--tracking-wide);
+    color: var(--accent);
+    margin-bottom: 5px;
+  }
+
+  /* Chips share the header row so the shelf below gets the whole fold. */
+  .shelf-tag-bar {
+    flex: 1 1 auto;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0;
+    padding-bottom: 4px;
+    border-bottom: none;
+    scrollbar-width: none;
+  }
+
+  .shelf-tag-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .shelf-tag-bar .tag-chip {
+    flex: 0 0 auto;
+  }
+
+  /* ══════════════════════════════════════════
+     THE SHELF
+     ══════════════════════════════════════════ */
+
+  .shelf {
+    position: relative;
+    flex: 1 1 auto;
+    display: flex;
+    width: 100%;
+    min-height: 0;
+    margin-top: 2px;
+  }
+
+  .shelf-stage {
+    position: relative;
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 420px;
+
+    perspective: calc(var(--S, 100px) * var(--persp, 11.8));
+    perspective-origin: 50% 50%;
+
+    overflow: hidden;
+
+    /* The row is a pointer-drag surface: vertical panning stays with the
+       browser (the page can still scroll), everything horizontal is ours. */
+    touch-action: pan-y;
+  }
+
+  .shelf-stage.is-dragging {
+    cursor: grabbing;
+    touch-action: none;
+  }
+
+  .shelf-track {
+    position: absolute;
+    inset: 0;
+
+    transform-style: preserve-3d;
+
+    /* Drops the whole 3D scene toward the bottom of the stage so the shelf
+       sits on the footer rule instead of floating in the middle with dead
+       space below it. Percentage of the stage height; tune to taste.
+       NOTE: a track transform is safe — it is the 3D context's root child,
+       and a pure 2D translate never flattens it. */
+    transform: translateY(var(--shelf-drop, 1.5%));
+  }
+
+  /* Soft archive light so the cassettes sit in a space, not a void. */
+  .shelf-atmos {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+
+    background: radial-gradient(
+      ellipse 46% 40% at 50% 56%,
+      rgba(255, 255, 255, 0.05),
+      transparent 70%
+    );
+
+    opacity: 0.5;
+  }
+
+  :global(:root[data-theme="light"]) .shelf-atmos {
+    opacity: 0.28;
+  }
+
+  /* Top / bottom scrims: they lift the micro-type off the starfield and give
+     the HUD rails somewhere to sit. */
+  .shelf-scrim {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+
+    background:
+      linear-gradient(
+        180deg,
+        rgba(4, 4, 7, 0.72) 0%,
+        rgba(4, 4, 7, 0.28) 9%,
+        transparent 22%
+      ),
+      linear-gradient(
+        0deg,
+        rgba(4, 4, 7, 0.7) 0%,
+        rgba(4, 4, 7, 0.24) 8%,
+        transparent 20%
+      );
+  }
+
+  :global(:root[data-theme="light"]) .shelf-scrim {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(240, 235, 224, 0.8) 0%,
+        rgba(240, 235, 224, 0.3) 9%,
+        transparent 22%
+      ),
+      linear-gradient(
+        0deg,
+        rgba(240, 235, 224, 0.78) 0%,
+        rgba(240, 235, 224, 0.26) 8%,
+        transparent 20%
+      );
+  }
+
+  .shelf-floor {
+    position: absolute;
+    left: 50%;
+    bottom: 7%;
+    width: min(74vw, 900px);
+    height: 76px;
+    transform: translateX(-50%);
+    pointer-events: none;
+
+    background: radial-gradient(
+      ellipse at center,
+      rgba(0, 0, 0, 0.58),
+      transparent 68%
+    );
+
+    filter: blur(6px);
+  }
+
+  :global(:root[data-theme="light"]) .shelf-floor {
+    background: radial-gradient(
+      ellipse at center,
+      rgba(0, 0, 0, 0.26),
+      transparent 68%
+    );
+  }
+
+  /* ══════════════════════════════════════════
+     CASSETTE
+     World units: W 4.85 · H 3.10 · D 0.37
+     The shell is deliberately thin (D ≈ 7.6% of W, against the old 14.4%):
+     seven of these have to stand in one row without their slabs colliding.
+     ══════════════════════════════════════════ */
+
+  /* ══════════════════════════════════════════
+     TAPE — the shell as a MATERIAL, in two themes.
+
+     Everything the six faces paint comes from these tokens, so the whole row
+     can be re-materialised per theme without touching a face rule. The dark set
+     is graphite in a cool key; the light set is a warm ivory/bone shell, because
+     a black cassette on a paper-white page reads as a hole punched in the page.
+     Values are grouped by where they land: body, spines, moulded edges, metal,
+     micro-type, and the relief pair every raised detail is built from.
+     ══════════════════════════════════════════ */
+
+  .cas {
+    /* Body: the front plate and the plastic around the J-card. */
+    --shell-top: #17171c;
+    --shell-mid: #0a0a0d;
+    --shell-bot: #07070a;
+
+    /* Side walls, seam → outer edge (light comes from the front-right). */
+    --shell-spine-a: #05050a;
+    --shell-spine-b: #101016;
+    --shell-spine-c: #17171f;
+    --shell-spine-d: #0a0a10;
+
+    /* Moulded top/bottom walls and the back plate. */
+    --shell-edge-a: #1b1b21;
+    --shell-edge-b: #0a0a0d;
+    --shell-edge-under-a: #06060a;
+    --shell-edge-under-b: #12121a;
+    --shell-back: #08080b;
+
+    /* Rim: the bright seam where two walls meet, and the dark line inside it. */
+    --shell-rim: rgba(255, 255, 255, 0.17);
+    --shell-rim-inner: rgba(0, 0, 0, 0.55);
+    --shell-hi: rgba(255, 255, 255, 0.14);
+    --shell-ao: rgba(0, 0, 0, 0.62);
+    --shell-seam: rgba(255, 255, 255, 0.24);
+
+    /* Relief: every raised part gets this light/dark pair, every recessed part
+       the inverse. This is the neumorphic half of the shell — one light source
+       (top-left) for the whole tape. */
+    --relief-hi: rgba(255, 255, 255, 0.34);
+    --relief-lo: rgba(0, 0, 0, 0.55);
+
+    /* Metal: the reel hubs and the spine caps. */
+    --metal-hi: #ffffff;
+    --metal-mid: #d2d2d6;
+    --metal-lo: #6b6b74;
+
+    /* Micro-type printed or moulded on the shell. */
+    --shell-ink: rgba(233, 227, 214, 0.78);
+    --shell-ink-dim: rgba(196, 189, 175, 0.5);
+
+    /* The window: frosted plastic over the reels. */
+    --glass-a: rgba(255, 255, 255, 0.13);
+    --glass-b: rgba(255, 255, 255, 0.03);
+    --glass-cavity-a: rgba(10, 10, 15, 0.86);
+    --glass-cavity-b: rgba(4, 4, 7, 0.94);
+
+    /* Neighbours are dimmed with this, never with `opacity`: a see-through tape
+       lets the tape behind it show through and the row reads as stacked ghosts
+       (worst on the light theme, where the bleed is obvious). */
+    --shell-dim-a: rgba(7, 10, 20, 0.68);
+    --shell-dim-b: rgba(4, 6, 14, 0.84);
+
+    /* ── The reels ──
+       Geometry and material of the two hubs, all custom properties so the
+       temporary tuning panel can drive them live (and so the final numbers are
+       one block to bake). The recessed lighting is the point: inside a dent the
+       NEAR wall (top-left) is in shadow and the FAR wall (bottom-right) catches
+       the light, which is the inverse of every raised part on the shell. */
+    --reel-size: 2.35em;
+    --reel-spoke-inset: 12%;
+    --reel-spoke-alpha: 0.34;
+    --reel-spoke-on: 4deg;
+    --reel-spoke-gap: 60deg;
+    --reel-cavity-a: 0.72;
+    --reel-cavity-b: 0.86;
+    --reel-cavity-c: 0.9;
+    --reel-near-shadow: 0.8;
+    --reel-far-light: 0.16;
+    --reel-rim: 0.16;
+    --reel-hub-inset: 30%;
+    --hub-lit-x: 66%;
+    --hub-lit-y: 76%;
+    --hub-lit-alpha: 0.5;
+    --hub-shadow: 0.85;
+
+    /* Cast shadow: cold and deep on graphite, warm and shorter on ivory. */
+    --tape-drop-far: 0 30px 64px rgba(0, 0, 0, 0.62);
+    --tape-drop-near: 0 6px 18px rgba(0, 0, 0, 0.5);
+    --wall-drop: 0 20px 44px rgba(0, 0, 0, 0.6);
+    /* ⚠️ Ten tapes each casting a 64px-blur shadow is the single most expensive
+       thing in a repaint of this row, and only the selection's shadow is ever
+       read as depth — the neighbours are dimmed anyway. So they get a short
+       one; see `.cas:not(.is-center) .cas-front`. */
+    --tape-drop-short: 0 12px 22px rgba(0, 0, 0, 0.45);
+
+    /* The key light that picks the selection out of the row. */
+    --key-glow: rgba(255, 178, 102, 0.06);
+    --key-edge: rgba(255, 196, 138, 0.22);
+
+    position: absolute;
+    left: 50%;
+    top: 50%;
+
+    width: var(--cas-w, 400px);
+    height: var(--cas-h, 256px);
+
+    margin-left: calc(var(--cas-w, 400px) / -2);
+    margin-top: calc(var(--cas-h, 256px) / -2);
+
+    transform-style: preserve-3d;
+    transform-origin: 50% 50%;
+
+    font-family: var(--font-mono);
+    font-size: calc(var(--cas-w, 400px) / 26);
+
+    text-decoration: none;
+    color: var(--text-bright);
+
+    cursor: grab;
+    /* Native image / link dragging is the enemy here: without these the
+       browser starts its own drag of the cover art or of the anchor as soon as
+       the pointer moves, and the row never gets the gesture. */
+    -webkit-user-drag: none;
+    user-select: none;
+
+    /* ⚠️ `will-change` is deliberately NOT set on every tape. It was, and that
+       promotes ten 3D boxes to their own compositor layers for the whole life of
+       the page — memory, plus a re-raster of each on the first frame after the
+       shelf settles. The hint belongs on the tape that is about to move, so the
+       render loop adds it to the selection only (see `.is-center` below). */
+    contain: layout style;
+  }
+
+  /* Only the tape that is actually travelling gets a layer hint. */
+  .cas.is-center {
+    will-change: transform;
+  }
+
+  .cas.is-hidden {
+    visibility: hidden;
+    will-change: auto;
+  }
+
+  /* ── Chrome shell for the light theme ──
+     Retro-futurism on a paper page is *metal on paper*: a cool silver body with
+     blue-grey shadows and a cool charcoal ink, so the tape reads as a machined
+     object sitting on a technical document. ⚠️ The previous set was warm ivory
+     with warm brown shadows on a warm paper background — the user's verdict was
+     "像屎黄色" and they were right: nothing in that set had any temperature
+     contrast against the page, so every value collapsed into mud. Keep this set
+     COOL; the only warmth on a light-theme tape is the accent stripe. */
+  :global(:root[data-theme="light"]) .cas {
+    --shell-top: #e9edf2;
+    --shell-mid: #c2c9d3;
+    --shell-bot: #98a1ad;
+
+    --shell-spine-a: #79828f;
+    --shell-spine-b: #a7afba;
+    --shell-spine-c: #c5cbd4;
+    --shell-spine-d: #89919d;
+
+    --shell-edge-a: #dfe3e9;
+    --shell-edge-b: #929aa6;
+    --shell-edge-under-a: #8b93a0;
+    --shell-edge-under-b: #c0c6cf;
+    --shell-back: #b4bac4;
+
+    --shell-rim: rgba(255, 255, 255, 0.94);
+    --shell-rim-inner: rgba(54, 64, 80, 0.32);
+    --shell-hi: rgba(255, 255, 255, 0.96);
+    --shell-ao: rgba(48, 58, 74, 0.32);
+    --shell-seam: rgba(255, 255, 255, 0.92);
+
+    --relief-hi: rgba(255, 255, 255, 0.94);
+    --relief-lo: rgba(52, 62, 78, 0.36);
+
+    --metal-hi: #ffffff;
+    --metal-mid: #dfe3e9;
+    --metal-lo: #7e8795;
+
+    --shell-ink: rgba(36, 44, 58, 0.88);
+    --shell-ink-dim: rgba(52, 62, 78, 0.6);
+
+    --glass-a: rgba(255, 255, 255, 0.52);
+    --glass-b: rgba(255, 255, 255, 0.14);
+    --glass-cavity-a: rgba(36, 42, 54, 0.62);
+    --glass-cavity-b: rgba(20, 24, 32, 0.82);
+
+    --shell-dim-a: rgba(42, 50, 66, 0.38);
+    --shell-dim-b: rgba(24, 30, 42, 0.52);
+
+    --tape-drop-far: 0 26px 52px rgba(34, 44, 62, 0.36);
+    --tape-drop-near: 0 5px 14px rgba(34, 44, 62, 0.32);
+    --wall-drop: 0 18px 36px rgba(34, 44, 62, 0.32);
+    --tape-drop-short: 0 10px 18px rgba(34, 44, 62, 0.32);
+
+    --key-glow: rgba(255, 186, 116, 0.24);
+    --key-edge: rgba(190, 118, 44, 0.4);
+  }
+
+  .cas:focus-visible {
+    outline: none;
+  }
+
+  .cas-f {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+
+    opacity: var(--cas-o, 1);
+
+    backface-visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* The reference fades the printed cover out as a tape turns edge-on
+     (`front = 1 − .96·side`). The intent here is INVERTED on purpose: the
+     neighbours are dimmed rather than hidden, so keeping the cover ~80%
+     visible at full side-turn makes the row read as a fan of artwork instead of
+     a rack of blank spines — which is exactly the "make the spine titles
+     readable" complaint. */
+  /* ⚠️ NOTHING on a tape fades with `opacity` except the ring enter/leave
+     (`--cas-o` = `tape.vis`) and the intro. An earlier revision also crossfaded
+     the printed cover as a tape turned edge-on (`--cas-front-o`, 0.8 at full
+     side). It looked acceptable on the dark theme and wrong on the light one:
+     the front plate of every neighbour went see-through, so a tape showed the
+     tape behind it, the shell behind that, and the row read as stacked
+     translucent volumes. Depth is carried by the opaque dim below, the Z
+     separation and the scale — never by alpha. */
+  .cas-front,
+  .cas-back {
+    opacity: var(--cas-o, 1);
+  }
+
+  /* Behind the selection the tapes stay SOLID and are dimmed instead.
+     ⚠️ The dim is a translucent veil over an OPAQUE tape — that is what makes
+     the artwork recede while the object stays solid. Dimming the whole element
+     with `opacity` instead would let the neighbours behind it show through. */
+  .cas-f::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, var(--shell-dim-a), var(--shell-dim-b));
+    opacity: var(--cas-beneath, 0);
+    transition: opacity 0.5s var(--ease-out);
+  }
+
+  /* ── Blank cassette: same shell, no record on it ──
+     A blank is an unwritten tape, so it keeps the hardware (window, reels,
+     screws, plate) and loses only the print. */
+  .cas-blank .cas-label-fallback {
+    background-size: 22px 22px;
+    background-color: var(--shell-mid);
+  }
+
+  .cas-blank .cas-label-scrim {
+    background: linear-gradient(
+      180deg,
+      rgba(4, 4, 7, 0.28) 0%,
+      transparent 60%,
+      rgba(4, 4, 7, 0.3) 100%
+    );
+  }
+
+  :global(:root[data-theme="light"]) .cas-blank .cas-label-scrim {
+    background: linear-gradient(
+      180deg,
+      rgba(74, 58, 38, 0.16) 0%,
+      transparent 60%,
+      rgba(74, 58, 38, 0.18) 100%
+    );
+  }
+
+  /* A single hairline cross marks an unwritten tape without pretending to be
+     content. */
+  .cas-blank-mark {
+    position: absolute;
+    left: 50%;
+    top: 36%;
+    width: 34%;
+    height: 1px;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--shell-ink-dim),
+      transparent
+    );
+  }
+
+  .cas-blank-mark::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: -14px;
+    width: 1px;
+    height: 28px;
+    background: linear-gradient(
+      180deg,
+      transparent,
+      var(--shell-ink-dim),
+      transparent
+    );
+  }
+
+  .cas-blank .cas-accent-bar,
+  .cas-blank .cas-hairline,
+  .cas-blank .cas-mould {
+    display: none;
+  }
+
+  /* A blank is scenery: no cursor affordance, no hover response. */
+  .cas-blank {
+    cursor: default;
+  }
+
+  /* ── FRONT ──
+     The shell is a drawn object, not a photo: a moulded plate with a bevelled
+     rim, an inner frame (`.cas-label::after`) holding the printed J-card, four
+     metal screws and a gloss sweep. */
+  .cas-front {
+    width: var(--cas-w, 400px);
+    height: var(--cas-h, 256px);
+    margin-left: calc(var(--cas-w, 400px) / -2);
+    margin-top: calc(var(--cas-h, 256px) / -2);
+
+    transform: translateZ(calc(var(--cas-d, 38px) / 2));
+
+    border-radius: 5px;
+    overflow: hidden;
+
+    background: linear-gradient(
+      168deg,
+      var(--shell-top) 0%,
+      var(--shell-mid) 58%,
+      var(--shell-bot) 100%
+    );
+
+    /* Bevel: rim light, inner dark line, top highlight — plus the cast shadow
+       that grounds the tape against the row. */
+    box-shadow:
+      var(--tape-drop-far),
+      var(--tape-drop-near),
+      inset 0 0 0 1px var(--shell-rim),
+      inset 0 0 0 2.5px var(--shell-rim-inner),
+      inset 0 1px 0 var(--shell-hi);
+
+    transition: box-shadow 0.5s var(--ease-out);
+  }
+
+  /* Shell rim detail: a bright seam where the front turns into the left wall. */
+  .cas-front::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--shell-seam);
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  /* ── The cover fills the whole face; everything else reads on top of it ── */
+  .cas-label {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: var(--shell-mid);
+  }
+
+  /* The moulded frame the J-card sits in: a raised plastic lip around the print,
+     lit on the top-left and shadowed on the bottom-right, with the card itself
+     recessed behind it. This is the single strongest cue that the artwork is a
+     printed insert held by a shell rather than a photo pasted on a card.
+     ⚠️ Kept to HARD insets, no blur: this element exists on all ten tapes and
+     they all repaint while the row moves. A stack of 10px-blur insets here
+     measured -25% frame rate on a tape step (+17ms/frame) for a difference
+     nobody can see.
+     ⚠️ There is NO diagonal gloss sweep any more (removed 2026-09-19 on the
+     user's call): a specular band across a cover image reads as a sticker on
+     the artwork rather than as light on plastic. The lip and the rim light
+     already carry the material. */
+  .cas-label::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    pointer-events: none;
+
+    border-radius: 5px;
+
+    box-shadow:
+      inset 0 0 0 1px var(--shell-rim),
+      inset 3px 3px 0 -1px var(--shell-hi),
+      inset -3px -3px 0 -1px var(--relief-lo);
+  }
+
+  /* Gloss: REMOVED. The diagonal specular sweep used to live here; it read as a
+     sticker lying on the cover image, not as light on plastic. If a highlight is
+     ever wanted back, put it on the SHELL (a rim or a lip), never across the
+     printed J-card. */
+
+  /* Moulded model code, embossed rather than printed: a light edge below and a
+     dark edge above is what makes type look pressed into plastic. */
+  .cas-mould {
+    position: absolute;
+    left: 6%;
+    bottom: 15.2%;
+    z-index: 3;
+
+    font-size: 0.42em;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+
+    color: transparent;
+    text-shadow:
+      0 1px 0 var(--relief-hi),
+      0 -1px 0 var(--relief-lo);
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  .cas-label img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    filter: saturate(0.94) contrast(1.04);
+    -webkit-user-drag: none;
+  }
+
+  .cas-label-fallback {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+    background-size: 26px 26px;
+    background-color: #0d0d11;
+  }
+
+  /* Two scrims only: the label header and the title have to survive whatever
+     cover lands behind them. The middle of the face stays untouched so the
+     artwork still reads. */
+  .cas-label-scrim {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+
+    background:
+      linear-gradient(
+        180deg,
+        rgba(4, 4, 7, 0.72) 0%,
+        rgba(4, 4, 7, 0.22) 14%,
+        transparent 30%
+      ),
+      linear-gradient(
+        0deg,
+        rgba(4, 4, 7, 0.9) 0%,
+        rgba(4, 4, 7, 0.5) 16%,
+        transparent 40%
+      );
+  }
+
+  .cas-label-head {
+    position: absolute;
+    left: 4.5%;
+    right: 4.5%;
+    top: 4.5%;
+    z-index: 2;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5em;
+
+    font-size: 0.55em;
+    letter-spacing: var(--tracking-micro);
+    text-transform: uppercase;
+    color: rgba(233, 227, 214, 0.78);
+  }
+
+  .cas-node {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cas-deck-idx {
+    flex: 0 0 auto;
+    font-weight: 700;
+    color: var(--cas-accent-soft, var(--accent));
+  }
+
+  .cas-deck-team {
+    color: rgba(233, 227, 214, 0.72);
+  }
+
+  /* The title swaps to the display face: JetBrains Mono 900 at this size is a
+     wall of rectangles, and a wide condensed face is what makes a long project
+     name legible on a 250px tape. */
+  .cas-title {
+    position: absolute;
+    left: 5%;
+    right: 5%;
+    bottom: 25%;
+    z-index: 4;
+
+    margin: 0;
+
+    font-family: var(--font-display);
+    font-size: 1.02em;
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: 0.005em;
+    text-transform: uppercase;
+
+    color: #f6f1e6;
+
+    text-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.9),
+      0 4px 16px rgba(0, 0, 0, 0.7);
+
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  :global(html[lang="zh"]) .cas-title {
+    font-family: var(--font-zh-display);
+    letter-spacing: 0;
+    line-height: 1.24;
+  }
+
+  /* ── Tape window: reels over the cover, as if seen through the shell ──
+     A real cassette's hub window sits just above the colour rail; here it
+     straddles the title band so the artwork above it stays clean. It is built
+     as a recessed glass strip: dark cavity, frosted front, lit top edge, with a
+     raised plate between the hubs and the tape path running underneath. */
+  .cas-window {
+    position: absolute;
+    left: 6%;
+    right: 6%;
+    bottom: 27.6%;
+    z-index: 3;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5em;
+
+    padding: 0.42em 0.7em 0.5em;
+    border-radius: 3px;
+
+    /* The frost is folded into the window's own background stack: a separate
+       `::after` layer meant one more full-size paint per tape, per frame. */
+    background:
+      linear-gradient(
+        128deg,
+        var(--glass-a) 0%,
+        transparent 34%,
+        transparent 72%,
+        var(--glass-b) 100%
+      ),
+      linear-gradient(180deg, var(--glass-b) 0%, transparent 42%),
+      linear-gradient(180deg, var(--glass-cavity-a), var(--glass-cavity-b));
+
+    box-shadow:
+      inset 0 1px 0 var(--shell-hi),
+      inset 0 0 0 1px var(--shell-rim),
+      inset 0 2px 4px -2px rgba(0, 0, 0, 0.75);
+
+    pointer-events: none;
+  }
+
+  .cas-reel {
+    position: relative;
+    width: var(--reel-size, 2.35em);
+    aspect-ratio: 1;
+    flex: 0 0 auto;
+    border-radius: 50%;
+
+    background: radial-gradient(
+      circle at 50% 46%,
+      rgba(10, 10, 14, var(--reel-cavity-a, 0.72)) 0%,
+      rgba(4, 4, 7, var(--reel-cavity-b, 0.86)) 62%,
+      rgba(12, 12, 17, var(--reel-cavity-c, 0.9)) 100%
+    );
+
+    /* ⚠️ A RECESSED well, not a raised disc. Inside a dent the far wall catches
+       the key light and the near wall falls into shadow, so the bright edge is
+       the bottom-right and the dark one the top-left — the inverse of every
+       raised part on the shell. Contrast is deliberately low: a crisp bright
+       ring here reads as a button, which is what made the first version look
+       cheap. */
+    box-shadow:
+      inset 0.5px 0.5px 1px rgba(0, 0, 0, var(--reel-near-shadow, 0.8)),
+      inset -0.5px -0.5px 0 rgba(226, 218, 202, var(--reel-far-light, 0.16)),
+      0 0 0 0.5px rgba(0, 0, 0, 0.45);
+  }
+
+  .cas-reel-spokes {
+    position: absolute;
+    inset: var(--reel-spoke-inset, 12%);
+    border-radius: 50%;
+
+    /* Fainter than the first pass: the spokes are behind glass in a dark well,
+       so they should be a hint of structure, not a bright gear. */
+    background: repeating-conic-gradient(
+      from 0deg,
+      rgba(214, 206, 190, var(--reel-spoke-alpha, 0.34)) 0deg
+        var(--reel-spoke-on, 4deg),
+      transparent var(--reel-spoke-on, 4deg) var(--reel-spoke-gap, 60deg)
+    );
+
+    transform: rotate(var(--reel-spin, 0rad));
+  }
+
+  /* The hub is a counter-sunk bore: the shadow sits top-left, the lit face
+     bottom-right, and the cut edge is a hairline rather than a rim. */
+  .cas-reel-hub {
+    position: absolute;
+    inset: var(--reel-hub-inset, 30%);
+    border-radius: 50%;
+
+    background: radial-gradient(
+      circle at var(--hub-lit-x, 66%) var(--hub-lit-y, 76%),
+      rgba(120, 114, 104, var(--hub-lit-alpha, 0.5)) 0%,
+      rgba(16, 16, 20, 0.86) 46%,
+      rgba(6, 6, 9, 0.94) 100%
+    );
+
+    box-shadow:
+      inset 0.5px 0.5px 1px rgba(0, 0, 0, var(--hub-shadow, 0.85)),
+      inset -0.5px -0.5px 0 rgba(226, 218, 202, var(--reel-far-light, 0.16)),
+      0 0 0 0.5px rgba(0, 0, 0, 0.5);
+  }
+
+  .cas-reel-ring {
+    position: absolute;
+    inset: 2%;
+    border-radius: 50%;
+    border: 1px solid rgba(228, 220, 204, var(--reel-rim, 0.16));
+  }
+
+  /* ── The plate between the hubs ──
+     One honest mark, not a wall of micro-print. The recessed well carries a
+     single wide-tracked line with an accent tick; an earlier version stacked
+     three 5px lines and a fake barcode here, which at 400px reads as noise and
+     is exactly what made the tape look cheap. */
+  .cas-plate {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+
+    padding: 0.34em 0.7em;
+    border-radius: 2px;
+
+    background: linear-gradient(
+      180deg,
+      rgba(8, 8, 12, 0.62),
+      rgba(4, 4, 7, 0.78)
+    );
+
+    box-shadow:
+      inset 0 1px 0 rgba(0, 0, 0, 0.5),
+      inset 0 -1px 0 var(--relief-hi);
+
+    font-size: 0.46em;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(226, 219, 205, 0.7);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .cas-plate-mark {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  /* A one-pixel accent tick: the only colour on the window, and the only mark
+     that needs to be read at a glance. */
+  .cas-plate-tick {
+    flex: 0 0 auto;
+    width: 2px;
+    height: 0.9em;
+    border-radius: 1px;
+    background: var(--cas-accent-soft, var(--accent));
+    box-shadow: 0 0 8px var(--cas-accent-soft, var(--accent));
+  }
+
+  .cas-plate-blank {
+    min-height: 1.7em;
+  }
+
+  /* ── Tape path ──
+     The ribbon leaves one hub, passes the guide rollers and returns: a light
+     line along the bottom of the window with two dark rollers on it. */
+  .cas-path {
+    position: absolute;
+    left: 0.9em;
+    right: 0.9em;
+    bottom: 0.12em;
+    height: 0.42em;
+    pointer-events: none;
+  }
+
+  .cas-path-ribbon {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    margin-top: -0.5px;
+
+    background: linear-gradient(
+      90deg,
+      rgba(228, 220, 204, 0.12),
+      rgba(228, 220, 204, 0.5) 18%,
+      rgba(228, 220, 204, 0.5) 82%,
+      rgba(228, 220, 204, 0.12)
+    );
+  }
+
+  .cas-path-roller {
+    position: absolute;
+    top: 50%;
+    width: 0.42em;
+    height: 0.42em;
+    margin-top: -0.21em;
+    border-radius: 50%;
+
+    background: radial-gradient(
+      circle at 36% 30%,
+      rgba(210, 204, 190, 0.7),
+      rgba(12, 12, 16, 0.95) 70%
+    );
+  }
+
+  .cas-path-roller:nth-child(2) {
+    left: 0;
+  }
+
+  .cas-path-roller:nth-child(3) {
+    right: 0;
+  }
+
+  /* ── Index + date on the foot band, above the colour rail ── */
+  .cas-deck-meta {
+    position: absolute;
+    left: 5%;
+    right: 5%;
+    bottom: 6.4%;
+    z-index: 3;
+
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.6em;
+
+    font-size: 0.48em;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: rgba(214, 206, 190, 0.82);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  }
+
+  /* The colour rule the brief keeps: a solid rail along the tape's foot. */
+  .cas-accent-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2.5px;
+    z-index: 3;
+
+    background: var(--cas-accent, var(--accent));
+    opacity: 0.9;
+    box-shadow: 0 0 14px var(--cas-accent, var(--accent));
+  }
+
+  .cas-hairline {
+    position: absolute;
+    left: 4%;
+    right: 4%;
+    bottom: 4.6%;
+    height: 1px;
+    z-index: 3;
+    background: rgba(255, 255, 255, 0.22);
+  }
+
+  /* Warm key on the pulled-out tape only — the reference lights just the
+     selection; everything else sits in the cool ambient. */
+  .cas.is-center .cas-front {
+    box-shadow:
+      var(--tape-drop-far),
+      var(--tape-drop-near),
+      inset 0 0 0 1px var(--shell-rim),
+      inset 0 0 0 2.5px var(--shell-rim-inner),
+      inset 0 0 34px var(--key-glow),
+      inset 0 1px 0 var(--shell-hi);
+  }
+
+  /* ⚠️ The short shadow belongs to the neighbours. Ten 64px-blur casts repaint
+     with the row and only the selection's is read as depth. */
+  .cas:not(.is-center) .cas-front {
+    box-shadow:
+      var(--tape-drop-short),
+      inset 0 0 0 1px var(--shell-rim),
+      inset 0 0 0 2.5px var(--shell-rim-inner),
+      inset 0 1px 0 var(--shell-hi);
+  }
+
+  /* The lit tape's lip also catches the key light. */
+  .cas.is-center .cas-label::after {
+    box-shadow:
+      inset 0 0 0 1px var(--shell-rim),
+      inset 3px 3px 0 -1px var(--relief-hi),
+      inset -3px -3px 0 -1px var(--relief-lo),
+      inset 0 0 6px var(--shell-ao),
+      0 0 0 1px var(--key-edge);
+  }
+
+  .cas.is-center .cas-left,
+  .cas.is-center .cas-right {
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.24),
+      inset 0 0 26px rgba(0, 0, 0, 0.55);
+  }
+
+  .cas.is-center .cas-accent-bar {
+    opacity: 1;
+    box-shadow: 0 0 20px var(--cas-accent, var(--accent));
+  }
+
+  /* ── SPINES ──
+     The narrow walls keep the shell material: a moulding with a metal cap top
+     and bottom, fine mould scoring along the length, and the printed spine
+     insert between them. */
+  .cas-left,
+  .cas-right {
+    width: var(--cas-d, 38px);
+    height: var(--cas-h, 256px);
+    margin-top: calc(var(--cas-h, 256px) / -2);
+    margin-left: calc(var(--cas-d, 38px) / -2);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 5% 0;
+    overflow: hidden;
+
+    /* Light comes from the front-right, so both side walls fall into shade:
+       a dark seam at the join, lifting toward the outer edge, with two mould
+       score lines running the full length. */
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent 0 7px,
+        rgba(255, 255, 255, 0.035) 7px 8px
+      ),
+      linear-gradient(
+        90deg,
+        var(--shell-spine-a) 0%,
+        var(--shell-spine-b) 34%,
+        var(--shell-spine-c) 66%,
+        var(--shell-spine-d) 100%
+      );
+
+    box-shadow:
+      var(--wall-drop),
+      inset 0 0 0 1px var(--shell-rim),
+      inset 0 0 26px var(--shell-ao);
+
+    transition: box-shadow 0.5s var(--ease-out);
+  }
+
+  /* Metal cap where the spine meets the top / bottom wall. */
+  .cas-left::before,
+  .cas-right::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 6%;
+    pointer-events: none;
+
+    background: linear-gradient(
+      180deg,
+      var(--metal-mid) 0%,
+      var(--metal-lo) 62%,
+      rgba(0, 0, 0, 0.5) 100%
+    );
+    box-shadow: inset 0 1px 0 var(--metal-hi);
+  }
+
+  .cas-left {
+    transform: rotateY(-90deg) translateZ(calc(var(--cas-w, 400px) / 2));
+  }
+
+  .cas-right {
+    transform: rotateY(90deg) translateZ(calc(var(--cas-w, 400px) / 2));
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent 0 7px,
+        rgba(255, 255, 255, 0.035) 7px 8px
+      ),
+      linear-gradient(
+        270deg,
+        var(--shell-spine-a) 0%,
+        var(--shell-spine-b) 34%,
+        var(--shell-spine-c) 66%,
+        var(--shell-spine-d) 100%
+      );
+  }
+
+  .cas-spine-stripe {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 14%;
+    max-width: 4px;
+
+    background: var(--cas-accent, var(--accent));
+    box-shadow: 0 0 12px var(--cas-accent, var(--accent));
+    opacity: 0.9;
+  }
+
+  .cas-left .cas-spine-stripe {
+    left: 0;
+  }
+
+  .cas-right .cas-spine-stripe {
+    right: 0;
+  }
+
+  .cas-spine-brand,
+  .cas-spine-idx {
+    position: relative;
+    font-size: 0.44em;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--shell-ink-dim);
+    writing-mode: vertical-rl;
+    white-space: nowrap;
+  }
+
+  .cas-spine-title {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* Vertical spine text: the only orientation that survives the ~76°
+       foreshortening of a spine face. Both spines read top→bottom; CSS 3D
+       renders each face unmirrored, so no counter-rotation is needed. */
+    writing-mode: vertical-rl;
+
+    font-family: var(--font-display);
+    font-size: 0.72em;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+
+    /* ⚠️ The spine is SHELL material, not artwork: its ink has to flip with the
+       theme (light type on graphite, warm dark type on ivory) or the light
+       theme's titles vanish into the ivory. */
+    color: var(--shell-ink);
+
+    max-height: 82%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* ── SHELL EDGES ──
+     The top and bottom walls are where the moulding's hardware shows: a metal
+     screw rail, a tape-path groove and the accent block that marks the model. */
+  .cas-top,
+  .cas-bottom {
+    width: var(--cas-w, 400px);
+    height: var(--cas-d, 38px);
+    margin-left: calc(var(--cas-w, 400px) / -2);
+    margin-top: calc(var(--cas-d, 38px) / -2);
+
+    background: linear-gradient(
+      180deg,
+      var(--shell-edge-a) 0%,
+      var(--shell-edge-b) 100%
+    );
+    box-shadow: inset 0 0 0 1px var(--shell-rim);
+  }
+
+  /* The moulded groove every cassette has along its top and bottom wall. */
+  .cas-top::before,
+  .cas-bottom::before {
+    content: "";
+    position: absolute;
+    left: 3%;
+    right: 3%;
+    top: 50%;
+    height: 2px;
+    margin-top: -1px;
+    pointer-events: none;
+
+    background: var(--shell-ao);
+    box-shadow: 0 1px 0 var(--relief-hi);
+    opacity: 0.7;
+  }
+
+  .cas-top {
+    transform: rotateX(90deg) translateZ(calc(var(--cas-h, 256px) / 2));
+  }
+
+  /* The bottom wall is the second half of the "pulled off the shelf" read,
+     so it gets a bright seam where it meets the front face. */
+  .cas-bottom {
+    transform: rotateX(-90deg) translateZ(calc(var(--cas-h, 256px) / 2));
+    background: linear-gradient(
+      180deg,
+      var(--shell-edge-under-a) 0%,
+      var(--shell-edge-under-b) 100%
+    );
+    box-shadow:
+      var(--wall-drop),
+      inset 0 0 0 1px var(--shell-rim);
+  }
+
+  .cas-bottom-edge {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1px;
+    background: var(--shell-seam);
+  }
+
+  .cas-bottom-edge::after {
+    content: "";
+    position: absolute;
+    left: 4%;
+    right: 4%;
+    top: 0;
+    height: 1px;
+    background: var(--cas-accent, var(--accent));
+    opacity: 0.5;
+  }
+
+  /* The back plate is moulded, not printed: a rib grid, a recessed label well
+     and the screw bosses, so a tape turned away from the viewer still reads as
+     an object with two sides. */
+  .cas-back {
+    width: var(--cas-w, 400px);
+    height: var(--cas-h, 256px);
+    margin-left: calc(var(--cas-w, 400px) / -2);
+    margin-top: calc(var(--cas-h, 256px) / -2);
+
+    transform: translateZ(calc(var(--cas-d, 38px) / -2)) rotateY(180deg);
+
+    background:
+      repeating-linear-gradient(
+        90deg,
+        transparent 0 9px,
+        var(--shell-ao) 9px 10px
+      ),
+      linear-gradient(
+        180deg,
+        var(--shell-back) 0%,
+        var(--shell-edge-under-a) 100%
+      );
+    box-shadow: inset 0 0 0 1px var(--shell-rim);
+  }
+
+  /* Recessed label well: two hard rings, no blur — this face is only seen while
+     a tape is turning, and that is exactly when the row is repainting. */
+  .cas-back::before {
+    content: "";
+    position: absolute;
+    inset: 12% 14%;
+    border-radius: 2px;
+    pointer-events: none;
+
+    background: linear-gradient(180deg, var(--shell-ao), transparent 78%);
+    box-shadow:
+      inset 0 0 0 1px var(--shell-rim),
+      0 1px 0 var(--relief-hi);
+    opacity: 0.8;
+  }
+
+  .cas-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    border: 0;
+    clip-path: inset(50%);
+  }
+
+  /* ══════════════════════════════════════════
+     HUD
+     ══════════════════════════════════════════ */
+
+  .shelf-hud,
+  .shelf-scrim,
+  .shelf-panel,
+  .shelf-foot,
+  .shelf-nav,
+  .shelf-intro,
+  .shelf-veil,
+  .shelf-empty {
+    position: absolute;
+  }
+
+  .shelf-hud {
+    top: 22px;
+    left: 34px;
+    right: 34px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+
+    pointer-events: none;
+
+    opacity: 0;
+    transform: translateY(10px);
+    transition:
+      opacity 0.8s var(--ease-out),
+      transform 0.8s var(--ease-out);
+  }
+
+  .shelf.is-ready .shelf-hud {
+    opacity: 1;
+    transform: none;
+  }
+
+  .shelf-hud-row {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  /* The section blurb lives in the stage's top band — that band is empty by
+     design (the shelf sits low), so the copy costs no vertical space. */
+  .shelf-hud-desc {
+    max-width: 58ch;
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-dim);
+  }
+
+  /* Hairline rail: ties the counter to the state readout and gives the top
+     band a reason to exist. */
+  .shelf-hud-rule {
+    flex: 1 1 auto;
+    height: 1px;
+    min-width: 24px;
+
+    background: linear-gradient(
+      90deg,
+      var(--accent) 0%,
+      var(--accent) 8%,
+      var(--border) 24%,
+      var(--border) 100%
+    );
+
+    opacity: 0.75;
+  }
+
+  .shelf-hud-state {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .shelf-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--terminal-green);
+    box-shadow: 0 0 8px var(--terminal-green);
+    animation: shelfPulse 2.4s var(--ease-out) infinite;
+  }
+
+  @keyframes shelfPulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.28;
+    }
+  }
+
+  .shelf-counter {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: var(--tracking-label);
+    color: var(--text-dim);
+  }
+
+  .shelf-counter strong {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: var(--tracking-tight);
+    color: var(--text-bright);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .shelf-counter em {
+    font-style: normal;
+    font-size: 9px;
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-left: 4px;
+  }
+
+  /* ── Selected-record panel (right) ── */
+  .shelf-panel {
+    top: 50%;
+    right: 52px;
+    width: min(318px, 25vw);
+    transform: translate(46px, -50%);
+
+    padding: 20px 22px;
+
+    border-left: 2px solid var(--cas-accent, var(--accent));
+    background: linear-gradient(
+      90deg,
+      rgba(7, 7, 12, 0.42),
+      rgba(7, 7, 12, 0.82)
+    );
+
+    /* Chamfered corner + hairline ticks: the Rhine-Lab-adjacent archive look,
+       and cheap because the panel is a sibling of the 3D track, never an
+       ancestor of a preserve-3d element. */
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% calc(100% - 15px),
+      calc(100% - 15px) 100%,
+      0 100%
+    );
+
+    /* Non-3D sibling of the track, so backdrop-filter is safe here. */
+    backdrop-filter: blur(14px) saturate(150%);
+
+    opacity: 0;
+    pointer-events: none;
+
+    transition:
+      opacity 0.6s var(--ease-out),
+      transform 0.75s var(--spring-gentle);
+  }
+
+  .shelf-panel::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 26px;
+    height: 1px;
+    background: var(--cas-accent, var(--accent));
+    opacity: 0.85;
+  }
+
+  /* Safari ≤ 17 needs the prefixed form; keep it out of the rule above — lightningcss folds the pair and keeps only the last one. */
+  @supports (-webkit-backdrop-filter: blur(1px)) {
+    .shelf-panel {
+      -webkit-backdrop-filter: blur(14px) saturate(150%);
+    }
+  }
+
+  :global(:root[data-theme="light"]) .shelf-panel {
+    background: linear-gradient(
+      90deg,
+      rgba(248, 244, 236, 0.55),
+      rgba(248, 244, 236, 0.92)
+    );
+  }
+
+  .shelf.is-ready .shelf-panel {
+    opacity: 1;
+    transform: translate(0, -50%);
+    pointer-events: auto;
+  }
+
+  .shelf-panel-kicker {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  /* ── Status readout ──
+     The mark is a box, the word is the word. The old version put a "●" inside
+     the string, which let the line wrap *between* the dot and the word and
+     left the dot stranded on its own row on a narrow panel. WIP reads amber,
+     not green. */
+  .shelf-panel-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    color: var(--terminal-green);
+  }
+
+  .shelf-panel-status b {
+    font-weight: 700;
+    letter-spacing: var(--tracking-wider);
+  }
+
+  .shelf-status-mark {
+    flex: 0 0 auto;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  .shelf-panel[data-wip="1"] .shelf-panel-status {
+    color: var(--stripe-yellow);
+  }
+
+  .shelf-panel[data-wip="1"] .shelf-status-mark {
+    /* Half-filled disc — the tape is still being wound. */
+    background: linear-gradient(90deg, currentColor 0 50%, transparent 50%);
+  }
+
+  .shelf-panel-title {
+    font-family: var(--font-display);
+    font-size: clamp(21px, 1.75vw, 29px);
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: 0.005em;
+    text-transform: uppercase;
+    margin: 0 0 12px;
+
+    transition:
+      filter 0.36s var(--ease-out),
+      transform 0.46s var(--ease-out),
+      opacity 0.22s ease;
+  }
+
+  :global(html[lang="zh"]) .shelf-panel-title {
+    font-family: var(--font-zh-display);
+    letter-spacing: 0;
+    line-height: 1.26;
+  }
+
+  .shelf-panel-desc {
+    font-family: var(--font-body);
+    font-size: 13px;
+    line-height: 1.62;
+    color: var(--text-soft);
+    margin: 0 0 14px;
+    max-height: 9.8em;
+    overflow: hidden;
+
+    transition:
+      filter 0.36s var(--ease-out),
+      transform 0.46s var(--ease-out),
+      opacity 0.22s ease;
+  }
+
+  /* Reference: `.title-frame.changing .title` blur-slide on swap. */
+  .shelf-panel.is-changing .shelf-panel-title,
+  .shelf-panel.is-changing .shelf-panel-desc {
+    filter: blur(5px);
+    opacity: 0.25;
+    transform: translateY(13px);
+  }
+
+  .shelf-panel-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+
+    transition: opacity 0.3s ease;
+  }
+
+  .shelf-panel.is-changing .shelf-panel-tags {
+    opacity: 0.15;
+  }
+
+  .shelf-panel-tags span {
+    padding: 4px 7px;
+    font-family: var(--font-mono);
+    font-size: 8px;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text-dim);
+  }
+
+  .shelf-panel-tags span:nth-child(3n + 1) {
+    border-color: var(--stripe-red);
+    color: var(--stripe-red-soft);
+  }
+
+  .shelf-panel-tags span:nth-child(3n + 2) {
+    border-color: var(--stripe-yellow);
+    color: var(--stripe-yellow-soft);
+  }
+
+  .shelf-panel-tags span:nth-child(3n) {
+    border-color: var(--stripe-teal);
+    color: var(--stripe-teal-soft);
+  }
+
+  .shelf-panel-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    padding-top: 12px;
+    border-top: 1px dashed var(--border-divider);
+
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  /* ── The way in. This is the panel's primary action, so it looks like one:
+     a filled slab carrying the tape's accent, mirroring the reference's
+     `.solid-button`. ── */
+  .shelf-open {
+    width: 100%;
+    margin-top: 12px;
+    padding: 12px 14px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+
+    color: #0a0a0d;
+    background: var(--cas-accent, var(--accent));
+    border: 0;
+    border-radius: 2px;
+    cursor: pointer;
+
+    box-shadow: 0 10px 26px -12px var(--cas-accent, var(--accent));
+
+    transition:
+      box-shadow 0.25s var(--ease-out),
+      transform 0.25s var(--spring-snappy);
+  }
+
+  :global(:root[data-theme="light"]) .shelf-open {
+    color: #fdfaf4;
+  }
+
+  .shelf-open:hover {
+    box-shadow: 0 14px 32px -12px var(--cas-accent, var(--accent));
+    transform: translateY(-1px);
+  }
+
+  .shelf-open:active {
+    transform: translateY(0);
+  }
+
+  .shelf-open:focus-visible {
+    outline: 2px solid var(--text-bright);
+    outline-offset: 3px;
+  }
+
+  .shelf-open-arrow {
+    position: relative;
+    flex: 0 0 auto;
+    width: 15px;
+    height: 9px;
+    transition: transform 0.25s var(--spring-snappy);
+  }
+
+  .shelf-open-arrow::before,
+  .shelf-open-arrow::after {
+    content: "";
+    position: absolute;
+    background: currentColor;
+    border-radius: 2px;
+  }
+
+  .shelf-open-arrow::before {
+    left: 0;
+    top: 50%;
+    width: 100%;
+    height: 2px;
+    transform: translateY(-50%);
+  }
+
+  .shelf-open-arrow::after {
+    right: 0;
+    top: 50%;
+    width: 2px;
+    height: 9px;
+    transform: translateY(-50%) rotate(45deg);
+    transform-origin: 100% 50%;
+  }
+
+  .shelf-open:hover .shelf-open-arrow {
+    transform: translateX(4px);
+  }
+
+  /* ── ARROWS — chunky, Q-bounce, straight from the reference keyframes ── */
+  .shelf-nav {
+    top: 50%;
+    width: 52px;
+    height: 104px;
+    margin-top: -52px;
+
+    border: 0;
+    background: none;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+
+    opacity: 0.72;
+    transition: opacity 0.3s var(--ease-out);
+    z-index: 4;
+    /* The row is a drag surface: a click that starts on an arrow must not be
+       read as a drag. */
+    touch-action: none;
+  }
+
+  .shelf.is-ready .shelf-nav {
+    opacity: 0.92;
+  }
+
+  .shelf-nav:hover {
+    opacity: 1;
+  }
+
+  .shelf-nav[hidden] {
+    display: none;
+  }
+
+  /* Both arrows are nudged inboard of the screen edge: the right-hand one has
+     to clear the record panel to the right of it, or the panel paints over the
+     capsule. */
+  .shelf-nav.left {
+    left: 14px;
+  }
+
+  .shelf-nav.right {
+    right: 54px;
+  }
+
+  /* The arrow IS the affordance — no capsule, no frame.
+     It is a single stroked polyline, and each side carries its OWN path.
+
+     ⚠️ **The TIP of a polyline is its MIDDLE point, not its first.** That is
+     the mistake that shipped the inverted pair: `M2 2 L12 13 L2 24` reads like
+     "start at x=2" but it draws a `>` — the vertex is the second coordinate
+     pair, (12,13), so it points RIGHT. Measured, not reasoned: the ink map of
+     that path shows one run at its leftmost column and two runs to the right,
+     i.e. the point is on the left. So:
+       · `M12 2 L2 13 L12 24` → vertex (2,13)  → points LEFT  (the prev arrow)
+       · `M2 2 L12 13 L2 24`  → vertex (12,13) → points RIGHT (the next arrow)
+
+     ⚠️ One path, not two bars. Two separate bars — however they are placed —
+     cannot make a sharp corner: each bar ends in a rounded cap, and those caps
+     cut a notch out of the vertex. The user saw exactly that ("the tip is not a
+     right angle but a dented flat"). A polyline with `stroke-linejoin: miter`
+     produces a true point from one geometry: the measured apex is 1 run of 2px,
+     and the miter overhangs the 14px box by ~1px, which is what `overflow:
+     visible` on the svg is for.
+
+     ⚠️ And the direction is written into the path data, not derived from a
+     mirror. A `scaleX(-1)` on the wrapper is what made both arrows point the
+     wrong way: the mirrored element also carried the bounce animation, so the
+     mirror and the animation fought over the same transform. Two explicit paths
+     cannot disagree with each other. ⚠️ That is also why the bounce below rides
+     the inner `svg` and not `.shelf-arrow`: if a mirror is ever reintroduced, it
+     goes on the wrapper with nothing else on it. */
+  .shelf-arrow {
+    display: block;
+    width: 14px;
+    height: 26px;
+    margin: 0 6px; /* breathing room inside the hit area */
+  }
+
+  .shelf-arrow svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .shelf-arrow path {
+    fill: none;
+    stroke: var(--text-bright);
+    stroke-width: 4;
+    stroke-linecap: round;
+    /* The sharp point. */
+    stroke-linejoin: miter;
+    miterlimit: 8;
+    transition: stroke 0.3s var(--ease-out);
+  }
+
+  .shelf-nav:hover .shelf-arrow path {
+    stroke: var(--cas-accent, var(--accent));
+  }
+
+  /* Both arrows bounce IN PHASE and in the SAME SCREEN direction — out toward
+     the frame edges, then back — so the pair reads as one breathing mark rather
+     than two independent ones.
+
+     ⚠️ The two keyframe sets are deliberate, and they are NOT
+     `animation-direction: reverse` of one another. Each arrow is a different
+     path, so there is no shared transform to lean on: `translate` is an ODD
+     quantity and has to be negated by hand for the left arrow. `reverse` mirrors
+     the animation in TIME instead, and that only coincides with a spatial
+     negation when the keyframes are antisymmetric about 50% *and* `scale` is
+     symmetric about 50% — and a symmetric scale is precisely what throws away
+     the pull-back/push-out contrast (thin on the recoil, fat on the throw).
+     So: negate every `translate`, copy the `scale` ladder verbatim. */
+  .shelf-arrow svg {
+    animation: shelfBounceOut 1240ms var(--ease-out) infinite;
+  }
+
+  /* Right arrow — +x is outward. */
+  @keyframes shelfBounceOut {
+    0%,
+    100% {
+      translate: 0 0;
+      scale: 1 1;
+    }
+
+    18% {
+      translate: -6px 0;
+      scale: 0.84 1;
+    }
+
+    40% {
+      translate: 8px 0;
+      scale: 1.14 1;
+    }
+
+    58% {
+      translate: -2px 0;
+      scale: 0.96 1;
+    }
+
+    74% {
+      translate: 3px 0;
+      scale: 1.03 1;
+    }
+  }
+
+  .shelf-nav.left .shelf-arrow svg {
+    animation-name: shelfBounceOutLeft;
+  }
+
+  /* Left arrow — −x is outward, so every `translate` is negated. */
+  @keyframes shelfBounceOutLeft {
+    0%,
+    100% {
+      translate: 0 0;
+      scale: 1 1;
+    }
+
+    18% {
+      translate: 6px 0;
+      scale: 0.84 1;
+    }
+
+    40% {
+      translate: -8px 0;
+      scale: 1.14 1;
+    }
+
+    58% {
+      translate: 2px 0;
+      scale: 0.96 1;
+    }
+
+    74% {
+      translate: -3px 0;
+      scale: 1.03 1;
+    }
+  }
+
+  /* ── Footer hint / replay ── */
+  .shelf-foot {
+    left: 34px;
+    right: 34px;
+    bottom: 20px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+    color: var(--text-dim);
+
+    opacity: 0;
+    transition: opacity 0.8s var(--ease-out) 0.1s;
+    pointer-events: none;
+  }
+
+  .shelf.is-ready .shelf-foot {
+    opacity: 1;
+  }
+
+  .shelf-hint {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .shelf-replay {
+    flex: 0 0 auto;
+    padding: 5px 12px;
+
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    cursor: pointer;
+    pointer-events: auto;
+
+    transition:
+      color 0.25s var(--ease-out),
+      border-color 0.25s var(--ease-out);
+  }
+
+  .shelf-replay:hover {
+    color: var(--text-bright);
+    border-color: var(--border-strong);
+  }
+
+  .shelf-empty {
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .shelf-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    border: 0;
+    clip-path: inset(50%);
+  }
+
+  /* ── Intro curtain ── */
+  .shelf-intro {
+    inset: 0;
+    z-index: 90;
+    background: var(--bg);
+    pointer-events: none;
+
+    transition:
+      opacity 0.9s var(--ease-out),
+      visibility 0s linear 0.9s;
+  }
+
+  .shelf-intro.is-done {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .shelf-intro-mark {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .shelf-intro-bar {
+    display: block;
+    width: 168px;
+    height: 1px;
+    background: var(--border);
+    overflow: hidden;
+  }
+
+  .shelf-intro-bar i {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: var(--accent);
+    transform-origin: left center;
+    animation: shelfLoad 2.4s var(--ease-out) infinite;
+  }
+
+  @keyframes shelfLoad {
+    0% {
+      transform: scaleX(0);
+    }
+
+    70%,
+    100% {
+      transform: scaleX(1);
+    }
+  }
+
+  .shelf-intro-skip {
+    font-size: 8px;
+    letter-spacing: var(--tracking-wider);
+    color: var(--text-tertiary);
+    opacity: 0.7;
+  }
+
+  /* ── Launch veil (click → detail) ── */
+  .shelf-veil {
+    inset: 0;
+    z-index: 80;
+    background: var(--bg);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .shelf.is-launching .shelf-veil {
+    opacity: 1;
+    transition: opacity 0.44s var(--ease-out) 0.22s;
+  }
+
+  .shelf.is-launching .shelf-panel,
+  .shelf.is-launching .shelf-hud,
+  .shelf.is-launching .shelf-foot,
+  .shelf.is-launching .shelf-nav {
+    opacity: 0;
+    transition: opacity 0.3s var(--ease-out);
+  }
+
+  .shelf.is-launching .cas:not(.is-center) .cas-f {
+    opacity: 0;
+    transition: opacity 0.34s var(--ease-out);
+  }
+
+  /* The shelf is a one-screen experience: the global scroll-telemetry rail has
+     nothing to report here and it collides with the right arrow. Scoped to the
+     six pages that render this component.
+     `!important` is deliberate: ScrollMeter styles itself through a scoped
+     class+attribute selector (0,2,0) that a plain class override cannot beat. */
+  :global(.scroll-cluster) {
+    display: none !important;
+  }
+
+  /* ══════════════════════════════════════════
+     FLAT MODE — phones / reduced motion / no preserve-3d.
+     A plain card switcher: no perspective, no 3D box,
+     no rise. Same markup, same state machine.
+     ══════════════════════════════════════════ */
+
+  .shelf-page[data-mode="flat"] {
+    min-height: 0;
+    padding-bottom: 40px;
+  }
+
+  .shelf-page[data-mode="flat"] .shelf {
+    display: block;
+    flex: 0 0 auto;
+  }
+
+  .shelf-page[data-mode="flat"] .shelf-stage {
+    perspective: none;
+    min-height: 0;
+    overflow: visible;
+
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 0 0 4px;
+  }
+
+  .shelf-page[data-mode="flat"] .shelf-track {
+    order: 1;
+    position: relative;
+    inset: auto;
+
+    width: min(520px, 100% - 104px);
+    aspect-ratio: 4.85 / 3.1;
+
+    margin: 0 auto;
+    transform: none; /* the 3D-mode drop does not apply to the flat stack */
+    transform-style: flat;
+    overflow: hidden; /* clips the off-screen neighbours */
+  }
+
+  .shelf-page[data-mode="flat"] .cas {
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    transform-style: flat;
+    will-change: auto;
+  }
+
+  .shelf-page[data-mode="flat"] .cas-f {
+    display: none;
+  }
+
+  .shelf-page[data-mode="flat"] .cas-front {
+    display: block;
+    position: relative;
+    left: auto;
+    top: auto;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    transform: none;
+  }
+
+  .shelf-page[data-mode="flat"] .shelf-atmos,
+  .shelf-page[data-mode="flat"] .shelf-scrim,
+  .shelf-page[data-mode="flat"] .shelf-floor {
+    display: none;
+  }
+
+  .shelf-page[data-mode="flat"] .shelf-hud {
+    order: 2;
+    position: static;
+    width: 100%;
+    max-width: 572px;
+    margin: 0 auto;
+    padding: 0 52px;
+  }
+
+  .shelf-page[data-mode="flat"] .shelf-panel,
+  .shelf-page[data-mode="flat"].is-ready .shelf-panel {
+    order: 3;
+    position: static;
+    top: auto;
+    right: auto;
+    width: min(520px, 100% - 40px);
+    margin: 0 auto;
+    transform: none;
+    transition: none;
+  }
+
+  .shelf-page[data-mode="flat"] .shelf-foot {
+    order: 4;
+    position: static;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    max-width: 572px;
+    margin: 0 auto;
+    padding: 0 52px;
+  }
+
+  /* Arrows sit on the card, which is the first block in the flat stack:
+     card height = width / (4.85 / 3.10). */
+  .shelf-page[data-mode="flat"] .shelf-nav {
+    height: 62px;
+    margin-top: -31px;
+    width: 48px;
+    top: calc(min(520px, 100vw - 104px) / 3.129);
+  }
+
+  @media (max-width: 900px) {
+    .shelf-head {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      padding: 16px 20px 0;
+    }
+
+    .shelf-head h1 {
+      font-size: 26px;
+    }
+
+    .shelf-tag-bar {
+      justify-content: flex-start;
+    }
+
+    .shelf-panel {
+      right: 20px;
+      width: min(300px, 62vw);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .shelf-hud-desc {
+      display: none;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .shelf-page[data-mode="flat"] .shelf-track {
+      width: min(520px, 100% - 88px);
+    }
+
+    .shelf-page[data-mode="flat"] .shelf-nav {
+      width: 40px;
+      top: calc(min(520px, 100vw - 88px) / 3.129);
+    }
+
+    .shelf-page[data-mode="flat"] .shelf-hud,
+    .shelf-page[data-mode="flat"] .shelf-foot {
+      padding: 0 44px;
+    }
+
+    .shelf-page[data-mode="flat"] .shelf-panel {
+      width: calc(100% - 44px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .shelf-arrow svg,
+    .shelf-intro-bar i {
+      animation: none !important;
+    }
+
+    .shelf-hud,
+    .shelf-panel,
+    .shelf-foot,
+    .shelf-intro {
+      transition: none !important;
+    }
+  }
+</style>
+
+<script>
+  /* TEMPORARY: the shelf tuning panel. Delete this import (and
+     src/scripts/shelf-tuner.ts) once the reels and the hero pose are baked. */
+  import { initShelfTuner } from "../scripts/shelf-tuner";
+
+  (() => {
+    "use strict";
+
+    const rootEl = document.getElementById("cassette-shelf");
+    const stageEl = document.getElementById("shelf-stage");
+    const trackEl = document.getElementById("shelf-track");
+    if (!rootEl || !stageEl || !trackEl) return;
+
+    // The tuner publishes `window.__shelfTune`; the pose reads it through TUNE().
+    initShelfTuner();
+
+    // Re-bind after the guard: the helpers below are hoisted function
+    // declarations, so TS cannot carry the narrowing of rootEl/stageEl/trackEl
+    // into their bodies.
+    const root: HTMLElement = rootEl;
+    const stage: HTMLElement = stageEl;
+    const track: HTMLElement = trackEl;
+
+    // The mode flag lives on the page root so flat mode can restyle the
+    // surrounding page shell (which is outside <section class="shelf">).
+    const page: HTMLElement =
+      (root.closest(".shelf-page") as HTMLElement | null) ?? root;
+
+    // The record tapes only. The blank cassettes in `[data-fillers]` also carry
+    // `.cas` (they share the whole shell), so they have to be excluded by
+    // ancestry — selecting `.cas` outright silently made every blank look like a
+    // real project.
+    const casEls = Array.from(
+      root.querySelectorAll<HTMLAnchorElement>(".cas"),
+    ).filter((el) => !el.closest("[data-fillers]"));
+    if (casEls.length === 0) return;
+
+    /* ══════════════════════════════════════════
+       WORLD CONSTANTS
+       Ported from `输入/磁带盒主体动画.html` — layoutPose(),
+       with the intro ladder from `输入/磁带盒启动动画.html`.
+       ══════════════════════════════════════════ */
+
+    const CAS_W = 4.85;
+    const CAS_H = 3.1;
+    // Thin shell: 0.37 world units — 7.6% of the card width. The old 0.70 was
+    // a VHS-depth slab; seven of those in a row collide.
+    const CAS_D = 0.37;
+    // Camera framing. The tape row is sized from the window WIDTH, not its
+    // height: the frame is a horizontal strip, so the pitch is what has to be
+    // guaranteed and the height follows from the stage's own aspect ratio.
+    const WORLD_H = 4.3;
+    // Visible world width. The reference frames its hero at roughly a third of
+    // the frame width, and that is the ratio to hold: lower this and every tape
+    // grows (and the outer slots leave the frame), raise it and the spine titles
+    // stop being readable.
+    const MIN_WORLD_W = 19;
+    const PERSPECTIVE = 11.8; // × S, the reference camera distance
+
+    // Slot pitch, in world units. The reference's `layoutPose` uses 3.42 against
+    // a 4.85-wide book — 0.71 of their own width — and scaled to this frame that
+    // is ~2.2. The RATIO is the point, not the number: tapes this close stand
+    // deeply overlapped, so nine of them read as a packed rack and not as a
+    // spread of tiles. ⚠️ Pitch and `MIN_WORLD_W` are one decision in two
+    // constants — change them together and re-measure.
+    const SPREAD_X = 2.2;
+    const SPREAD_X2 = 0.12;
+    // z of the selected tape, and how hard the rest recede. The reference's
+    // selected book sits at z = 0.95 with the rear wall falling to ≈ −7.6, which
+    // is a big separation: the row loses itself in depth, and the pull-out reads
+    // as the selection coming FORWARD rather than the others sliding sideways.
+    const Z_NEAR = 1.15;
+    const Z_FALL = 1.55;
+    const Z_POW = 1.12;
+    const Y_BASE = -0.1;
+    const Y_FALL = 0.2;
+    const Y_POW = 1.18;
+    // Neighbours keep most of the hero's size on top of the perspective shrink.
+    const SCALE_FALL = 0.105;
+    const RY_CENTER = Math.PI / 12; // — the 15° hero rotation (left spine out)
+    // The rear wall sits at the reference's 58°, not fully edge-on: a 90° turn
+    // projects almost no width, which is what made the outer tapes unreadable.
+    const RY_SIDE = 1.01;
+    const SIDE_SPAN = 0.72;
+    const RX_BASE = -0.13; // — tips the bottom edge into view
+    const RX_SIDE = 0.055;
+    const RZ_BASE = 0.045;
+    const RZ_SPREAD = 0.06;
+    const RZ_SPREAD2 = 0.012;
+    const LIFT = 0.36;
+    const LIFT_FALL = 7.2;
+
+    /* ── Live overrides for the hero pose ──
+       The tuning panel writes numbers into `window.__shelfTune`; every pose read
+       goes through `TUNE(name, constant)`, so a slider moves the selected tape
+       on the next frame and the shipped constants stay the defaults. ⚠️ The
+       window object is read on EVERY call, never cached: the tuner publishes a
+       fresh object per change, so a captured reference silently stops tracking
+       (that cost one debugging round). Bake the final numbers into the constants
+       above and this indirection can go. */
+    const TUNE = (name: string, fallback: number): number => {
+      const v = (window as typeof window & { __shelfTune?: Record<string, number> })
+        .__shelfTune?.[name];
+      return typeof v === "number" && Number.isFinite(v) ? v : fallback;
+    };
+
+    /**
+     * Slots painted per side. Four gives a **nine-tape** row, which is the
+     * composition the reference uses: the selection plus four either side, the
+     * outer ones overlapping hard and fading off at the frame edge. The
+     * neighbours are near edge-on, so the hero is the only face you read.
+     */
+    const MAX_SLOTS = 4;
+    // The slot that is always off-stage. A tape is teleported into it while it
+    // is invisible, which is what makes a step seamless.
+    const PARK_SLOTS = 1;
+
+    // Bookshelf ladder (intro file `磁带盒启动动画.html`)
+    const SHELF_STEP = SPREAD_X;
+    const SHELF_Z = -3.42;
+    // The reference rises a 2.05-scaled wall up to 2.30 and then lets the rear
+    // fall back to 1.30 while the selected tape lands at 1.18 in front of it.
+    const RISE_SCALE_FROM = 2.05;
+    const RISE_SCALE_TO = 2.3;
+
+    const RISE_START = 260;
+    const RISE_STAGGER = 130;
+    const RISE_DUR = 1150;
+    const PULL_DUR = 1700;
+    const CURTAIN_FADE = 320;
+
+    const DRAG_SPAN = 0.3; // viewport fraction = progress 1
+    const DRAG_CLAMP = 1.15;
+    const SWIPE_MIN = 92;
+    const SWIPE_FRACTION = 0.065;
+    const FLICK_VELOCITY = 2.5; // progress/s at release that commits a step
+    const VELOCITY_WINDOW = 100; // ms of pointer history used to measure it
+
+    // Release spring: critically damped position solver with a velocity
+    // handoff, so a flick keeps going and a slow drag settles where it was let
+    // go (RhineLabUI's `damp()`, same numbers).
+    const SPRING_RATE = 9.2;
+    const SPRING_STOP = 0.0025;
+    const SPRING_STOP_V = 0.02;
+
+    // ── The step tween: the reference's exact numbers ──
+    // One eased tween moves the WHOLE row (`progress` shifts every tape's slot
+    // together) and the ring steps under it when it lands. That is how the
+    // reference navigates, and it is what makes the motion read as one
+    // deliberate sweep instead of several tapes each converging on its own.
+    const STEP_FROM_REST = 620; // reference: `progress === 0 ? 620 : …`
+    const STEP_BASE = 380; //            `380 + distance * 180`
+    const STEP_PER_UNIT = 180;
+    const SETTLE_AFTER_DRAG = 440; //     the swipe that passes the threshold
+    const SETTLE_BACK = 320; //           the release that snaps home
+    const REVEAL_SMOOTH = 12;
+
+    const CARD_KEY = "rrsuika-shelf-card";
+    const WARM_KEY = "rrsuika-shelf-warm";
+
+    /**
+     * The record the visitor was on, and whether they have already seen the
+     * intro. Read ONCE, at module scope, before any renderer code can write
+     * them back — `updateUI` owns `CARD_KEY`, so a later read returns the value
+     * the boot itself just wrote.
+     */
+    const boot = (() => {
+      try {
+        return {
+          warm: sessionStorage.getItem(WARM_KEY) === "1",
+          card: Number.parseInt(sessionStorage.getItem(CARD_KEY) ?? "", 10),
+        };
+      } catch {
+        return { warm: false, card: Number.NaN };
+      }
+    })();
+    const warm = boot.warm;
+    const restored = Number.isFinite(boot.card) && boot.card >= 0 ? boot.card : -1;
+    /* ══════════════════════════════════════════
+       MATH
+       ══════════════════════════════════════════ */
+
+    const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+    const smooth = (t: number) => {
+      t = clamp(t);
+      return t * t * t * (t * (t * 6 - 15) + 10);
+    };
+
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - clamp(t), 3);
+    const easeOutQuart = (t: number) => 1 - Math.pow(1 - clamp(t), 4);
+
+    const easeInOutCubic = (t: number) => {
+      t = clamp(t);
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    };
+
+    const wrap = (n: number, len: number) => ((n % len) + len) % len;
+
+    /** Frame-rate independent chase: `1 - e^(-k·dt)` never overshoots. */
+    const smoothTo = (value: number, target: number, k: number, dt: number) =>
+      value + (target - value) * (1 - Math.exp(-k * dt));
+
+    /* ══════════════════════════════════════════
+       STATE
+       ══════════════════════════════════════════ */
+
+    interface Tape {
+      el: HTMLAnchorElement;
+      /** Ring index, or — while the tape is outside the ring (parked). */
+      ring: number;
+      /** 0— reveal factor. 0 means "off-stage and not drawn". */
+      vis: number;
+      /** True for the decorative blank cassettes that fill a short shelf. */
+      empty: boolean;
+      /** Last reel angle written, so the spin only repaints when it changes. */
+      reelSpin: number;
+      /** True while the element is parked with `visibility: hidden`. */
+      hidden: boolean;
+    }
+
+    let mode: "3d" | "flat" = "3d";
+    let S = 100; // px per world unit
+    let current = 0;
+    /** — — 1 while the row travels to the next slot. Drives EVERY tape. */
+    let progress = 0;
+    let hoverX = 0;
+
+    let allTapes: Tape[] = [];
+    /** The ring being walked: the filtered real tapes, padded with blanks. */
+    let list: Tape[] = [];
+    /** The decorative blank cassettes that pad a short shelf. */
+    let blankTapes: Tape[] = [];
+    /** Ring positions the visitor may select: the real tapes, end to end. */
+    let walkFrom = 0;
+    let walkTo = 0;
+    /** Ring positions either side of the selection that are painted. */
+    let half = MAX_SLOTS;
+    /** `half` plus the off-stage park lane a recycled tape waits in. */
+    let span = half + PARK_SLOTS;
+
+    let introT0 = 0;
+    let introDuration = 0;
+    let introDone = false;
+
+    let lastFrame = 0;
+
+    let pointerDown = false;
+    let dragging = false;
+    let dragMoved = false;
+    let dragStartX = 0;
+    let dragLastX = 0;
+    let lock = false;
+    // Recent (x, time) samples. A single frame's delta is far too noisy to
+    // decide a flick from a slow drag; the release velocity is measured over a
+    // real time window instead.
+    let dragSamples: { x: number; t: number }[] = [];
+
+    // Release physics + step tween
+    const spring = { value: 0, velocity: 0, target: 0, active: false };
+    const snap = {
+      from: 0,
+      to: 0,
+      t: 0,
+      active: false,
+      dur: STEP_FROM_REST,
+      dir: 1 as 1 | -1,
+    };
+
+    let launching = false;
+    let launchT0 = 0;
+    const LAUNCH_DUR = 700;
+
+    /** True while the row is breathing, spinning or travelling. A settled shelf
+     *  writes nothing, which is what keeps it from repainting at rest. */
+    let rowBusy = true;
+    /** `rowBusy`, mirrored where the pose math can read it. */
+    let idle = true;
+
+    let lastUiKey = "";
+    let uiToken = 0;
+    let running = false;
+
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    /** Every cassette element on the page, real and blank. Populated at boot. */
+    const realEls = casEls;
+
+    /**
+     * A tape's displacement from the selection, in slots, as a float.
+     *
+     * This is the only position model in the component, and keeping it to one
+     * line is the point: an earlier revision tracked a separate ring `offset`
+     * and derived the slot from it in three places, the copies drifted, and the
+     * selection ring ended up painted on a different tape from the one the
+     * panel described. One formula, read everywhere, cannot drift.
+     *
+     * `progress` is the continuous part: one eased tween on it moves the entire
+     * row, which is what makes a step read as a single sweep rather than a
+     * handful of tapes each easing toward its own target.
+     */
+    const slotIndex = (tape: Tape) => tape.ring - current + progress;
+
+    /** How many slots a parked tape sits beyond the row. Deep enough that the
+     *  projection keeps it off-stage; perspective pulls a distant tape back
+     *  toward the middle, so this scales with the stage. */
+    const parkSlots = () =>
+      Math.max(
+        span + 1,
+        Math.ceil(stage.clientWidth / (SPREAD_X * S)) + 1,
+      );
+
+    /* ══════════════════════════════════════════
+       POSE — hero (selected) composition
+       ══════════════════════════════════════════ */
+
+    interface Pose {
+      x: number;
+      y: number;
+      z: number;
+      rx: number;
+      ry: number;
+      rz: number;
+      scale: number;
+      abs: number;
+      /** 0 = facing the viewer, 1 = fully edge-on. Drives the face crossfade. */
+      side: number;
+    }
+
+    function heroPose(p: number, time: number, seed: number): Pose {
+      const abs = Math.abs(p);
+      const side = smooth(clamp(abs / SIDE_SPAN));
+
+      const x = p * SPREAD_X + p * abs * SPREAD_X2;
+      const z = TUNE("zNear", Z_NEAR) - Math.pow(abs, Z_POW) * Z_FALL;
+
+      // A slow breath while the shelf is alive, frozen once it settles. Keeping
+      // it running at rest meant every tape was re-composited on every frame
+      // forever, which showed up as uneven frame times during a step.
+      const breath = idle
+        ? Math.sin((time * Math.PI * 2) / 8 + seed * 0.3) * 0.032 +
+          Math.sin((time * Math.PI * 2) / 13 - seed * 0.17) * 0.014
+        : 0;
+      const y = TUNE("yBase", Y_BASE) - Math.pow(abs, Y_POW) * Y_FALL + breath;
+
+      const scale = 1 / (1 + SCALE_FALL * abs);
+
+      // The rotation depends on the SLOT ALONE. The reference's `layoutPose`
+      // reads exactly this way, and that is not an accident: adding a
+      // progress-fed term (an earlier revision blended the hero toward edge-on
+      // while the row travelled) makes the selected tape swing 60° in the middle
+      // of a 620ms step, which is what made the transition feel abrupt. The
+      // tape now only ever slides and recedes — never turns against the motion.
+      const ry = lerp(
+        TUNE("ryCenter", RY_CENTER) + hoverX * 0.035,
+        p >= 0 ? -RY_SIDE : RY_SIDE,
+        side,
+      );
+
+      const rz = TUNE("rzBase", RZ_BASE) + p * (RZ_SPREAD + RZ_SPREAD2 * abs);
+      const rx = TUNE("rxBase", RX_BASE) + RX_SIDE * side;
+      const lift = TUNE("lift", LIFT) * Math.exp(-p * p * LIFT_FALL);
+
+      return { x, y: y + lift, z, rx, ry, rz, scale, abs, side };
+    }
+
+    /** Flat, evenly spaced, edge-on row — the shelf before the pull. */
+    function shelfPose(slot: number) {
+      return {
+        x: slot * SHELF_STEP,
+        y: 0,
+        z: SHELF_Z - Math.abs(slot) * 0.11,
+        ry: slot > 0 ? -Math.PI / 2 : Math.PI / 2,
+      };
+    }
+
+    /* ══════════════════════════════════════════
+       MEASURE
+       ══════════════════════════════════════════ */
+
+    function measure() {
+      const w = stage.clientWidth;
+      const h = stage.clientHeight;
+      if (w === 0 || h === 0) return;
+
+      S =
+        mode === "3d"
+          ? Math.min(h / WORLD_H, w / MIN_WORLD_W)
+          : Math.min(w / MIN_WORLD_W, 110);
+
+      root.style.setProperty("--S", S.toFixed(3) + "px");
+      root.style.setProperty("--persp", PERSPECTIVE.toFixed(2));
+      root.style.setProperty("--cas-w", (CAS_W * S).toFixed(2) + "px");
+      root.style.setProperty("--cas-h", (CAS_H * S).toFixed(2) + "px");
+      root.style.setProperty("--cas-d", (CAS_D * S).toFixed(2) + "px");
+    }
+
+    /* ══════════════════════════════════════════
+       THE ROW
+       ══════════════════════════════════════════ */
+
+    /**
+     * Build the ring the row walks: the filtered real tapes, padded at both
+     * ends with blank cassettes.
+     *
+     * The padding is not redundant. `MAX_SLOTS` reaches the screen edge on both
+     * sides, so a shelf with five projects in it would otherwise leave empty
+     * slots at each end and read as "only five things here" — the blanks make it
+     * read as a shelf that continues past the frame. Padding to `2·half + 1`
+     * whenever the list is short is also what keeps the selection **centred**:
+     * with the padded row always that long, a five-project selection sits in the
+     * middle of a full row instead of being dragged off to one side.
+     *
+     * The blanks are scenery, never destinations: the walkable range runs from
+     * the first real tape to the last one, and `navigate` refuses to step past
+     * either. Everything outside that range is painted, because the shelf should
+     * look continuous, but it cannot be selected.
+     */
+    function buildRing(filtered: Tape[]) {
+      // ── How long does the ring have to be? ──
+      //
+      // The painted band is `current ± half`, so every real tape needs `half`
+      // positions of room on BOTH sides, or the band runs off the end of the
+      // ring and the shelf silently loses half its tapes. That sets a minimum
+      // ring length of `n + 2·half`. A short archive is padded all the way to
+      // the full row (`2·half + 1`) so the blanks fill the frame; a long one is
+      // padded just enough to keep the band centred, and those extras sit
+      // off-stage where they are never seen.
+      const floorSize = MAX_SLOTS * 2 + 1;
+      const need = Math.max(
+        0,
+        Math.max(floorSize, filtered.length + MAX_SLOTS * 2) - filtered.length,
+      );
+      const used = blankTapes.slice(0, Math.min(need, blankTapes.length));
+      const lead = Math.ceil(used.length / 2);
+
+      list = [
+        ...used.slice(0, lead),
+        ...filtered,
+        ...used.slice(lead),
+      ];
+      list.forEach((tape, i) => {
+        tape.ring = i;
+      });
+
+      // Everything outside the ring is parked off-stage. Real tapes the filter
+      // removed keep their element — and their decoded cover — for the next swap.
+      const inRing = new Set(list);
+      for (const tape of allTapes) {
+        if (!inRing.has(tape)) {
+          tape.ring = -1;
+          tape.vis = 0;
+        }
+      }
+      for (const tape of blankTapes) tape.el.hidden = !inRing.has(tape);
+
+      walkFrom = lead;
+      walkTo = lead + filtered.length - 1;
+      half = MAX_SLOTS;
+      span = half + PARK_SLOTS;
+
+      // Seat the hero `half` positions along the ring: that is what puts it at
+      // screen centre. Clamped to the real tapes so a short shelf never opens on
+      // a blank, and to the ring's own slack so the band always fits.
+      const seat = clamp(
+        half,
+        Math.max(walkFrom, half),
+        Math.min(walkTo, Math.max(walkFrom, list.length - 1 - half)),
+      );
+
+      // A kept selection survives a filter change.
+      const kept = centreEl();
+      const keptTape = kept ? list.find((tape) => tape.el === kept) : undefined;
+      const keptIdx = keptTape ? list.indexOf(keptTape) : -1;
+      current = keptIdx >= walkFrom && keptIdx <= walkTo ? keptIdx : seat;
+
+      reseat(true);
+    }
+
+    /**
+     * Park every tape that is not currently in the ring, then tell the UI where
+     * the selection is.
+     *
+     * There is deliberately no per-tape easing here. Every tape's painted
+     * position is `ring — current + progress`, so the single tween on
+     * `progress` moves the whole row in lockstep — which is what reads as one
+     * sweep. An earlier revision had each tape chase its own target with an
+     * exponential filter, and the row arrived in a mush of slightly different
+     * velocities.
+     */
+    function reseat(snapProgress: boolean) {
+      if (snapProgress) {
+        progress = 0;
+        spring.value = 0;
+        spring.velocity = 0;
+        spring.active = false;
+        snap.active = false;
+      }
+
+      // A tape is painted while it is inside `±span`; anything else is pruned by
+      // the render loop's fade, so there is nothing to park explicitly. The
+      // tapes just outside the row are already off-stage, which is why a step
+      // never pops: the tape that leaves has faded out past the frame edge and
+      // the one that arrives has faded in from it.
+
+      syncEmptyState(walkTo < walkFrom);
+      updateUI(true);
+    }
+
+    /** Step the carousel by ±1. `progress` must already be at the far end. */
+    function recycle(direction: 1 | -1) {
+      if (list.length === 0) return;
+      const next = wrap(current + direction, list.length);
+      // A blank is scenery, not a destination: refuse to step onto one, and
+      // unwind `progress` so the row eases back instead of sticking mid-step.
+      if (next < walkFrom || next > walkTo) {
+        lock = true;
+        spring.value = progress;
+        spring.velocity = 0;
+        spring.target = 0;
+        spring.active = true;
+        return;
+      }
+
+      current = next;
+      progress = 0;
+      spring.value = 0;
+      spring.velocity = 0;
+      spring.active = false;
+      lock = false;
+      reseat(false);
+    }
+
+    function syncEmptyState(empty: boolean) {
+      const emptyEl = document.getElementById("shelf-empty");
+      if (emptyEl) emptyEl.hidden = !empty;
+
+      // An arrow is only live while there is somewhere to go.
+      const atStart = current <= walkFrom;
+      const atEnd = current >= walkTo;
+      document.getElementById("shelf-prev")?.toggleAttribute("hidden", atStart);
+      document.getElementById("shelf-next")?.toggleAttribute("hidden", atEnd);
+    }
+
+    /* ══════════════════════════════════════════
+       NAVIGATE / DRAG / RELEASE
+       ══════════════════════════════════════════ */
+
+    function navigate(direction: 1 | -1) {
+      if (lock || launching || !introDone || walkTo <= walkFrom) return;
+
+      // Refuse to walk onto the blank scenery at either end and ease back
+      // instead — the shelf continues past the frame, but the archive stops.
+      const next = wrap(current + direction, list.length);
+      if (next < walkFrom || next > walkTo) {
+        lock = true;
+        spring.value = progress;
+        spring.velocity = 0;
+        spring.target = 0;
+        spring.active = true;
+        return;
+      }
+
+      // The reference: a step from rest takes 620ms, and a step that starts
+      // mid-flight gets `380 + distance * 180` — so an interrupted transition
+      // finishes the remainder rather than restarting.
+      const target = direction > 0 ? -1 : 1;
+      const distance = Math.abs(target - progress);
+      snap.dur =
+        mode === "flat"
+          ? 380
+          : progress === 0
+            ? STEP_FROM_REST
+            : STEP_BASE + distance * STEP_PER_UNIT;
+      snap.from = progress;
+      snap.to = target;
+      snap.t = 0;
+      snap.active = true;
+      snap.dir = direction;
+    }
+
+    function settleDrag() {
+      dragging = false;
+      pointerDown = false;
+      stage.classList.remove("is-dragging");
+      lock = true;
+
+      const canStep = walkTo > walkFrom;
+      const distance = dragLastX - dragStartX;
+      const threshold = Math.max(SWIPE_MIN, window.innerWidth * SWIPE_FRACTION);
+      // A fast flick commits even under the distance threshold: the velocity
+      // the pointer actually left with is carried into the decision.
+      const flick = Math.abs(spring.velocity) > FLICK_VELOCITY;
+      const forward = flick ? spring.velocity < 0 : distance < 0;
+      const direction: 1 | -1 = forward ? 1 : -1;
+      const next = wrap(current + direction, Math.max(1, list.length));
+      const allowed =
+        canStep && next >= walkFrom && next <= walkTo;
+
+      if (allowed && (flick || Math.abs(distance) > threshold)) {
+        snap.dur = mode === "flat" ? 380 : SETTLE_AFTER_DRAG;
+        snap.from = progress;
+        snap.to = direction > 0 ? -1 : 1;
+        snap.t = 0;
+        snap.active = true;
+        snap.dir = direction;
+        return;
+      }
+
+      // Under threshold — or against the end of the archive: play the tape back
+      // onto the shelf.
+      spring.value = progress;
+      spring.target = 0;
+      spring.active = true;
+    }
+
+    /* ══════════════════════════════════════════
+       RENDER LOOP
+       ══════════════════════════════════════════ */
+
+    function stepTweens(dt: number) {
+      // ── release spring (critically damped, velocity preserved) ──
+      if (spring.active) {
+        const rate = reduceMotion ? 60 : SPRING_RATE;
+        const delta = spring.value - spring.target;
+        const impulse = spring.velocity + rate * delta;
+        const decay = Math.exp(-rate * dt);
+        spring.value = spring.target + (delta + impulse * dt) * decay;
+        spring.velocity = (spring.velocity - rate * impulse * dt) * decay;
+
+        if (
+          Math.abs(spring.value - spring.target) < SPRING_STOP &&
+          Math.abs(spring.velocity) < SPRING_STOP_V
+        ) {
+          spring.value = spring.target;
+          spring.velocity = 0;
+          spring.active = false;
+          if (Math.abs(spring.target) > 0.5) {
+            recycle(spring.target < 0 ? 1 : -1);
+          } else {
+            // Landed back on the shelf. The row may have come to rest short of
+            // the slot (an end-of-archive push), so settle it exactly.
+            progress = 0;
+            lock = false;
+          }
+        }
+        progress = spring.value;
+      }
+
+      // ── the step: ONE eased tween drives the whole row ──
+      if (snap.active) {
+        snap.t += dt / (snap.dur / 1000);
+        const t = clamp(snap.t);
+        progress = lerp(snap.from, snap.to, easeOutQuart(t));
+        if (t >= 1) {
+          snap.active = false;
+          recycle(snap.dir);
+        }
+      }
+    }
+
+    function renderFrame(now: number) {
+      const dt = lastFrame ? Math.min(0.05, (now - lastFrame) / 1000) : 0.016;
+      lastFrame = now;
+
+      // Reduced motion keeps the static 3D composition but freezes the idle
+      // float and the reel spin.
+      const time = reduceMotion ? 0 : now / 1000;
+
+      stepTweens(dt);
+
+      const introElapsed = now - introT0;
+      // Is anything moving? Drives the reel spin and the idle float, so a
+      // settled shelf costs no repaints at all.
+      const rowBusy =
+        !introDone ||
+        snap.active ||
+        spring.active ||
+        dragging ||
+        launching ||
+        Math.abs(progress) > 0.0005;
+      idle = rowBusy;
+
+      if (launching) {
+        const lt = easeInOutCubic(clamp((now - launchT0) / LAUNCH_DUR));
+        if (lt >= 1) return;
+      }
+
+      for (const tape of allTapes) {
+        const { el } = tape;
+        const sink = slotIndex(tape);
+
+        // ── reveal fade: 1 inside the painted row, 0 outside it. Parked tapes
+        // sit beyond this and are culled outright, and because a tape is only
+        // ever teleported while it is invisible, a step never pops. ──
+        const inRing = tape.ring >= 0;
+        const within = inRing && Math.abs(sink) <= span;
+
+        tape.vis = smoothTo(
+          tape.vis,
+          within ? 1 : 0,
+          reduceMotion ? 60 : REVEAL_SMOOTH,
+          dt,
+        );
+
+        if (tape.vis <= 0.004) {
+          tape.vis = 0;
+          if (!tape.hidden) {
+            tape.hidden = true;
+            el.classList.add("is-hidden");
+            el.setAttribute("aria-hidden", "true");
+            el.style.removeProperty("--cas-o");
+            el.style.removeProperty("--reel-spin");
+          }
+          continue;
+        }
+
+        if (tape.hidden) {
+          tape.hidden = false;
+          el.classList.remove("is-hidden");
+          if (!tape.empty) el.removeAttribute("aria-hidden");
+        }
+
+        // What every tape actually paints from: its own slot, clamped to the
+        // last painted position so a tape still on its way into the park lane
+        // never shoots off past where it can be seen.
+        const pos = clamp(sink, -span, span);
+        const isCentre = introDone && Math.abs(pos) < 0.5;
+        el.classList.toggle("is-center", isCentre);
+
+        // Only the selection is lit. Everything else stays fully opaque and is
+        // dimmed and cooled instead — the reference shelves solid dark objects,
+        // and a translucent neighbour just mixes with the starfield behind it.
+        const beneath = isCentre ? "0" : "1";
+        if (el.dataset.beneath !== beneath) {
+          el.dataset.beneath = beneath;
+          el.style.setProperty("--cas-beneath", beneath);
+        }
+
+        if (mode === "flat") {
+          const abs = Math.abs(pos);
+          el.style.transform = `translate3d(${(pos * 106).toFixed(2)}%,0,0)`;
+          el.style.setProperty(
+            "--cas-o",
+            (clamp(1 - Math.max(0, abs - 0.5) * 2.4) * tape.vis).toFixed(3),
+          );
+          el.style.setProperty("--cas-beneath", "0");
+          el.style.zIndex = String(Math.round(100 - abs * 10));
+          continue;
+        }
+
+        const hero = heroPose(pos, time, tape.ring);
+        let { x, y, z, rx, ry, rz, scale } = hero;
+        let opacity = tape.vis;
+
+        // ⚠️ No per-tape alpha, and no cover crossfade. An earlier revision
+        // dimmed the printed cover toward 0.8 as a tape turned edge-on (the
+        // reference's `1 − .96·side`, inverted). On the light theme that made
+        // every neighbour's front plate see-through, so each tape showed the
+        // tape behind it and the row read as stacked translucent volumes. Depth
+        // comes from the opaque dim veil, the Z separation and the scale.
+
+        // ── intro: the reference's ladder ──
+        // Tapes rise edge-on from below with their X held on the row (the
+        // reference never slides them laterally) and then the rear wall
+        // retreats while the selection pulls forward out of it.
+        if (introElapsed < (introAt.get(tape) ?? 0) + RISE_DUR + 60) {
+          const rt = easeOutCubic(
+            clamp((introElapsed - (introAt.get(tape) ?? 0)) / RISE_DUR),
+          );
+          const from = introFrom(tape, pos);
+
+          x = from.x;
+          y = lerp(from.y, hero.y, rt);
+          z = lerp(from.z, hero.z, rt);
+          rx = lerp(0.025, hero.rx, rt);
+          ry = lerp(from.ry, hero.ry, rt);
+          rz = lerp(0, hero.rz, rt);
+          scale = lerp(RISE_SCALE_FROM, hero.scale, rt);
+          opacity *= clamp(rt * 1.7);
+        }
+
+        // ── launch: the selected tape flies at the viewer ──
+        if (launching && isCentre) {
+          const lt = easeInOutCubic(clamp((now - launchT0) / LAUNCH_DUR));
+          z = lerp(z, 7.6, lt);
+          scale = lerp(scale, 1.5, lt);
+          ry = lerp(ry, -0.02, lt);
+          rx = lerp(rx, 0, lt);
+          rz = lerp(rz, 0, lt);
+          x = lerp(x, 0, lt);
+        }
+
+        el.style.transform =
+          `translate3d(${(x * S).toFixed(2)}px,${(-y * S).toFixed(2)}px,${(z * S).toFixed(2)}px) ` +
+          `rotateX(${(-rx).toFixed(5)}rad) rotateY(${ry.toFixed(5)}rad) rotateZ(${(-rz).toFixed(5)}rad) ` +
+          `scale(${scale.toFixed(4)})`;
+
+        el.style.setProperty("--cas-o", opacity.toFixed(3));
+
+        // Reels: only the SELECTION turns, and it turns all the time. The rule
+        // used to be "spin whatever is near the centre, but only while the row
+        // is moving", which meant the shelf sat perfectly still at rest and the
+        // circles only came alive during a drag — reported as "the rings are
+        // frozen until I drag". Everything else keeps a fixed angle, which is
+        // also the cheapest state: one tape repaints its reel, nine do not.
+        // (`--reel-spin` drives a `repeating-conic-gradient` rotation, i.e. a
+        // full repaint of that reel, so it is written only when it changes.)
+        if (!reduceMotion && hero.abs < 0.5) {
+          const rate = rowBusy ? 0.9 + 0.5 * (1 - hero.abs) : 0.22;
+          const spin = time * rate + tape.ring;
+          tape.reelSpin = spin;
+          el.style.setProperty("--reel-spin", spin.toFixed(4) + "rad");
+        }
+
+        el.style.zIndex = String(Math.round(30 - hero.abs * 2));
+      }
+
+      // DOM order == row order. A recycled tape keeps its node and its state
+      // and is only moved in the tree, which is what lets the 3D stacking and
+      // the paint order stay consistent across a step.
+      const order = allTapes
+        .slice()
+        .sort(
+          (a, b) =>
+            clamp(slotIndex(a), -span, span) - clamp(slotIndex(b), -span, span),
+        );
+      if (order.some((tape, i) => track.children[i] !== tape.el)) {
+        for (const tape of order) track.append(tape.el);
+      }
+    }
+
+    /** Where a tape's intro rise starts: edge-on, below the frame, on its own
+     *  slot's X. The reference holds X fixed for the whole climb. */
+    function introFrom(tape: Tape, pos: number) {
+      const shelf = shelfPose(pos);
+      return {
+        x: shelf.x,
+        y: -6.25 - Math.abs(pos) * 0.055,
+        z: -4.15 - Math.abs(pos) * 0.06,
+        ry: pos >= 0 ? -Math.PI / 2 : Math.PI / 2,
+      };
+    }
+
+    function introEnd() {
+      return (
+        RISE_START + (half + PARK_SLOTS) * 2 * RISE_STAGGER + RISE_DUR + PULL_DUR
+      );
+    }
+
+    /* ══════════════════════════════════════════
+       UI
+       ══════════════════════════════════════════ */
+
+    /** The selected tape's element. The selection is always a real tape —        `buildRing` and `recycle` both refuse to land on a blank. */
+    const centreEl = () => (list.length ? list[current % list.length].el : null);
+
+    function updateUI(force = false) {
+      const el = centreEl();
+      if (!el) return;
+
+      // Count the ARCHIVE, not the scenery: `walkTo — walkFrom + 1` is the
+      // filtered set, so a padded shelf still reads "05 tapes loaded".
+      const total = walkTo - walkFrom + 1;
+
+      const key = String(el.dataset.index) + "/" + String(total);
+      if (!force && key === lastUiKey) return;
+      lastUiKey = key;
+
+      const pad = String(Number.parseInt(el.dataset.index ?? "1", 10) || 1);
+      const idxEl = document.getElementById("shelf-current");
+      if (idxEl) idxEl.textContent = pad;
+
+      const totalEl = document.getElementById("shelf-total");
+      if (totalEl) totalEl.textContent = String(total).padStart(2, "0");
+
+      const hudState = document.getElementById("shelf-hud-state");
+      if (hudState) {
+        hudState.textContent =
+          String(total).padStart(2, "0") + " " + (root.dataset.loadedLabel ?? "");
+      }
+
+      // Where the visitor is, so a language switch can land on the same record
+      // instead of resetting the shelf to the first tape.
+      try {
+        sessionStorage.setItem(CARD_KEY, String(current - walkFrom));
+      } catch {
+        /* storage disabled */
+      }
+
+      const panel = document.getElementById("shelf-panel");
+      const accent = el.style.getPropertyValue("--cas-accent");
+      if (accent) panel?.style.setProperty("--cas-accent", accent);
+
+      // The status colour belongs to the record, not to the copy: it flips
+      // instantly, while the text waits for the blur swap.
+      panel?.setAttribute("data-wip", el.dataset.wip ?? "0");
+
+      const titleEl = document.getElementById("shelf-panel-title");
+      const descEl = document.getElementById("shelf-panel-desc");
+      const catEl = document.getElementById("shelf-panel-category");
+      const statusEl = document.getElementById("shelf-panel-status");
+      const dateEl = document.getElementById("shelf-panel-date");
+      const tagsEl = document.getElementById("shelf-panel-tags");
+
+      panel?.classList.add("is-changing");
+      const token = ++uiToken;
+
+      window.setTimeout(
+        () => {
+          if (token !== uiToken) return;
+
+          if (titleEl) titleEl.textContent = el.dataset.title ?? "";
+          if (descEl) descEl.textContent = el.dataset.desc ?? "";
+          if (catEl) catEl.textContent = el.dataset.category || el.dataset.type || "";
+          if (statusEl) statusEl.textContent = el.dataset.status ?? "";
+          if (dateEl) dateEl.textContent = el.dataset.date ?? "";
+
+          if (tagsEl) {
+            let tags: string[] = [];
+            try {
+              tags = JSON.parse(el.dataset.tags || "[]");
+            } catch {
+              tags = [];
+            }
+            tagsEl.replaceChildren(
+              ...tags.slice(0, 6).map((tag) => {
+                const span = document.createElement("span");
+                span.textContent = tag;
+                return span;
+              }),
+            );
+          }
+
+          panel?.classList.remove("is-changing");
+        },
+        reduceMotion ? 0 : 170,
+      );
+
+      // Only the selected tape is a tab stop; the rest stay crawlable links.
+      for (const item of realEls) {
+        item.tabIndex = item === el ? 0 : -1;
+      }
+
+      const status = document.getElementById("shelf-status");
+      if (status && introDone) {
+        status.textContent = `${el.dataset.title ?? ""} —{pad}/${total}`;
+      }
+    }
+
+    /* ══════════════════════════════════════════
+       INTRO
+       ══════════════════════════════════════════ */
+
+    const introEl = document.getElementById("shelf-intro");
+
+    /** Ring offset at which each tape's rung of the ladder starts. */
+    let introAt = new Map<Tape, number>();
+
+    function startIntro(full: boolean) {
+      introDone = false;
+      root.classList.remove("is-ready");
+      introEl?.classList.remove("is-done");
+
+      // Left — right along the row, so the ladder sweeps in from the left. The
+      // stagger is counted from the leftmost painted slot, not from the
+      // selection, or the middle of the row would rise before its neighbours.
+      introAt = new Map();
+      for (const tape of allTapes) {
+        const order = clamp(slotIndex(tape), -span, span) + span;
+        introAt.set(tape, RISE_START + order * RISE_STAGGER);
+      }
+
+      introT0 = performance.now();
+      introDuration = introEnd();
+
+      if (!full || reduceMotion) {
+        introT0 = performance.now() - introEnd() - CURTAIN_FADE - 400;
+      }
+    }
+
+    function finishIntro() {
+      if (introDone) return;
+      introDone = true;
+      root.classList.add("is-ready");
+      introEl?.classList.add("is-done");
+      try {
+        sessionStorage.setItem("rrsuika-shelf-intro-seen", "1");
+      } catch {
+        /* storage disabled */
+      }
+      updateUI(true);
+    }
+
+    function skipIntro() {
+      if (introDone) return;
+      introT0 = performance.now() - introEnd() - 4000;
+      finishIntro();
+    }
+
+    root.addEventListener("pointerdown", () => {
+      if (!introDone) skipIntro();
+    });
+
+    /* ══════════════════════════════════════════
+       POINTER — drag the row
+       ══════════════════════════════════════════ */
+
+    stage.addEventListener("dragstart", (event) => event.preventDefault());
+
+    stage.addEventListener("pointerdown", (event) => {
+      if (launching || lock || !introDone) return;
+      if (
+        (event.target as HTMLElement).closest(
+          ".shelf-nav, .shelf-open, .shelf-replay",
+        )
+      ) {
+        return;
+      }
+
+      pointerDown = true;
+      dragging = false;
+      dragMoved = false;
+      dragStartX = event.clientX;
+      dragLastX = event.clientX;
+      dragSamples = [{ x: event.clientX, t: performance.now() }];
+
+      // Any in-flight motion is cancelled and taken over from where it is.
+      spring.active = false;
+      snap.active = false;
+      spring.velocity = 0;
+      spring.value = progress;
+
+      try {
+        stage.setPointerCapture?.(event.pointerId);
+      } catch {
+        /* synthetic or already-released pointer — capture is optional */
+      }
+    });
+
+    stage.addEventListener("pointermove", (event) => {
+      const rect = stage.getBoundingClientRect();
+      hoverX = (event.clientX - rect.left) / rect.width - 0.5;
+
+      if (!pointerDown || launching || lock) return;
+
+      dragLastX = event.clientX;
+      const distance = dragLastX - dragStartX;
+
+      if (Math.abs(distance) > 7) dragMoved = true;
+      if (Math.abs(distance) > 9 && !dragging) {
+        dragging = true;
+        stage.classList.add("is-dragging");
+      }
+
+      if (!dragging) return;
+
+      const now = performance.now();
+      dragSamples.push({ x: dragLastX, t: now });
+      dragSamples = dragSamples.filter((s) => now - s.t <= VELOCITY_WINDOW);
+
+      const span = window.innerWidth * DRAG_SPAN;
+      progress = clamp(distance / span, -DRAG_CLAMP, DRAG_CLAMP);
+      spring.value = progress;
+
+      // Release velocity for the flick handoff, in progress-units per second.
+      const first = dragSamples[0];
+      const last = dragSamples[dragSamples.length - 1];
+      spring.velocity =
+        last && first && last.t > first.t
+          ? ((last.x - first.x) / span) * (1000 / (last.t - first.t))
+          : 0;
+    });
+
+    stage.addEventListener("pointerup", (event) => {
+      if (!pointerDown) return;
+      pointerDown = false;
+      try {
+        stage.releasePointerCapture?.(event.pointerId);
+      } catch {
+        /* nothing captured */
+      }
+
+      if (!dragMoved) {
+        dragging = false;
+        stage.classList.remove("is-dragging");
+        return;
+      }
+
+      settleDrag();
+    });
+
+    stage.addEventListener("pointercancel", () => {
+      if (pointerDown) settleDrag();
+    });
+
+    /* Suppress the click that ends a drag — without this, releasing on a tape
+       navigates to its detail page. Capture phase, so it lands before the link
+       logic below. */
+    track.addEventListener(
+      "click",
+      (event) => {
+        if (dragMoved) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      },
+      true,
+    );
+
+    /* Horizontal wheel / trackpad swipe. Vertical scroll is left alone, and
+       the accumulator is locked out while a step is animating so one gesture
+       cannot queue several steps. */
+    let wheelAcc = 0;
+    let wheelReset = 0;
+    stage.addEventListener(
+      "wheel",
+      (event) => {
+        if (launching || lock || !introDone) return;
+        if (Math.abs(event.deltaX) < 8) return;
+        if (Math.abs(event.deltaX) < Math.abs(event.deltaY) * 1.5) return;
+
+        event.preventDefault();
+
+        const now = performance.now();
+        if (now - wheelReset > 280) wheelAcc = 0;
+        wheelReset = now;
+        wheelAcc += event.deltaX;
+
+        if (Math.abs(wheelAcc) > 190) {
+          const direction: 1 | -1 = wheelAcc > 0 ? 1 : -1;
+          wheelAcc = 0;
+          navigate(direction);
+        }
+      },
+      { passive: false },
+    );
+
+    /* ══════════════════════════════════════════
+       CLICK — detail transition
+       ══════════════════════════════════════════ */
+
+    function launch(url: string) {
+      if (launching || !introDone) return;
+
+      if (reduceMotion) {
+        window.location.href = url;
+        return;
+      }
+
+      launching = true;
+      launchT0 = performance.now();
+      root.classList.add("is-launching");
+
+      window.setTimeout(() => {
+        window.location.href = url;
+      }, LAUNCH_DUR - 130);
+    }
+
+    track.addEventListener("click", (event) => {
+      const link = (event.target as HTMLElement).closest<HTMLAnchorElement>(".cas");
+      if (!link) return;
+
+      // Modifier clicks and non-primary buttons keep native behaviour.
+      if (
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey ||
+        (event as MouseEvent).button !== 0
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      if (launching || !introDone) return;
+
+      // Clicking a neighbour selects it; clicking the centre opens it; clicking
+      // a blank cassette is a no-op — it is scenery.
+      if (link !== centreEl()) {
+        const tape = allTapes.find((t) => t.el === link);
+        if (!tape || tape.empty) return;
+        const sink = slotIndex(tape);
+        if (sink > 0.05) navigate(1);
+        else if (sink < -0.05) navigate(-1);
+        return;
+      }
+
+      const url = link.getAttribute("href");
+      if (url) launch(url);
+    });
+
+    document.getElementById("shelf-open")?.addEventListener("click", () => {
+      const url = centreEl()?.getAttribute("href");
+      if (url) launch(url);
+    });
+
+    /* ══════════════════════════════════════════
+       CONTROLS
+       ══════════════════════════════════════════ */
+
+    document
+      .getElementById("shelf-prev")
+      ?.addEventListener("click", () => navigate(-1));
+    document
+      .getElementById("shelf-next")
+      ?.addEventListener("click", () => navigate(1));
+
+    document.getElementById("shelf-replay")?.addEventListener("click", () => {
+      if (launching) return;
+      progress = 0;
+      spring.active = false;
+      snap.active = false;
+      lock = false;
+      startIntro(true);
+    });
+
+    root.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        navigate(-1);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        navigate(1);
+      }
+    });
+
+    /* ══════════════════════════════════════════
+       TAG FILTER — re-slot in place, no curtain
+       ══════════════════════════════════════════ */
+
+    const chips = Array.from(
+      document.querySelectorAll<HTMLButtonElement>("#shelf-tag-bar .tag-chip"),
+    );
+
+    for (const chip of chips) {
+      chip.addEventListener("click", () => {
+        if (launching) return;
+
+        const tag = chip.dataset.tag || "";
+        for (const c of chips) c.classList.remove("active");
+        chip.classList.add("active");
+
+        const previous = centreEl();
+        const matched = tag
+          ? realEls
+              .map((el) => allTapes.find((tape) => tape.el === el))
+              .filter((tape): tape is Tape => {
+                if (!tape) return false;
+                try {
+                  return (
+                    JSON.parse(tape.el.dataset.tags || "[]") as string[]
+                  ).includes(tag);
+                } catch {
+                  return false;
+                }
+              })
+          : allTapes.filter((tape) => !tape.empty);
+
+        // No curtain, no replay: `buildRing` re-seats the survivors and pads the
+        // ends with blanks, the pruned tapes fade out where they stand, and the
+        // covers are already decoded — so nothing goes black.
+        void previous;
+        buildRing(matched);
+      });
+    }
+
+    /* ══════════════════════════════════════════
+       MODE + RESIZE
+       ══════════════════════════════════════════ */
+
+    function resolveMode() {
+      const supports3d =
+        typeof CSS !== "undefined" &&
+        CSS.supports?.("transform-style", "preserve-3d");
+      const narrow = window.matchMedia("(max-width: 860px)").matches;
+      return !supports3d || narrow ? "flat" : "3d";
+    }
+
+    function applyMode() {
+      const next = resolveMode();
+
+      const panel = document.getElementById("shelf-panel");
+      if (panel) {
+        panel.style.removeProperty("--cas-accent");
+        const accent = centreEl()?.style.getPropertyValue("--cas-accent");
+        if (accent) panel.style.setProperty("--cas-accent", accent);
+      }
+
+      if (next === mode) return;
+      mode = next;
+      page.dataset.mode = mode;
+
+      reseat(true);
+      measure();
+    }
+
+    let resizeRaf = 0;
+    function onResize() {
+      if (resizeRaf) return;
+      resizeRaf = requestAnimationFrame(() => {
+        resizeRaf = 0;
+        applyMode();
+        measure();
+      });
+    }
+
+    /* ══════════════════════════════════════════
+       LOOP — paused off-screen and on hidden tabs
+       ══════════════════════════════════════════ */
+
+    let visible = true;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        visible = entries.some((e) => e.isIntersecting);
+        if (visible) start();
+      },
+      { threshold: 0 },
+    );
+    observer.observe(root);
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) start();
+    });
+
+    function start() {
+      if (running) return;
+      running = true;
+      requestAnimationFrame(loop);
+    }
+
+    function loop(now: number) {
+      running = false;
+      if (!visible || document.hidden) return;
+
+      renderFrame(now);
+
+      if (!introDone && now - introT0 >= introDuration + CURTAIN_FADE) {
+        finishIntro();
+      }
+
+      if (launching && now - launchT0 >= LAUNCH_DUR) return;
+
+      running = true;
+      requestAnimationFrame(loop);
+    }
+
+    /* ══════════════════════════════════════════
+       BOOT
+       ══════════════════════════════════════════ */
+
+    mode = resolveMode();
+    page.dataset.mode = mode;
+
+    // The blank cassettes live in their own store at the end of the track so
+    // the real markup stays readable. They are scenery: no link, no copy, and
+    // they never enter the walkable range.
+    const blankStore = root.querySelector<HTMLElement>("[data-fillers]");
+    const blankEls = blankStore
+      ? Array.from(blankStore.querySelectorAll<HTMLAnchorElement>(".cas"))
+      : [];
+    for (const el of blankEls) {
+      el.removeAttribute("href");
+      el.setAttribute("aria-hidden", "true");
+      el.tabIndex = -1;
+      el.dataset.empty = "1";
+    }
+
+    const makeTape = (
+      el: HTMLAnchorElement,
+      empty: boolean,
+    ): Tape => ({
+      el,
+      ring: -1,
+      vis: 0,
+      empty,
+      reelSpin: 0,
+      hidden: false,
+    });
+
+    blankTapes = blankEls.map((el) => makeTape(el, true));
+    allTapes = [...realEls.map((el) => makeTape(el, false)), ...blankTapes];
+
+    measure();
+    buildRing(allTapes.filter((tape) => !tape.empty));
+
+    // A language switch is a full page load that lands on a different URL, so
+    // the only thing that carries across is what we store: the record the
+    // visitor was looking at. Restoring it keeps the shelf where it was
+    // instead of snapping back to the first tape.
+    //
+    // ⚠️ Read it HERE, before anything else can run. `buildRing` calls
+    // `updateUI`, and `updateUI` is what WRITES this key — so a read placed
+    // after the ring is built reads back the value the boot itself just wrote,
+    // which is always "0". That is a silent reset on every language switch.
+    if (restored >= 0 && restored <= walkTo - walkFrom) {
+      current = walkFrom + restored;
+      reseat(true);
+      updateUI(true);
+    }
+
+    // The curtain is a first-visit moment only. A return visit — including the
+    // one a language switch causes — lifts it on the first frame, so the shelf
+    // never flashes black at a visitor who has already seen it. A tag filter
+    // does not start an intro at all.
+    const fullIntro = !warm && mode === "3d" && !reduceMotion;
+
+    measure();
+    startIntro(fullIntro);
+    measure();
+    start();
+    // ⚠️ `startIntro` also arms the *curtain*, which the intro now covers: on a
+    // load where the site intro is playing, the shelf's own entrance would run
+    // unseen underneath it and be over before the paper opens. Layout exposes
+    // `__rrsIntroGate` for exactly this — hold the shelf's entrance until the
+    // intro has opened, then play it. With no gate (every other load) this is a
+    // resolved promise and nothing changes.
+    const introGate = (window as typeof window & { __rrsIntroGate?: Promise<void> }).__rrsIntroGate;
+    if (introGate) introGate.then(() => startIntro(fullIntro));
+
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+  })();
+</script>

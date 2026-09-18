@@ -1,7 +1,7 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import { getCollection } from "astro:content";
-import ProjectCard from "../../components/ProjectCard.astro";
+import CassetteShelf from "../../components/CassetteShelf.astro";
 import { getLanguageFromPath } from "../../utils/i18n";
 import { getTranslations } from "../../utils/translations";
 
@@ -13,7 +13,7 @@ const projectEntries = entries
   .filter((e) => e.data.type === "projects" && e.data.lang === language)
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
-// Curated filter tags
+// Curated filter tags — narrowed inside CassetteShelf to the ones that exist
 const filterTags = [
   "Industrial Design",
   "Sheet Metal",
@@ -26,105 +26,17 @@ const filterTags = [
   "Welding",
   "BOM",
 ];
-
-// Only show tags that actually exist in project entries
-const allTags = new Set(projectEntries.flatMap((e) => e.data.tags || []));
-const topTags = filterTags
-  .filter((t) => allTags.has(t))
-  .map((t) => [t, projectEntries.filter((e) => (e.data.tags || []).includes(t)).length] as const);
 ---
 
-<Layout title={`${t.sections.projects.title} | RrSuika Studio`} description={t.sections.projects.description}>
-  <main class="projects-page">
-    <header class="projects-header">
-      <h1>{t.sections.projects.title}</h1>
-      <p>{t.sections.projects.description}</p>
-    </header>
-
-    {
-      topTags.length > 0 && (
-        <div class="tag-bar" id="tag-bar">
-          <button class="tag-chip active" data-tag="">ALL</button>
-          {topTags.map(([tag, count]) => (
-            <button class="tag-chip" data-tag={tag}>
-              {tag}<span class="tag-count">{count}</span>
-            </button>
-          ))}
-        </div>
-      )
-    }
-
-    <div class="grid" id="projects-grid">
-      {projectEntries.map((entry) => (
-        <div class="project-wrapper" data-tags={JSON.stringify(entry.data.tags || [])}>
-          <ProjectCard project={entry} />
-        </div>
-      ))}
-    </div>
-  </main>
+<Layout
+  title={`${t.sections.projects.title} | RrSuika Studio`}
+  description={t.sections.projects.description}
+>
+  <CassetteShelf
+    entries={projectEntries}
+    kind="projects"
+    filterTags={filterTags}
+    title={t.sections.projects.title}
+    description={t.sections.projects.description}
+  />
 </Layout>
-
-<script>
-  const chips = document.querySelectorAll<HTMLButtonElement>(".tag-chip");
-  const wrappers = document.querySelectorAll<HTMLElement>(".project-wrapper");
-
-  chips.forEach((chip) => {
-    chip.addEventListener("click", () => {
-      const tag = chip.dataset.tag || "";
-
-      chips.forEach((c) => c.classList.remove("active"));
-      chip.classList.add("active");
-
-      wrappers.forEach((w) => {
-        const tags: string[] = JSON.parse(w.dataset.tags || "[]");
-        if (!tag || tags.includes(tag)) {
-          w.style.display = "";
-        } else {
-          w.style.display = "none";
-        }
-      });
-    });
-  });
-</script>
-
-<style>
-  .projects-page {
-    max-width: var(--container-wide);
-    margin: auto;
-    padding: 0 40px 80px;
-  }
-
-  .projects-header {
-    margin-bottom: 30px;
-  }
-
-  .projects-header h1 {
-    font-size: var(--text-scale-h1);
-    line-height: 1.2;
-  }
-
-  .projects-header p {
-    font-size: 20px;
-    color: #666;
-    margin-top: 8px;
-  }
-
-  /* ── Tag chips: global styles in global.css §12 ── */
-
-  /* ── Grid ── */
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--grid-gap);
-  }
-
-  @media (max-width: 1100px) {
-    .grid { grid-template-columns: repeat(2, 1fr); }
-  }
-
-  @media (max-width: 700px) {
-    .projects-page { padding: 0 16px 60px; }
-    .grid { grid-template-columns: 1fr; }
-    .projects-header h1 { font-size: 42px; }
-  }
-</style>
