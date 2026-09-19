@@ -116,7 +116,10 @@ export const translations = {
 
     card: {
       projectNode: "PRJ_NODE //",
-      online: "● ONLINE",
+      // Entry status. NOT the navbar's live system status ("ONLINE", in the
+      // `system` section) — a finished entry reads COMPLETE so the two no
+      // longer say the same word (2026-09-20, user request).
+      online: "● COMPLETE",
       wip: "◐ WIP",
       team: "/TEAMWORK/",
       imageStream: "IMAGE_STREAM // ACTIVE",
@@ -682,7 +685,9 @@ export const translations = {
 
     card: {
       projectNode: "项目节点 //",
-      online: "● 在线",
+      // 条目状态。注意与 navbar 的系统状态（`system` 段的"在线"）区分开：
+      // 已完成条目显示"完成"，避免两处用同一个词（2026-09-20 用户要求）。
+      online: "● 完成",
       wip: "◐ 进行中",
       team: "/协作/",
       imageStream: "图像流 // ACTIVE",
@@ -1223,7 +1228,10 @@ export const translations = {
 
     card: {
       projectNode: "PRJ_NODE //",
-      online: "● ONLINE",
+      // Status van een item. Let op: dit is NIET de live systeemstatus in de
+      // navbar ("ONLINE", sectie `system`) — een afgerond item leest COMPLETE,
+      // zodat beide niet hetzelfde woord tonen (2026-09-20, verzoek gebruiker).
+      online: "● COMPLETE",
       wip: "◐ WIP",
       team: "/TEAMWERK/",
       imageStream: "IMAGE_STREAM // ACTIEF",

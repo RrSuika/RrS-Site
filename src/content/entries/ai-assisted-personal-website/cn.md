@@ -1,6 +1,6 @@
 ---
 title: AI 协作个人网站：从一张主页到一个复杂数据库
-spineTitle: "BUILD A PERSONAL WEBSITE"
+spineTitle: "个人网站构建"
 date: 2026-05-19
 dateLabel: "May 19"
 description: 学习通过 AI 搭建 + 部署个人网站。这里记录迭代过程和经验心得，以及 AI 能做什么、人必须负责什么。

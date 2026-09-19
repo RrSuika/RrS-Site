@@ -1,6 +1,6 @@
 ---
 title: 家用低负载太阳能板电路规划设计
-spineTitle: "HOME SOLAR PANEL CIRCUIT DESIGN"
+spineTitle: "家用太阳能板电路设计"
 date: 2026-09-03
 description: "DIY 离网太阳能储能：600W 便携板、2×12V LiFePO₄ 串联 24V、六端口 MPPT（内置母线）驱动 LED 照明与纯正弦逆变器。"
 

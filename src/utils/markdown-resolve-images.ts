@@ -43,6 +43,24 @@
  * invalidate it. Delete `node_modules/.astro` to force a re-render
  * locally. Cloudflare builds from a clean checkout, so deploys are
  * unaffected.
+ *
+ * ⚠️⚠️ The same cache also hides NEWLY ADDED images in dev: the raw
+ * `<img>` tag is only rewritten if the filename is already in the
+ * `knownEntryImages` glob, and a new file does not change the markdown
+ * digest, so the cached body is replayed and the new image is served as
+ * a bare `./file.png` — which 404s (2026-09-20, "many images don't
+ * load"). Adding an image therefore needs one of: touch the entry's md,
+ * delete `node_modules/.astro` and restart, or trust `npm run build`
+ * (a clean build always re-renders). Verify with
+ * `grep -c 'src="\./'` on the dev HTML: it must be 0.
+ *
+ * 💡 Practical note from that session: a plugin edit alone does NOT
+ * invalidate the store, and neither does an appended newline if the
+ * formatter already left the file ending in exactly one. The reliable
+ * dev loop is: make a REAL one-character change to the markdown (or
+ * delete `node_modules/.astro`), then reload. The plugin's own
+ * `console.log` is the only way to tell whether it ran — if it prints
+ * nothing, the body came from cache and no new `<img>` was resolved.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

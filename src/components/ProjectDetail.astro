@@ -235,41 +235,51 @@ const gallery = project.data.gallery ?? [];
       activate(0);
     });
     // ── Process scroll auto-advance ──
-    const sc = document.getElementById("process-scroll");
-    const track = document.getElementById("process-track") as HTMLElement | null;
-    if (sc && track) {
-      let pos = 0, speed = 0.4, dragging = false, hovering = false;
-      let dragX = 0, dragStart = 0;
+    // ⚠️ One page can carry SEVERAL of these rails (walstroomkast has the build
+    // steps and a second one for the real cabinet), and the original code grabbed
+    // a single rail with `getElementById("process-scroll")`. Duplicate ids are
+    // invalid, and getElementById only ever returns the first match — so the
+    // second rail got no listeners at all: no auto-advance, no drag (2026-09-20).
+    // Select by class and keep each rail's state in a WeakMap keyed by its own
+    // track, so the rails animate independently.
+    const processState = new WeakMap<HTMLElement, { pos: number; dragging: boolean; hovering: boolean; dragX: number; dragStart: number }>();
+
+    document.querySelectorAll<HTMLElement>(".process-scroll").forEach((sc) => {
+      const track = sc.querySelector<HTMLElement>(".process-track");
+      if (!track) return;
+
+      const state = { pos: 0, dragging: false, hovering: false, dragX: 0, dragStart: 0 };
+      processState.set(track, state);
       const copies = Number(track.dataset.copies) || 2;
 
-      sc.addEventListener("mouseenter", () => { hovering = true; });
-      sc.addEventListener("mouseleave", () => { hovering = false; dragging = false; sc.style.cursor = "grab"; });
+      sc.addEventListener("mouseenter", () => { state.hovering = true; });
+      sc.addEventListener("mouseleave", () => { state.hovering = false; state.dragging = false; sc.style.cursor = "grab"; });
       sc.addEventListener("mousedown", (e) => {
-        dragging = true; dragX = e.clientX; dragStart = pos; sc.style.cursor = "grabbing"; e.preventDefault();
+        state.dragging = true; state.dragX = e.clientX; state.dragStart = state.pos; sc.style.cursor = "grabbing"; e.preventDefault();
       });
       window.addEventListener("mousemove", (e) => {
-        if (!dragging) return;
-        pos = dragStart + (dragX - e.clientX) * 1.5;
+        if (!state.dragging) return;
+        state.pos = state.dragStart + (state.dragX - e.clientX) * 1.5;
       });
-      window.addEventListener("mouseup", () => { dragging = false; });
+      window.addEventListener("mouseup", () => { state.dragging = false; });
       sc.addEventListener("touchstart", (e) => {
-        dragging = true; dragX = e.touches[0].clientX; dragStart = pos;
+        state.dragging = true; state.dragX = e.touches[0].clientX; state.dragStart = state.pos;
       });
       sc.addEventListener("touchmove", (e) => {
-        if (!dragging) return;
-        pos = dragStart + (dragX - e.touches[0].clientX) * 1.5;
+        if (!state.dragging) return;
+        state.pos = state.dragStart + (state.dragX - e.touches[0].clientX) * 1.5;
       });
-      sc.addEventListener("touchend", () => { dragging = false; });
+      sc.addEventListener("touchend", () => { state.dragging = false; });
 
       const anim = () => {
-        if (!dragging && !hovering) pos += speed;
+        if (!state.dragging && !state.hovering) state.pos += 0.4;
         const setWidth = track.scrollWidth / copies;
-        pos = ((pos % setWidth) + setWidth) % setWidth;
-        track.style.transform = `translateX(${-pos}px)`;
+        state.pos = ((state.pos % setWidth) + setWidth) % setWidth;
+        track.style.transform = `translateX(${-state.pos}px)`;
         requestAnimationFrame(anim);
       };
       requestAnimationFrame(anim);
-    }
+    });
     // ── Full Code blocks: collapsible shell + one-click copy ──
     // Lab entries end with a several-hundred-line code dump. Wrap it so the
     // bar carries a copy button and the body starts collapsed, keeping the
@@ -1571,6 +1581,99 @@ const gallery = project.data.gallery ?? [];
     margin-top: 12px;
   }
   @media (max-width: 800px) { .info-tabs { grid-template-columns: 1fr; } }
+
+  /* --- Tab panel images ---
+     Markdown-emitted <img> inside a raw-HTML tab panel carries an inline
+     `max-width:100%; display:block`, so it fills the panel width and, for a
+     landscape render, blows straight past the panel's fixed height — the panel
+     then scrolls just to see one picture. Cap the height against the viewport
+     (`vh`, not `%`: the panel's height is definite, so a percentage would also
+     work, but vh keeps one image on screen at any window size) and let the
+     width follow from the aspect ratio. `width:auto` also has to beat the
+     site-wide `.project img { width:100% !important }`, hence `!important`. */
+  /* The height cap is generous on purpose: a `.tab-image` panel is tall enough
+     that the picture fills the remaining box, so the image lands flush with the
+     text column instead of floating in the middle of a 340px window. */
+  article .info-tabs .tab-panel img {
+    max-width: 100% !important;
+    max-height: 78%;
+    width: auto !important;
+    height: auto !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* Image-heavy panels opt in with `.tab-image` (markdown-authored) instead of
+     being tied to the `wip` flag — a page can be finished and still need the
+     extra room, and gating on the WIP notice wrongly implied unfinished work. */
+  .tab-panel.tab-image { height: 460px; }
+
+  /* --- Pros / cons lists in tab panels ---
+     Mirrors how the source presentation marks advantages and disadvantages: a
+     green `+` or a red `−` in front of the line, the option name bolded, and the
+     points laid out HORIZONTALLY so each option costs a line plus a wrapped run
+     of points instead of one line per point. The `!important` on colour is
+     because `article p` (global) would otherwise win on the element itself. */
+  .tab-panel .mat-list {
+    margin: 0 0 12px;
+    padding: 0;
+  }
+  .tab-panel .mat-list strong { color: var(--text-bright); }
+  .tab-panel .mat-list .plus,
+  .tab-panel .mat-list .minus {
+    font-weight: 700;
+    margin-right: 4px;
+    font-size: var(--text-scale-sm);
+  }
+  .tab-panel .mat-list .plus { color: #3fbf5f !important; }
+  .tab-panel .mat-list .minus { color: #e0483f !important; }
+  :root[data-theme="light"] .tab-panel .mat-list .plus { color: #1c7a38 !important; }
+  :root[data-theme="light"] .tab-panel .mat-list .minus { color: #b32a20 !important; }
+
+  /* --- Comparison table in a tab panel ---
+     One row per option, one column per criterion (advantages / disadvantages),
+     which reads far calmer than a wall of pros/cons lines. A `verdict` row
+     spans the full width for the final choice. */
+  .tab-panel .mat-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 12px;
+    font-size: var(--text-scale-2xs);
+    line-height: 1.65;
+  }
+  .tab-panel .mat-table th {
+    text-align: left;
+    vertical-align: bottom;
+    padding: 0 12px 8px 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-scale-3xs);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    border-bottom: 1px solid var(--border-strong);
+  }
+  .tab-panel .mat-table td {
+    vertical-align: top;
+    padding: 10px 12px 10px 0;
+    color: var(--text-soft);
+    border-bottom: 1px solid var(--border-divider);
+  }
+  .tab-panel .mat-table td:first-child { color: var(--text-bright); width: 26%; }
+  .tab-panel .mat-table tr.verdict td {
+    border-bottom: none;
+    padding-top: 12px;
+    color: var(--text-soft);
+  }
+  .tab-panel .mat-table .plus,
+  .tab-panel .mat-table .minus {
+    font-weight: 700;
+    margin-right: 4px;
+    font-size: var(--text-scale-sm);
+  }
+  .tab-panel .mat-table .plus { color: #3fbf5f !important; }
+  .tab-panel .mat-table .minus { color: #e0483f !important; }
+  :root[data-theme="light"] .tab-panel .mat-table .plus { color: #1c7a38 !important; }
+  :root[data-theme="light"] .tab-panel .mat-table .minus { color: #b32a20 !important; }
 
   /* --- Process scroll track --- */
   .process-scroll { overflow: hidden; cursor: grab; margin: 30px 0 0; user-select: none; -webkit-user-select: none; position: relative; height: 310px; }

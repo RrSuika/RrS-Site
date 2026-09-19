@@ -1,5 +1,6 @@
 ---
 title: "ZOEM Bike\n模块化货运自行车货箱"
+spineTitle: "货运自行车货箱"
 date: 2025-11-15
 description: 为 ZOEM Bike 平台重新设计模块化货箱;针对客户的实际痛点优化设计，并负责从材料选型、工厂对接到组装和最终交付的完整流程。
 
