@@ -152,9 +152,10 @@ const topTags = filterTags
  * markup needs the count at build time.
  */
 const MAX_SLOT_COUNT = 4;
-/** Blanks to author: enough to fill both ends of a short shelf, with the slack
- *  the drag needs to step past either end. */
-const MAX_FILLERS = MAX_SLOT_COUNT * 4;
+/** Blanks to author. ⚠️ Sized for the DRAG, not just for the scenery: a release
+ *  re-bases `current` by the whole landing, so the ring needs `2·(half + DRAG_MAX)`
+ *  of padding or a long drag walks the painting off its end. */
+const MAX_FILLERS = MAX_SLOT_COUNT * 6;
 
 const brand = "RrSuika";
 
@@ -3271,6 +3272,13 @@ const coverUrls = items
        ══════════════════════════════════════════ */
 
     const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+    /** As `clamp`, but the bounds are ALSO pulled in to `from ± DRAG_MAX`, the
+     *  furthest a single gesture can travel. A drag may only land on a slot the
+     *  gesture could actually have reached: without this the clamp on a short
+     *  archive hands back a slot *behind* the start, and a forward drag walks the
+     *  row backwards. With it, the far end of the archive is the answer. */
+    const clampReach = (v: number, a: number, b: number, from: number) =>
+      v < from ? Math.max(v, a, from - DRAG_MAX) : Math.min(v, b, from + DRAG_MAX);
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
     const smooth = (t: number) => {
@@ -3353,13 +3361,10 @@ const coverUrls = items
     // real time window instead.
     let dragSamples: { x: number; t: number }[] = [];
 
-    // Release physics + step tween. `target` is the slot offset the solver runs
-    // on; `dir` is the DIRECTION the release chose (`−1` = forward through the
-    // archive, `+1` = back) and `dest` the absolute ring index it lands on. Keeping
-    // the direction and the destination rather than a relative step is what makes
-    // the landing survive `recycle` re-basing `current` while the spring is still
-    // travelling — deriving either from `current − dragOriginCurrent` at settle time
-    // is ambiguous once the ring has moved under it.
+    // Release physics + step tween. Three separate quantities, and mixing any two
+    // of them up has produced a bug: `target` is the slot offset the solver runs
+    // on, `dir` is the DISTANCE it has left to travel (`target − value`, several
+    // slots for a long drag), and `dest` is the RING INDEX the release decided on.
     const spring = {
       value: 0,
       velocity: 0,
@@ -3533,25 +3538,20 @@ const coverUrls = items
     function buildRing(filtered: Tape[]) {
       // ── How long does the ring have to be? ──
       //
-      // The painted band is `current ± half`, plus the park lane a recycled tape
-      // waits in, so every real tape needs `span` positions of room on BOTH sides
-      // or the band runs off the end of the ring and the shelf silently loses
-      // half its tapes. That sets a minimum ring length of `n + 2·span`.
+      // ⚠️ **`ring ≥ n + 2·(span + DRAG_MAX)`, and both terms are load-bearing.**
       //
-      // ⚠️ It is `span`, not `half`, and that is what gives the row somewhere to
-      // go at the ends: `recycle` may only re-base onto a slot it can still paint
-      // the band around, so every spare slot here is one more slot of drag travel
-      // past the last real tape. With `2·half` a nine-tape archive had exactly
-      // zero slack, every drag was clamped against the edge, and a fast flick
-      // could not advance at all.
+      //  · `span` is the park lane: `recycle` may only re-base onto a slot the
+      //    painted band still fits around, plus the off-stage lane a recycled tape
+      //    waits in, so every real tape needs room on BOTH sides or the band runs
+      //    off the end of the ring and the shelf silently loses half its tapes.
+      //  · `DRAG_MAX` is the drag: a gesture can now travel several slots, and the
+      //    landing it re-bases onto has to be inside the ring or the painting walks
+      //    off the end of it. With `2·span` alone a three-tape drag had nowhere to
+      //    land and the row sprang back — which is what the user saw as "拖到一定距离就无法继续拖动".
       //
-      // ⚠️ And the pad is `2·span − 1`, not `2·half`. The band shrinks with the
-      // row's offset while the park distance does not, so a forward step from a
-      // slot needs `next ≤ list.length − 1 − (span − 1)`. Padding to `2·half` left
-      // exactly zero slack, which is why a fast flick against either end of the
-      // archive was refused and the row sprang back: there was no readable slot to
-      // land on.
-      const slack = Math.max(1, span);
+      // A short archive is padded to at least the full row (`2·half + 1`); a long
+      // one is padded by `slack` at each end, and the extras sit off-stage.
+      const slack = Math.max(1, span + DRAG_MAX);
       const floorSize = MAX_SLOTS * 2 + 1;
       const need = Math.max(
         0,
@@ -3696,98 +3696,54 @@ const coverUrls = items
     }
 
     /**
-     * Land the release spring on its slot.
+     * Land the release on its tape.
      *
-     * ⚠️ **EVERY gesture moves at most ONE tape**, in either direction — mid
-     * archive, at either end, slow drag and hard flick alike. That is the invariant
-     * that keeps the drag honest: the row only ever travels one slot, so nothing can
-     * be skipped past and no gesture can land somewhere the visitor did not see.
+     * The row has glided to the drop point, so `progress` sits on it. Two things
+     * then happen, deliberately separately:
      *
-     * ⚠️ **The landing is stored as a DIRECTION (`spring.dir`), applied to the live
-     * `current` at settle time.** Deriving it from `current − dragOriginCurrent`
-     * instead is ambiguous, because `recycle` re-bases `current` while a spring is
-     * still in flight — that bug produced a step of `-16`, which `wrap` read as
-     * "sixteen slots the other way" and teleported the row from the last tape to the
-     * sixth (reported as "in lab the left arrow does not work from ABS 3D Printing").
-     *
-     * ⚠️ **What the edge of the archive does**: a release past either end lets the
-     * row give — the solver overshoots into the blank scenery and eases back — but
-     * the SELECTION never moves onto a blank and never moves the wrong way. Land
-     * there and the row simply stays, which is what "the archive ends here" should
-     * feel like.
+     *  1. **Re-base the ring onto the tape**, in ONE `recycle` call carrying the
+     *     whole distance. That is what keeps `ring − current + progress` invariant
+     *     for every tape — i.e. what lets a five-slot drag land on the fifth tape
+     *     without the painting moving under it.
+     *  2. **If the drop landed in the scenery, slide home instead of cutting.** The
+     *     landing is clamped to a real tape, so such a drop asks `current` to travel
+     *     less far than `progress` did; assigning that outright snaps the whole row
+     *     sideways in one frame, which is the "空磁带盒直接消失，最近的有内容磁带盒直接刷新闪现出现" report. The
+     *     queued `snap` tween runs `progress` from where the drop left it to
+     *     `dest − current`, and the `recycle` at the end of it finishes the move —
+     *     the blank slides out and the neighbouring tape slides in.
      */
     function recycleFromSpring() {
-      // ⚠️ Three things have to hold at once here, and each was a separate bug:
-      //
-      //  1. **The selection never lands on a blank.** `dest` is clamped to a real
-      //     tape. `recycle` would seat a blank quite happily otherwise, and the
-      //     detail panel would then be describing scenery.
-      //  2. **The row may still GIVE.** `spring.target` is the raw lean aimed the
-      //     whole way out, so the solver runs its overshoot into the scenery and
-      //     eases back out — that travel is what makes the end of the archive feel
-      //     like a wall rather than a dead zone. (Easing only as far as the clamped
-      //     destination is the alternative, and it reads as the row lurching and
-      //     being snatched back.)
-      //  3. **The intent is CONSUMED, and the landing is clamped to a real tape.**
-      //     Letting it seat the blank past the end and then stepping the selection
-      //     back is the obvious way to get a "walk back through the scenery"
-      //     animation, and it does not survive contact: the spring has already eased
-      //     the row a full slot into the scenery, so the correction is a second
-      //     full slot-width in the opposite direction — the row is flung out and
-      //     snatched back, and `recycle` cannot even express it, because re-basing
-      //     twice inside one gesture is exactly what its range check exists to
-      //     prevent. What the end does instead: the release reaches a tape or it
-      //     does not, and the row eases to rest where it is.
-      const dir = spring.dir;
-      spring.dir = 0;
-      const dest = clamp(current + dir, walkFrom, walkTo);
-      recycle(dest - current);
+      const dest = spring.dest;
+      const step = dest - current;
+
+      // How far the DROP ended up from where the re-base needs the row, in slots.
+      // ⚠️ `recycle` preserves the picture only when its argument is `−progress`,
+      // and `step` IS that argument, so the recycle needs the row resting on
+      // `−step`; the drop left it on `round(spring.target)` (a progress value).
+      // Summing is therefore right and subtracting was the second half of the
+      // inverted-landing bug. Zero when the drop was already on a tape (the
+      // normal case).
+      const over = Math.round(spring.target) + step;
+
+      if (over !== 0) {
+        // ⚠️ The tween ends on `−step`, because `recycle` reads its argument in the
+        // INVERSE sense from `snap.to`: a forward step (a higher ring index) is
+        // `progress = −1` but `recycle(+1)`. Ending the tween on `step` therefore
+        // left `recycle` to move `current` by `−step` — measured, a 3-slot drag
+        // settled at `progress = −2` and then jumped to the wrong end of the
+        // archive. `recycle(−snap.to)` then receives `+step`, which is right.
+        snap.dur = WALK_BACK_MS;
+        snap.from = progress;
+        snap.to = -step;
+        snap.t = 0;
+        snap.active = true;
+        lock = true;
+        return;
+      }
+
+      recycle(step);
     }
-
-    /**
-     * Step the selection back onto a real tape if it ever ends up on scenery.
-     *
-     * ⚠️ **This is a safety net, not the normal path** — `recycleFromSpring` clamps
-     * the landing to a real tape, so a release cannot seat a blank in the first
-     * place. It exists because seating one is the single worst outcome available
-     * here (the detail panel would describe scenery), and because the ring's slack
-     * is derived from constants rather than stored, so a future change to
-     * `MAX_SLOTS`/`PARK_SLOTS` could put a walkable slot somewhere this code does
-     * not expect.
-     *
-     * ⚠️ **One step per pass, through `recycle`, never a direct assignment.**
-     * Moving `current` by hand would skip the re-base the whole row depends on:
-     * every tape's painted slot is `ring − current + progress`, so changing
-     * `current` alone shifts the entire row by that many slots in one frame.
-     * `recycle` is what keeps `slotIndex` invariant.
-     *
-     * Each pass is a short eased tween on `progress` (a `snap`), so the blank slides
-     * out and the real tape slides in rather than the two cutting.
-     */
-    function walkBackToTape() {
-      if (current >= walkFrom && current <= walkTo) return;
-
-      // ⚠️ The destination is recomputed on EVERY pass, because `current` moves
-      // between them: `recycle` only ever moves it by the step it is given, so
-      // aiming at `walkFrom` up front would ask for a step it then refuses
-      // (`next` outside the re-base range) and the walk-back would stall one blank
-      // short. Aiming one slot back and letting the final pass over-shoot is
-      // self-correcting: the last call lands exactly on the tape.
-      const step = current < walkFrom ? -1 : 1;
-      const next = clamp(current + step, walkFrom, walkTo);
-
-      snap.dur = WALK_BACK_MS;
-      snap.from = 0;
-      snap.to = next - current;
-      snap.t = 0;
-      snap.active = true;
-      // `recycle(-snap.to)` at the end of the tween is what actually moves
-      // `current`, and it lands on a real tape by construction.
-      lock = true;
-    }
-
-    /** Does the ring hold a real tape at this position? */
-    const isRealSlot = (index: number) => index >= walkFrom && index <= walkTo;
 
     function syncEmptyState(empty: boolean) {
       const emptyEl = document.getElementById("shelf-empty");
@@ -3916,50 +3872,59 @@ const coverUrls = items
       dragSamples = [];
 
       const maxStep = Math.round(DRAG_MAX);
-      // ⚠️ **The range is SYMMETRIC** — dragging backward has to be able to land
-      // on a positive offset. Clamping to `[-maxStep, 0]` looks harmless because
-      // forward is negative `progress`, but it silently made every rightward drag
-      // a no-op: a 300 px backward drag reaches `progress = +1.07`, rounds to
-      // `+1`, and that got clamped straight back to `0`, so the row played itself
-      // back to the tape it set off from (the user's "从左往右拖动时，松开鼠标他会回到之前选中的磁带盒"). Only
-      // the FLICK could still move backward, and only when velocity happened to
-      // push the (already clamped) value past the boundary.
-      let glide = clamp(Math.round(progress), -maxStep, maxStep);
-      // A flick commits to one more slot in the direction it is already going.
-      if (velocity <= -FLICK_COMMIT && glide > -maxStep) glide -= 1;
-      else if (velocity >= FLICK_COMMIT && glide < maxStep) glide += 1;
-
-      // ⚠️ **ONE TAPE PER GESTURE.** The landing is where the drag began plus one
-      // slot, in whichever direction the release was leaning — never the raw
-      // travel. Dragging 600 px is a gesture, not a request for two tapes: the row
-      // only ever moved one slot away from the selection, so landing two along
-      // would skip a tape the visitor never saw. `Math.sign` is the leaning; the
-      // magnitude is discarded on purpose.
-      const leaning = glide === 0 ? 0 : Math.sign(glide);
-      // The direction is stored as `−1` = forward (a higher ring index, which is
-      // what a leftward drag means) so nothing has to be re-derived at settle time,
-      // when `current` may have been re-based under the spring.
+      // ⚠️ **THE LANDING IS THE TRAVEL.** `progress` is the pointer's whole offset
+      // in slots, so the nearest whole slot to it IS the tape the visitor dragged
+      // to: five slots of travel lands five tapes along. Two earlier revisions
+      // threw the magnitude away and kept only `Math.sign(progress)`, which is
+      // exactly the report "无论我滑动多块，比如从 1 滑动到 5，松开鼠标后又会回退到 2 而不是 5".
       //
-      // ⚠️ It is the **leaning**, not the landing: the solver is given the
-      // DIRECTION even when the step it implies is off the archive, so the row
-      // gives against the end of the shelf instead of stopping dead. `recycleFromSpring`
-      // is what keeps that from moving the selection.
-      //
-      // ⚠️ But the give is ONE slot, not the whole `DRAG_MAX`. Aiming the solver at
-      // `DRAG_MAX` (1.6 slots) at the boundary is worse than not giving at all: the
-      // spring coasts well past the target on its own momentum — measured to
-      // `progress = −2.82`, i.e. 1.2 slots deeper into the scenery than intended —
-      // and because the overshoot is only corrected once the spring SETTLES, the
-      // visitor sees the row flung a full slot past the end before it snaps home.
-      // One slot is the travel the drag already made, so the give is invisible and
-      // the stop is clean.
-      spring.dir = clamp(-leaning, -1, 1);
-      spring.target = -spring.dir;
+      // The flick is only a TIE-BREAK on top of that: a quick release that had
+      // already carried the row most of the way to the next slot commits to it
+      // instead of rounding back. It never adds more than the one slot the round
+      // was already deciding about, so a hard flick cannot skip a tape the drag
+      // never reached.
+      let land = Math.round(progress);
+      if (velocity <= -FLICK_COMMIT && land > Math.min(progress, -maxStep)) land -= 1;
+      else if (velocity >= FLICK_COMMIT && land < Math.max(progress, maxStep)) land += 1;
+      land = clamp(land, -maxStep, maxStep);
 
-      // A release that leans nowhere has no velocity to spend.
+      // ⚠️ **Two different numbers, and conflating them was a bug.** `travel` is
+      // how far the SOLVER has left to run; `drop` is where the row comes to rest
+      // (the blank, if the drag ran onto the scenery); `dest` is the RING INDEX the
+      // release decided on (always a real tape). `recycleFromSpring` must read
+      // `dest` — it read the solver's travel once, which is `land − progress` and
+      // therefore **zero** whenever the release happened to land exactly on a whole
+      // slot, so every clean drag settled straight back on the tape it started from.
+      // ⚠️ **`dest` is `current − land`, NOT `current + land`.** `progress` grows
+      // as the pointer moves RIGHT (the row follows the pointer), and while the
+      // row is held at `progress = p` the tape under the CENTRE is the one with
+      // ring index `current − p` (that is `slotIndex = ring − current + progress
+      // = 0`). So a rightward drag of one slot has to move `current` DOWN by one.
+      // Summed instead, the release did two wrong things at once: it picked the
+      // tape *behind* the pointer and, because `recycle`'s argument has to be
+      // `−progress`, it re-based the ring by `+land` against a `progress` of
+      // `+land` — moving every tape by `2·land` slots in one frame. Reported as
+      // "从左往右拖，比如从 5 拖到 4，松开鼠标后会变成拖到 6"，and mirrored on the
+      // way back.
+      // ⚠️ Two clamps, and they are different questions:
+      //
+      //  · `dest` (where the selection ENDS UP) is clamped to the archive. It must
+      //    never be pulled toward the drag's start: on a short archive a 3-slot drag
+      //    has no third slot to land on, and constraining `dest` to
+      //    `current ± DRAG_MAX` made the clamp hand back a slot *behind* the start —
+      //    a forward drag that walks the row backwards. The far end of the archive
+      //    is the answer, and the row simply travels less than the pointer did.
+      //  · `spring.target` (where the row comes to REST) is the raw landing, so the
+      //    drop can settle in the scenery and the slide home is what brings it back.
+      //    Clamping the travel instead cuts the give short.
+      spring.dest = clamp(current - land, walkFrom, walkTo);
+      spring.dir = land - progress;
+
+      // A release that goes nowhere has no velocity to spend.
       spring.velocity = spring.dir === 0 ? 0 : velocity;
 
       spring.value = progress;
+      spring.target = land;
       spring.rate = GLIDE_RATE;
       spring.elapsed = 0;
       spring.active = true;
@@ -4002,7 +3967,7 @@ const coverUrls = items
           // is over: the cap can fire while `value` is still a little short of
           // `target`, and the picture difference is under a hundredth of a slot.
           recycleFromSpring();
-          if (!isRealSlot(current)) walkBackToTape();        }
+        }
       }
       if (wasActive) progress = spring.value;
 
@@ -4049,20 +4014,20 @@ const coverUrls = items
         const { el } = tape;
         const sink = slotIndex(tape);
 
-        // ── reveal fade: 1 inside the painted row, 0 outside it. Parked tapes
-        // sit beyond this and are culled outright, and because a tape is only
-        // ever teleported while it is invisible, a step never pops. ──
+        // ── reveal fade: 1 inside the painted row, 0 outside it. ──
         //
-        // ⚠️ The band SHRINKS with the row's offset. A drag can now hold the row
-        // between two slots for as long as the pointer keeps moving, and the
-        // outermost tape then sits in the park lane (`|slot| > half`) — painting
-        // it there would have it drift in from off-stage and then jump a whole
-        // slot back into the row. Fading it out on the way is the same trick the
-        // step tween uses, but for every intermediate position instead of only at
-        // a landing.
+        // ⚠️ The band is ASYMMETRIC once the row is offset, and it has to be:
+        // `progress` is now a multi-slot travel, so the painted row genuinely moves
+        // across the ring rather than pivoting on one slot. The side the row is
+        // moving AWAY from keeps the full span (those tapes are sliding out of the
+        // park lane and still have to be readable during the move); the side it is
+        // moving TOWARD contracts by exactly the offset, so a tape is never painted
+        // in the lane it is about to be teleported into. A single symmetric band
+        // cannot express both, and clamping `sink` to it instead would compress the
+        // whole row as the drag got longer.
         const inRing = tape.ring >= 0;
-        const band = span - Math.abs(progress);
-        const within = inRing && Math.abs(sink) <= band;
+        const band = span - Math.min(0, progress * Math.sign(sink));
+        const within = inRing && Math.abs(sink) <= Math.max(1, band);
 
         tape.vis = smoothTo(
           tape.vis,
@@ -4417,9 +4382,12 @@ const coverUrls = items
       // is a continuous function of it, so a slow drag of three slots' worth of
       // pixels walks three tapes.
       //
-      // ⚠️ The sign: dragging LEFT moves the row forward, and forward is
-      // NEGATIVE `progress` (see `slotIndex`). `progress` therefore *decreases*
-      // with `dragOffset`, which grows positive as the pointer moves right.
+      // ⚠️ The sign, stated once so it stops drifting: `dragOffset` grows as the
+      // pointer moves RIGHT, `progress` grows with it, and `slotIndex` grows with
+      // `progress` — so a rightward drag carries the row rightward, under the
+      // pointer, as it should. The tape that arrives at the centre is therefore
+      // the one with a LOWER ring index (`current − progress`), which is what
+      // `settleDrag` has to land on.
       dragOffset = event.clientX - dragAnchor;
       const distance = dragOffset;
 

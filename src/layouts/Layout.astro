@@ -193,12 +193,14 @@ const websiteSchema = {
         // Safety net: the cover must never outlive the script that opens it.
         setTimeout(() => {
           var el = document.getElementById("site-intro");
-          if (!el || el.classList.contains("is-leaving")) return;
+          if (!el || el.classList.contains("is-revealing")) return;
           window.__rrsIntroFallback = true;
-          el.classList.add("is-leaving");
+          // Emergency exit, no choreography: `is-revealing` is what hides the
+          // plate, the stage and the rail (§16), so the cover is simply gone.
+          el.classList.add("is-revealing");
           root.classList.remove("is-intro");
           window.__rrsIntroResolve();
-          setTimeout(() => el.remove(), 900);
+          setTimeout(() => el.remove(), 400);
         }, 6000);
       })();
     </script>
@@ -287,25 +289,54 @@ const websiteSchema = {
          carries no `hidden` attribute, and `<noscript>` below covers JS
          being off. It doubles as the preload gate: it stays up until the
          heavy layers (black-hole video, starfield, fonts, images) can
-         actually draw, then opens like a document.
+         actually draw, then the signal sweeps up the screen and dissolves
+         into the page.
     ========================================== -->
 
     <div class="site-intro" id="site-intro" role="status" aria-live="polite">
-      <span class="site-intro__half site-intro__half--top" aria-hidden="true"></span>
-      <span class="site-intro__half site-intro__half--bottom" aria-hidden="true"></span>
+      <span class="site-intro__plate" aria-hidden="true">
+        <span class="site-intro__grid" />
+      </span>
 
-      <span class="site-intro__scan" aria-hidden="true"></span>
-
-      <div class="site-intro__body">
-        <p class="site-intro__mark">RrSuika Studio</p>
-        <div class="site-intro__rail" aria-hidden="true">
-          <span class="site-intro__fill"></span>
-          <span class="site-intro__tip"></span>
+      <div class="site-intro__stage" aria-hidden="true">
+        <div class="site-intro__mark">
+          <span class="site-intro__brand">RrSuika Studio</span>
+          <span class="site-intro__rule" />
+          <span class="site-intro__sub">Portfolio // Design archive</span>
         </div>
-        <p class="site-intro__pct">
-          <span id="site-intro-pct">0</span><i>%&nbsp;loaded</i>
-        </p>
+
+        <div class="site-intro__readout">
+          <div class="site-intro__readout-top">
+            <span class="site-intro__hair" />
+            <span>Boot sequence</span>
+            <span class="site-intro__hair" />
+          </div>
+          <div class="site-intro__count">
+            <span class="site-intro__bracket">[</span>
+            <span id="site-intro-pct">000</span>
+            <span class="site-intro__bracket">]</span>
+          </div>
+          <div class="site-intro__status-row">
+            <span class="site-intro__cursor">▶</span>
+            <span id="site-intro-status">INITIALISING…</span>
+          </div>
+        </div>
+
+        <p class="site-intro__corner site-intro__corner--tl">RRS.SYS // WEB</p>
+        <p class="site-intro__corner site-intro__corner--tr">Signal lock</p>
+        <p class="site-intro__corner site-intro__corner--bl">Archive // 2026</p>
       </div>
+
+      {/* One full-width striped rail along the bottom edge — the reference's own
+          geometry: the live stripes fill from the RIGHT, clipped by `--reveal`. */}
+      <div class="site-intro__rail" aria-hidden="true">
+        <span class="site-intro__rail-dim" />
+        <span class="site-intro__rail-on" id="site-intro-rail" />
+      </div>
+
+      {/* The exit: the signal colour grows from the bottom edge, holds, then
+          dissolves (fade + blur) into the live page underneath. */}
+      <div class="site-intro__sweep" aria-hidden="true" />
     </div>
 
     <noscript>

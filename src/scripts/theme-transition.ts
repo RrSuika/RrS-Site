@@ -117,6 +117,37 @@ function intentTheme(): Theme {
   return pending ?? rootTheme();
 }
 
+/**
+ * Bring the starfield back gradually when the page lands on the dark theme.
+ *
+ * ⚠️ Without this the field is a hard cut: light mode sets `display: none` on the
+ * canvases, so the frame the swap lands on they appear at full strength — the
+ * user reported it as "圆环覆盖过后，星空是直接刷新在画面上，这样太突兀了".
+ * The fade is a CSS keyframe animation (see `sfArrive` in §10 of global.css) and
+ * this only toggles the class that starts it. The class is removed once the
+ * animation has finished so a later switch can start it again — a class that is
+ * already present cannot re-trigger its own animation.
+ *
+ * It runs on the frame AFTER the swap, deliberately: `applyInstant` swaps with
+ * transitions disabled, and starting the animation in that same frame would let
+ * the "transitions off" rule swallow the first tick.
+ */
+const ARRIVE_MS = 1100;
+
+function arriveBackground(): void {
+  const els = ["starfield-canvas", "lens-canvas"]
+    .map((id) => document.getElementById(id))
+    .filter((el): el is HTMLElement => el !== null);
+  if (els.length === 0) return;
+
+  requestAnimationFrame(() => {
+    for (const el of els) el.classList.add("sf-arrive");
+    window.setTimeout(() => {
+      for (const el of els) el.classList.remove("sf-arrive");
+    }, ARRIVE_MS);
+  });
+}
+
 function setRoot(next: Theme): void {
   document.documentElement.setAttribute("data-theme", next);
   document.documentElement.style.colorScheme = next;
@@ -142,11 +173,19 @@ function persist(next: Theme): void {
  *  animates when they come back. */
 function applyInstant(next: Theme): void {
   const root = document.documentElement;
+  const cameFrom = rootTheme();
   root.classList.add("theme-land");
   setRoot(next);
   persist(next);
   void root.offsetHeight; // flush style + layout while transitions are off
   root.classList.remove("theme-land");
+
+  // ⚠️ The starfield fade belongs HERE, at the landing — not in `setRoot`. During
+  // a burst the root is parked on the neutral theme, so `setRoot` fires while the
+  // page is still covered by the copies; the fade would burn itself out behind
+  // them and the visitor would still see the field cut in. This is the one swap
+  // that is actually visible, so this is where the class goes.
+  if (next === "dark" && cameFrom !== "dark") arriveBackground();
 }
 
 /** A usable click point, or null.

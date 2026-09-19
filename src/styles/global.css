@@ -827,6 +827,46 @@ main {
   display: none;
 }
 
+/* ── The starfield ARRIVES, it does not switch on ──
+   ⚠️ `display: none` → `opacity: 0.85` in one frame is a hard cut, which is what
+   the user saw as "圆环覆盖过后，星空是直接刷新在画面上" when going light → dark:
+   the ripple lifts and a full field of stars is simply there. A CSS transition
+   cannot fix it, because a transition needs the element to already be rendered
+   and `display: none` is not a value opacity can animate from. So the fade is a
+   keyframe ANIMATION, triggered by a class that `theme-transition.ts` adds on the
+   frame the swap lands and removes when it finishes.
+   ⚠️ **Opacity only.** No `transform`: this canvas has `position: fixed`
+   descendants, and a transform on it would turn it into their containing block
+   and shift the whole background stack. `filter` is safe (it only creates a
+   stacking context and the canvas is already `z-index: 0`), and a slight dim at
+   the start is what makes frame one read as "resolving" rather than "drawn".
+   ⚠️ `forwards` (not `both`) and an explicit `to { opacity }`: the resting opacity
+   stays the stylesheet's job, so the light theme's `display: none` still wins and
+   the animation cannot pin a stale value. */
+#starfield-canvas.sf-arrive,
+#lens-canvas.sf-arrive {
+  animation: sfArrive 1.05s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+@keyframes sfArrive {
+  from {
+    opacity: 0;
+    filter: brightness(0.55);
+  }
+
+  to {
+    opacity: 0.85;
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #starfield-canvas.sf-arrive,
+  #lens-canvas.sf-arrive {
+    animation: none;
+  }
+}
+
 /* The earlier 2D star canvas is disabled and hidden; kept for possible rollback. */
 #star-canvas {
   display: none;
@@ -1635,55 +1675,102 @@ html.theme-land *::after {
 
 /* ═══════════════════════════════════════════
    §16  SITE INTRO / PRELOADER
-   Two paper halves with a hairline seam, a rail that fills, a counter. It
-   covers everything, waits for the page to be able to draw, then opens like a
-   document. The inline guard in Layout.astro's <head> tags the document either
-   `is-intro` (play) or `is-intro-skip` (hide) before the first paint, so no
-   script — and no JS at all — means no cover rather than a blank page. Palette
-   is its own: the intro is white paper in BOTH themes — a dark site that opens
-   on a white document is the reference's own move — but the rail takes the live
-   accent, so it agrees with the theme the visitor will land in.
+   A boot screen: a gridded plate, a wordmark, a three-digit counter with a
+   status line, three corner labels and one striped rail along the bottom edge.
+   It covers everything, waits for the page to be able to draw, then the signal
+   colour sweeps up the screen and dissolves into the page.
+
+   ⚠️ **Rebuilt again 2026-09-19 from the SECOND version of `输入/开场动画.html`**
+   ("我希望开场动画至少有快速是 0-100 的切换，另外参考我提供的新的开场动画.html").
+   Two things changed in the reference itself, and both are load-bearing:
+   ① the exit is no longer a document parting down the middle — it is a **signal
+   panel that grows from the bottom edge, holds, and then dissolves** (opacity
+   plus a blur) into the page; ② the counter is a **fast 0→100** rather than an
+   approach that never arrives, on `max(t, easeOutCubic(t)·0.85)`, and it lands
+   on exactly 100.
+   Still deliberately NOT taken: the **scanlines** and the **chromatic-aberration
+   text shadow**. Those are the retro-terminal half of the reference's look, and
+   this site's language is instrument panel, not CRT — RGB fringing on the
+   wordmark is a costume change, not a style match. The grid texture and the
+   glow are taken, because both are structure rather than costume. The colour
+   comes from the live theme tokens, so the first frame of the page is the first
+   frame of the palette.
+
+   The inline guard in Layout.astro's <head> tags the document either `is-intro`
+   (play) or `is-intro-skip` (hide) before the first paint, so no script — and no
+   JS at all — means no cover rather than a blank page.
    ═══════════════════════════════════════════ */
 
 .site-intro {
   position: fixed;
   inset: 0;
   z-index: 2147483200; /* above the theme-reveal stack, below nothing */
-  display: grid;
-  place-items: center;
   pointer-events: auto;
 
   /* ⚠️ The cover takes the theme the visitor is about to land in, and it can:
      the boot script in <head> sets `data-theme` before the first paint. A dark
      site opening on a sheet of white paper was the reference's own move, but on
-     this site it read as a flashbang — the intro is the first frame of the
-     page, so it has to be the first frame of the palette too. Tokens below are
-     the light set; the dark block follows the same roles. */
-  --intro-paper: #f1ece1;
+     this site it read as a flashbang — the intro is the first frame of the page,
+     so it has to be the first frame of the palette too. Tokens below are the
+     light set; the dark block follows the same roles.
+
+     ⚠️ The signal colour is the THEME ACCENT, never a literal. The reference
+     hard-codes an amber that reads on black and disappears on paper; taking the
+     accent means the rail, the counter and the sweep are legible in both themes
+     by construction, and the intro agrees with the page it is covering. */
   --intro-ink: #16161a;
-  /* ⚠️ The clear rail is a LOOKUP TABLE, not an alpha.
-     `color-mix(in srgb, ACCENT n%, PAPER)` at a single `n` cannot work in both
-     themes: the accent is a dark burnt orange on paper and a bright amber on
-     black, so the same mix that reads as a track on one is invisible on the
-     other. The two ramps below are already mixed against the theme's own paper,
-     which is exactly what a stepped progress rail needs — it has to sit just
-     above the cover and below the ink, in both. */
-  --intro-rail: color-mix(in srgb, var(--intro-accent) 26%, var(--intro-paper));
-  --intro-rail-on: color-mix(
-    in srgb,
-    var(--intro-accent) 46%,
-    var(--intro-paper)
-  );
+  --intro-dim: rgba(22, 22, 26, 0.5);
+  --intro-hair: rgba(22, 22, 26, 0.13);
+  --intro-paper: #f1ece1;
+  --intro-signal: var(--accent, #c07020);
+  /* The signal at the two steps a gauge needs: a dim tick and a live one. Mixed
+     against the paper rather than set as an alpha, because one alpha cannot be a
+     quiet tick on paper and a quiet tick on black at the same time. */
+  --intro-tick: color-mix(in srgb, var(--intro-signal) 26%, var(--intro-paper));
+  /* The lip along the top of the rising panel. */
+  --intro-sweep-hi: color-mix(in srgb, var(--intro-signal) 52%, #fff);
+
+  /* The reference's easing ladder, kept as tokens so the whole intro moves on
+     one set of curves: `out` for arrivals, `snap` for the panel's launch. */
+  --intro-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --intro-ease-snap: cubic-bezier(0.85, 0, 0.15, 1);
 
   font-family: var(--font-mono);
   color: var(--intro-ink);
 }
 
 :root[data-theme="dark"] .site-intro {
-  --intro-paper: #0a0a11;
   --intro-ink: #f2ece0;
   --intro-dim: rgba(242, 236, 224, 0.52);
-  --intro-accent: var(--accent, #e8943a);
+  --intro-hair: rgba(242, 236, 224, 0.12);
+  --intro-paper: #0a0a11;
+  --intro-signal: var(--accent, #e8943a);
+  --intro-tick: color-mix(in srgb, var(--intro-signal) 26%, var(--intro-paper));
+}
+
+/* ── The plate: the opaque sheet the whole intro sits on ──
+   ⚠️ The background lives HERE and not on `.site-intro`, because the exit has to
+   be able to drop the sheet while the signal panel is still opaque — see
+   `.is-revealing` below. */
+.site-intro__plate {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--intro-paper);
+}
+
+/* A masked instrument grid, as an honest texture rather than a period detail:
+   it is the same grid the rest of the site is drawn on. ⚠️ Unprefixed
+   `mask-image` only — writing the `-webkit-` alias in the same rule lets the
+   build's minifier collapse the pair and keep the last one (see §10's note). */
+.site-intro__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--intro-hair) 1px, transparent 1px),
+    linear-gradient(90deg, var(--intro-hair) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse at center, #000 16%, transparent 86%);
 }
 
 /* Not this document's turn (see the guard in Layout.astro). */
@@ -1696,205 +1783,497 @@ html.is-intro {
   overflow: hidden;
 }
 
-.site-intro__half {
+/* ── THE EXIT ──
+   The signal colour rises from the bottom edge, holds while the readout steps
+   out, then dissolves: opacity to 0 with a blur, so the panel reads as
+   scattering rather than as a wipe being pulled away.
+   ⚠️ `transform` and `opacity` are transitioned on separate clocks on purpose —
+   the panel keeps RISING while it starts to fade, which is what makes the last
+   frames read as a dissolve instead of a retract. */
+.site-intro__sweep {
   position: absolute;
-  left: 0;
-  right: 0;
-  height: 50%;
-  background: var(--intro-paper);
-  transition: transform 0.62s cubic-bezier(0.76, 0, 0.24, 1);
-}
-
-.site-intro__half--top {
-  top: 0;
-  border-bottom: 1px solid var(--intro-accent);
-}
-
-.site-intro__half--bottom {
-  bottom: 0;
-}
-
-.site-intro.is-leaving .site-intro__half--top {
-  transform: translateY(-100.5%);
-}
-
-.site-intro.is-leaving .site-intro__half--bottom {
-  transform: translateY(100.5%);
-}
-
-/* Registration crosses: REMOVED (2026-09-19, user call). Four tiny crosses
-   scattered in the corners read as a print-shop joke at this size; the readout
-   and the rail are what carry the "functional boot" idea now. */
-
-/* A single hairline sweeping the field — the one moving part of the still.
-   ⚠️ REDESIGNED (2026-09-19: "开场动画的扫描带和进度条太丑了"). It used to be a
-   24vh amber wash that crossfaded in and out twice, which is a soft "scanning"
-   decoration — the kind of thing a loading screen does when it has nothing to
-   report. The reference's language is PRINT + INSTRUMENT (cream paper, ink,
-   hard edges, one saturated signal), so the sweeping element is now a 2px rule
-   that crosses the field ONCE, left to right, the way a plotter head or a
-   registration bar travels. Its motion is linear, not eased: a scanner does not
-   accelerate, and the linearity is what makes it read as machinery.
-   The faint wash behind it is carried by the rule's own leading edge, not by a
-   second gradient band. */
-.site-intro__scan {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 2px;
-  z-index: 1;
+  inset: 0;
+  z-index: 20;
+  background: var(--intro-signal);
+  transform: scaleY(0);
+  transform-origin: bottom center;
   pointer-events: none;
-
-  background: var(--intro-accent);
-  opacity: 0;
-  animation: site-intro-scan 900ms linear 120ms 1 both;
-}
-
-@keyframes site-intro-scan {
-  0% {
-    transform: translateX(-2px);
-    opacity: 0;
-  }
-
-  6%,
-  92% {
-    opacity: 0.9;
-  }
-
-  100% {
-    transform: translateX(100vw);
-    opacity: 0;
-  }
-}
-
-.site-intro__body {
-  position: relative;
-  z-index: 3;
-  display: grid;
-  justify-items: center;
-  gap: 12px;
-  text-align: center;
+  will-change: transform, opacity;
   transition:
-    opacity 0.3s var(--ease-out),
-    transform 0.3s var(--ease-out);
+    transform 0.62s var(--intro-ease-snap),
+    opacity 0.72s var(--intro-ease-out),
+    filter 0.72s var(--intro-ease-out);
 }
 
-.site-intro.is-leaving .site-intro__body {
+/* The lighter lip at the top of the panel, so the rising edge has an edge. */
+.site-intro__sweep::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--intro-sweep-hi) 60%, transparent) 0%,
+    transparent 24%
+  );
+}
+
+.site-intro.is-sweeping .site-intro__sweep {
+  transform: scaleY(1);
+}
+
+.site-intro.is-revealing .site-intro__sweep {
   opacity: 0;
-  transform: translateY(-6px);
+  filter: blur(7px);
 }
 
-.site-intro__mark {
-  margin: 0 0 2px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.44em;
-  /* The tracking adds a phantom space after the last letter; pull it back so the
-     wordmark stays optically centred. */
-  text-indent: 0.44em;
-  text-transform: uppercase;
+/* ⚠️ The sheet, the stage and the rail are dropped while the panel is at full
+   height, so what the panel dissolves INTO is the live page rather than the
+   cover. Without this the visitor would watch the panel fade to the paper and
+   then see the paper cut away one frame later. */
+.site-intro.is-revealing .site-intro__plate,
+.site-intro.is-revealing .site-intro__stage,
+.site-intro.is-revealing .site-intro__rail {
+  visibility: hidden;
+}
+
+/* ── The stage: everything above the plate ── */
+.site-intro__stage {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* The readout steps out in order as the panel starts to rise: wordmark, then
+   the readout, then the frame. */
+.site-intro__mark,
+.site-intro__readout,
+.site-intro__corner,
+.site-intro__rail {
+  transition: opacity 0.35s var(--intro-ease-out);
+}
+
+.site-intro.is-sweeping .site-intro__mark {
+  opacity: 0;
+}
+
+.site-intro.is-sweeping .site-intro__readout {
+  opacity: 0;
+  transition-delay: 0.07s;
+}
+
+.site-intro.is-sweeping .site-intro__rail {
+  opacity: 0;
+  transition-delay: 0.1s;
+}
+
+.site-intro.is-sweeping .site-intro__corner--tl,
+.site-intro.is-sweeping .site-intro__corner--bl {
+  opacity: 0;
+  transition-delay: 0.14s;
+}
+
+.site-intro.is-sweeping .site-intro__corner--tr {
+  opacity: 0;
+  transition-delay: 0.18s;
 }
 
 /* ── THE RAIL ──
-   ⚠️ REDESIGNED (2026-09-19: "开场动画的扫描带和进度条太丑了，你直接尝试复刻我提供的终末地的网址开场动画吧").
-   It used to be 2px of translucent track with a solid accent fill, a 3×14px
-   glowy head riding it, and a wide glow under the fill — a soft "loading bar",
-   and the glow is what made it cheap: a blurred halo around a 2px line reads as
-   a lit tube, not as a printed instrument.
-
-   The reference's language is a technical drawing: hard edges, a ruled scale,
-   ONE saturated signal colour used for exactly the thing you must see. So the
-   rail is now a RULED SCALE — a hairline track, a 1px step every 5%, a heavier
-   step every 10%, and a plain accent-coloured fill block that covers the scale
-   as it climbs (which is why the scale is drawn in a colour that is NOT the
-   accent: it has to be legible while still filled and while already passed).
-   The head is a 3px accent crossbar, applied as a two-stop gradient rather than
-   a moving box so there is no sixth element to keep in sync with the fill.
-
-   Height goes back to 1px because the scale now carries the information; a thick
-   bar plus a scale is two ways of saying the same thing. */
+   One full-width striped strip along the bottom edge, filling from the RIGHT as
+   the count climbs — the reference's own geometry.
+   ⚠️ The fill is a `clip-path: inset()` driven by `--reveal`, NOT a scale: the
+   stripes have to keep their width and pitch as the strip fills, and a scaled
+   stripe set stretches. It is also cheaper — clip-path on a fixed element is a
+   paint-time clip, not a re-layout. ⚠️ The reference also puts a `drop-shadow`
+   on the fill; it is inert there (the rail clips its own overflow) and it is a
+   full-width repaint every frame here, so it is left out. */
 .site-intro__rail {
-  position: relative;
-  width: min(58vw, 420px);
-  height: 1px;
-  margin: 4px 0 2px;
-
-  /* The scale: one hairline, with a step every 5% and a heavier one every 10%.
-     Drawn in the rail's own mix so it survives the accent fill passing over it. */
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0 9.99%,
-      var(--intro-rail-on) 9.99% 10%
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0 4.99%,
-      var(--intro-rail) 4.99% 5%
-    ),
-    var(--intro-rail);
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 8px;
+  z-index: 5;
+  overflow: hidden;
 }
 
-.site-intro__fill {
-  display: block;
-  height: 100%;
-  background: var(--intro-accent);
-  transform: scaleX(0);
-  transform-origin: left center;
+.site-intro__rail-dim,
+.site-intro__rail-on {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    to right,
+    currentColor 0 8px,
+    transparent 8px 11px
+  );
 }
 
-/* The head: a 3px accent crossbar that rides the `left` the script writes on the
-   tip element. No blur — a hard 1px vertical rule above and below the rail is
-   what makes it read as a cursor on a scale instead of a glowing dot. */
-.site-intro__tip {
+.site-intro__rail-dim {
+  color: var(--intro-tick);
+}
+
+.site-intro__rail-on {
+  color: var(--intro-signal);
+  clip-path: inset(0 0 0 calc(100% - var(--reveal, 0%)));
+  will-change: clip-path;
+}
+
+/* End caps: the strip is a scale, so it is capped at both ends. */
+.site-intro__rail::before,
+.site-intro__rail::after {
+  content: "";
   position: absolute;
   top: 50%;
-  left: 0;
-  width: 3px;
-  height: 13px;
-  margin-top: -6.5px;
-  margin-left: -1.5px;
-  background: var(--intro-accent);
+  width: 2px;
+  height: 14px;
+  margin-top: -7px;
+  background: var(--intro-signal);
+  opacity: 0.6;
+  z-index: 2;
 }
 
-/* ── The readout: a number and the unit, nothing else ──
-   ⚠️ The `%` sign is GONE (2026-09-19, same pass as the rail). A progress bar
-   reads as a percentage on its own, and the full-size glyph was the loudest
-   thing on the cover for no information. What is left is the counter and a small
-   tracked unit, so the instrument has one voice instead of two. */
-.site-intro__pct {
-  margin: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
+.site-intro__rail::before {
+  left: 0;
+}
 
-  font-size: 34px;
+.site-intro__rail::after {
+  right: 0;
+}
+
+/* ── The wordmark, centred ── */
+.site-intro__mark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  margin: 0;
+  text-align: center;
+  /* ⚠️ `backwards`, never `both` / `forwards`. These entrances animate `opacity`,
+     and a filled final keyframe OUTRANKS every normal declaration — so with
+     `both` the staged fade-out in `.is-sweeping` above would silently do nothing
+     (the animation would keep handing back opacity 1). `backwards` holds the
+     `from` state through the delay, plays, and then hands the element back to
+     its base rule.
+     ⚠️ The reference's stagger is 400 / 800 / 900 / 1100 ms; it is compressed
+     here so the last arrival lands at 1.36 s and the intro's `MIN_MS` can stay
+     under a second and a half. Keep the ORDER, not the milliseconds. */
+  animation: introIn 0.85s var(--intro-ease-out) 0.3s backwards;
+}
+
+.site-intro__brand {
+  font-size: clamp(30px, 4.4vw, 58px);
   font-weight: 700;
   line-height: 1;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.2em;
+  /* The tracking adds a phantom space after the last letter; pull it back so the
+     wordmark stays optically centred. */
+  text-indent: 0.2em;
   color: var(--intro-ink);
-  /* ⚠️ Tabular figures are not cosmetic here: the counter is repainted every
-     frame, and proportional digits make the whole readout twitch as it climbs
-     through 11 → 22 → 33. */
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
 }
 
-.site-intro__pct i {
+.site-intro__rule {
+  display: block;
+  width: 132px;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--intro-signal) 20%,
+    var(--intro-signal) 80%,
+    transparent
+  );
+  opacity: 0.8;
+  animation: introRuleIn 0.6s var(--intro-ease-out) 0.62s backwards;
+}
+
+.site-intro__sub {
   font-size: 10px;
-  font-style: normal;
-  font-weight: 700;
-  letter-spacing: 0.28em;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  text-transform: uppercase;
+  color: var(--intro-dim);
+  animation: introSubIn 0.6s var(--intro-ease-out) 0.76s backwards;
+}
+
+/* ── The readout, under the wordmark ── */
+.site-intro__readout {
+  position: absolute;
+  left: 50%;
+  bottom: 13%;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  animation: introReadoutIn 0.7s var(--intro-ease-out) 0.5s backwards;
+}
+
+.site-intro__readout-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 10px;
+  letter-spacing: 0.32em;
   text-transform: uppercase;
   color: var(--intro-dim);
 }
 
-/* The band is decoration, not information: with reduced motion it simply stays
-   off, and the intro still opens on its own schedule. */
-@media (prefers-reduced-motion: reduce) {
-  .site-intro__scan {
-    animation: none;
+.site-intro__hair {
+  display: block;
+  width: 36px;
+  height: 1px;
+  background: var(--intro-signal);
+  opacity: 0.55;
+}
+
+.site-intro__count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1;
+  color: var(--intro-signal);
+}
+
+.site-intro__bracket {
+  font-size: clamp(46px, 6vw, 72px);
+  font-weight: 300;
+  opacity: 0.45;
+}
+
+#site-intro-pct {
+  font-size: clamp(62px, 8.8vw, 104px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  /* The counter carries the only light on the plate, as in the reference. */
+  text-shadow: 0 0 18px color-mix(in srgb, var(--intro-signal) 30%, transparent);
+  /* ⚠️ Tabular figures are not cosmetic: the counter is repainted every frame,
+     and proportional digits make the whole readout twitch as it climbs through
+     011 → 022 → 033. */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  /* ⚠️ `transition` on colour only — the ready state is a signal change, not a
+     new element, so it should be a settle rather than a cut. */
+  transition: color 0.3s var(--ease-out), text-shadow 0.3s var(--ease-out);
+}
+
+/* The status line changes by dipping, swapping the word and coming back, rather
+   than by cutting — the readout is the one thing on this plate that is being
+   read. `site-intro.ts` toggles the class for `SWITCH_MS`. */
+#site-intro-status {
+  transition: opacity 0.18s var(--intro-ease-out);
+}
+
+#site-intro-status.is-switching {
+  opacity: 0.3;
+}
+
+.site-intro__status-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 10px;
+  min-height: 16px;
+  font-size: 11px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--intro-dim);
+  transition: color 0.3s var(--ease-out);
+}
+
+.site-intro__cursor {
+  font-size: 9px;
+  color: var(--intro-signal);
+  animation: introBlink 1.1s steps(1, end) infinite;
+}
+
+/* Ready: the whole readout steps up to the signal colour at once, and the
+   counter's glow comes up with it. */
+.site-intro.is-ready .site-intro__status-row,
+.site-intro.is-ready .site-intro__cursor,
+.site-intro.is-ready #site-intro-pct {
+  color: var(--intro-signal);
+}
+
+.site-intro.is-ready #site-intro-pct {
+  text-shadow: 0 0 2px var(--intro-signal),
+    0 0 26px color-mix(in srgb, var(--intro-signal) 50%, transparent);
+}
+
+/* Waiting: the status line pulses instead of sitting still, so a slow load reads
+   as the machine still working rather than as a freeze. */
+.site-intro.is-waiting .site-intro__status-row {
+  animation: introWait 1.6s ease-in-out infinite;
+}
+
+/* ── Corner labels: the frame around the instrument ── */
+.site-intro__corner {
+  position: absolute;
+  margin: 0;
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--intro-dim);
+  white-space: nowrap;
+}
+
+.site-intro__corner--tl {
+  top: 24px;
+  left: 34px;
+}
+
+.site-intro__corner--tr {
+  top: 24px;
+  right: 34px;
+}
+
+.site-intro__corner--bl {
+  bottom: 24px;
+  left: 34px;
+}
+
+/* The live indicator on the top-right label. */
+.site-intro__corner--tr::after {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: var(--intro-signal);
+  vertical-align: middle;
+  animation: introDot 2s ease-in-out infinite;
+}
+
+@keyframes introIn {
+  from {
     opacity: 0;
+    transform: translate(-50%, -50%) translateY(22px);
+  }
+}
+
+@keyframes introReadoutIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(18px);
+  }
+}
+
+/* The hero rule draws itself out of nothing — an instrument coming online. */
+@keyframes introRuleIn {
+  from {
+    width: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes introSubIn {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+}
+
+@keyframes introBlink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes introDot {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes introWait {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* The corners are the frame, not the news: they arrive first and quietly, in the
+   reference's order (top-left → top-right → bottom-left). ⚠️ `backwards` for the
+   same reason as the wordmark: a filled final keyframe would outrank the staged
+   fade-out in `.is-sweeping`. */
+.site-intro__corner {
+  animation: introFade 0.6s var(--intro-ease-out) backwards;
+}
+
+.site-intro__corner--tl {
+  animation-delay: 0.16s;
+}
+
+.site-intro__corner--tr {
+  animation-delay: 0.26s;
+}
+
+.site-intro__corner--bl {
+  animation-delay: 0.36s;
+}
+
+@keyframes introFade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .site-intro__readout {
+    bottom: 16%;
+  }
+
+  .site-intro__corner--tl,
+  .site-intro__corner--bl {
+    left: 18px;
+  }
+
+  .site-intro__corner--tr {
+    right: 18px;
+  }
+
+  .site-intro__rail {
+    height: 6px;
+  }
+}
+
+/* ⚠️ With reduced motion the intro still opens on its own schedule — it just does
+   it without the entrance moves. Killing the cover entirely is the guard's job
+   (it never sets `is-intro`), not this media query's. ⚠️ The SWEEP's transitions
+   are deliberately left alone even here: they are the exit path, not decoration,
+   and switching them off would only make the panel jump and vanish. */
+@media (prefers-reduced-motion: reduce) {
+  .site-intro__mark,
+  .site-intro__readout,
+  .site-intro__rule,
+  .site-intro__sub,
+  .site-intro__corner {
+    animation: none;
+  }
+
+  .site-intro__cursor,
+  .site-intro__corner--tr::after {
+    animation: none;
+  }
+
+  .site-intro.is-waiting .site-intro__status-row {
+    animation: none;
   }
 }
