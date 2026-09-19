@@ -86,8 +86,17 @@ interface Ripple {
 }
 
 let stack: HTMLDivElement | null = null;
-/** The theme being left behind, painted under every ripple of this burst. */
-let base: HTMLDivElement | null = null;
+/**
+ * The theme every ripple of the current burst stands on — the one that was
+ * visible when the FIRST click of the burst happened.
+ *
+ * ⚠️ Not the same thing as `leaving` (which is the theme being left by the click
+ * in hand): on a rapid second click `leaving` is the first ripple's theme, but the
+ * page UNDER the whole wave is still the original one. Without this the live page
+ * would flip on the second click of a fast double-click, in exactly the region the
+ * first circle has not reached yet.
+ */
+let burstLeaving: Theme | null = null;
 let ripples: Ripple[] = [];
 /** Scoped light/dark rules are built once, off the critical path. */
 let scopeState: "idle" | "ready" | "failed" = "idle";
@@ -176,6 +185,34 @@ function setRoot(next: Theme): void {
   document.documentElement.style.colorScheme = next;
 }
 
+/**
+ * Park the root for the length of a burst, and keep the LIVE page on `leaving`.
+ *
+ * ⚠️ The attribute has to come off `light` (see NEUTRAL_THEME) — but that alone
+ * means the page the visitor is looking at renders the neutral DARK theme for the
+ * whole reveal. On a dark→light click that is invisible (the outgoing theme IS
+ * dark); on a light→dark click it is a whole theme change landing on the click
+ * frame, and it used to be hidden only because a full-page BASE COPY of the light
+ * page was laid over it — a copy that has never been rastered at that moment, so
+ * its own first paint was what the visitor was actually waiting for
+ * (2026-09-19: "light mode 切换 dark mode 时，会出现磁带盒先变黑，其次才是圆环覆盖整个
+ * 画面，看起来没那么自然").
+ *
+ * The hold class is the trick `buildScope` already plays for the copies, pointed
+ * at the live root instead: `:root.theme-hold-light { … }` re-states every
+ * light-theme rule, so the page keeps rendering light while the attribute is
+ * parked. No copy has to be rastered before the click can be shown, and the two
+ * directions now behave identically.
+ */
+function holdRoot(leaving: Theme): void {
+  const root = document.documentElement;
+  root.classList.toggle(HOLD_CLASS, leaving === "light");
+  setRoot(NEUTRAL_THEME);
+  // The held page is the one on screen, so its colour-scheme has to agree with
+  // what it looks like, not with the parked attribute.
+  root.style.colorScheme = leaving;
+}
+
 function persist(next: Theme): void {
   try {
     localStorage.setItem(STORAGE_KEY, next);
@@ -201,6 +238,9 @@ function applyInstant(next: Theme): void {
   // says "dark" and the arrival below never fires.
   const cameFrom = visibleTheme;
   root.classList.add("theme-land");
+  // ⚠️ The hold class MUST come off here: it is only ever a parking state, and
+  // leaving it on would pin the page to the light overrides under a dark root.
+  root.classList.remove(HOLD_CLASS);
   setRoot(next);
   persist(next);
   void root.offsetHeight; // flush style + layout while transitions are off
@@ -266,8 +306,46 @@ function cornerRadius(x: number, y: number): number {
  */
 const ROOT_THEME_RE = /:root(\[data-theme[^\]]*\])?/g;
 
+/**
+ * The hold class: the light theme's rules, re-rooted on `<html>` itself.
+ *
+ * ⚠️ `holdRoot` needs the same re-emission `scopedSelector` does, but pointed at
+ * the LIVE root instead of a copy — see the note there. Only the light-theme
+ * overrides are collected: the bare `:root` block IS the neutral baseline and
+ * must keep applying while the attribute is parked.
+ */
+const HOLD_CLASS = "theme-hold-light";
+/** ⚠️ Quote-agnostic on purpose: the dev sheet writes `[data-theme="light"]` and
+ *  the minified build writes `[data-theme=light]`. */
+const HOLD_THEME_RE = /:root\[data-theme=["']?light["']?\]/;
+
 function scopedSelector(selectorText: string): string {
   return selectorText.replace(ROOT_THEME_RE, `.${SCOPE_CLASS}$1`);
+}
+
+/** The same rule re-rooted on the hold class, or null when it is not one of the
+ *  light-theme overrides.
+ *
+ *  ⚠️ **The descendant rules have to re-enter through `<body>`, and that is not
+ *  cosmetic**: the reveal's copies are `<div class="theme-scope"><body>…` hung off
+ *  `<html>` as SIBLINGS of the real body, so a bare `:root.theme-hold-light .x`
+ *  would reach inside a dark copy and hand it the light overrides — the exact
+ *  wrong-coloured-copy artefact `buildScope` exists to prevent (measured at mean
+ *  |Δ| 107 before it did). `> body` puts the hold rules inside the live page only.
+ *  The bare token block has no descendant, so it stays `:root.theme-hold-light`
+ *  and is inherited; every copy re-declares its own tokens anyway. */
+function holdSelector(selectorText: string): string | null {
+  const parts: string[] = [];
+  for (const one of selectorText.split(",")) {
+    const m = HOLD_THEME_RE.exec(one);
+    if (!m) continue;
+    const head = `${one.slice(0, m.index)}:root.${HOLD_CLASS}`;
+    const rest = one.slice(m.index + m[0].length).trim();
+    if (!rest) parts.push(head);
+    else if (/^body\b/.test(rest)) parts.push(`${head} > ${rest}`);
+    else parts.push(`${head} > body ${rest}`);
+  }
+  return parts.length ? parts.join(",") : null;
 }
 
 /** Walk a rule list, re-emitting every theme-gated rule with a scope class.
@@ -279,6 +357,8 @@ function collectScoped(rules: CSSRuleList, out: string[]): number {
     if (rule instanceof CSSStyleRule) {
       if (!rule.selectorText.includes(":root")) continue;
       out.push(`${scopedSelector(rule.selectorText)}{${rule.style.cssText}}`);
+      const held = holdSelector(rule.selectorText);
+      if (held) out.push(`${held}{${rule.style.cssText}}`);
       found += 1;
       continue;
     }
@@ -371,8 +451,6 @@ function stackEl(): HTMLDivElement | null {
 const WARM_MS = 400;
 
 interface WarmSet {
-  /** The theme being left, when it needs a copy of its own (see NEUTRAL_THEME). */
-  base: HTMLDivElement | null;
   /** The theme the click will reveal. */
   ripple: HTMLDivElement;
   builtFor: Theme;
@@ -385,7 +463,6 @@ let warmTimer = 0;
 function discardWarm(): void {
   window.clearTimeout(warmTimer);
   warmTimer = 0;
-  warm?.base?.remove();
   warm?.ripple.remove();
   warm = null;
 }
@@ -411,28 +488,24 @@ function buildWarm(): void {
 
   const ripple = make(theme);
   if (!ripple) return;
-  // Leaving the neutral theme needs no base copy: the document underneath is
-  // already that theme (see NEUTRAL_THEME).
-  const base = leaving === NEUTRAL_THEME ? null : make(leaving);
 
-  warm = { base, ripple, builtFor: leaving, at: performance.now() };
+  warm = { ripple, builtFor: leaving, at: performance.now() };
   // An unused set must not sit in the document for ever.
   warmTimer = window.setTimeout(discardWarm, WARM_MS + 1500);
 }
 
-/** Called at the start of a click: hands over both warmed layers, or neither. */
-function claimWarm(leaving: Theme): { base: HTMLDivElement | null; ripple: HTMLDivElement | null } {
+/** Called at the start of a click: hands over the warmed layer, or none. */
+function claimWarm(leaving: Theme): { ripple: HTMLDivElement | null } {
   if (!warm || warm.builtFor !== leaving || performance.now() - warm.at > WARM_MS) {
     discardWarm();
-    return { base: null, ripple: null };
+    return { ripple: null };
   }
   const set = warm;
   warm = null;
   window.clearTimeout(warmTimer);
   warmTimer = 0;
   set.ripple.style.visibility = "";
-  if (set.base) set.base.style.visibility = "";
-  return { base: set.base, ripple: set.ripple };
+  return { ripple: set.ripple };
 }
 
 /** Warm on press, for a real pointer only. */
@@ -537,7 +610,7 @@ function clonePage(theme: Theme): HTMLDivElement | null {
 
 function offsetClones(): void {
   const y = window.scrollY;
-  const all: (HTMLDivElement | null)[] = [base, ...ripples.map((r) => r.el)];
+  const all: (HTMLDivElement | null)[] = ripples.map((r) => r.el);
   for (const layer of all) {
     if (!layer) continue;
     const copy = layer.firstElementChild as HTMLElement | null;
@@ -565,8 +638,7 @@ function dropLayers(): void {
   unbindScroll();
   for (const r of ripples) r.el.remove();
   ripples = [];
-  base?.remove();
-  base = null;
+  burstLeaving = null;
   posterCache = null;
 }
 
@@ -594,8 +666,6 @@ function onRippleDone(entry: Ripple): void {
   if (index < 0) return;
 
   for (const under of ripples.slice(0, index)) under.el.remove();
-  base?.remove();
-  base = null;
   ripples = ripples.slice(index);
 
   if (ripples[ripples.length - 1] === entry) landBurst();
@@ -635,23 +705,11 @@ export function toggleThemeWithReveal(origin?: { x: number; y: number }): void {
   const y = point.y;
   const radius = cornerRadius(x, y);
   const first = ripples.length === 0;
+  if (first) burstLeaving = leaving;
   // One event's worth of head start, if a press provided it.
-  const held = first ? claimWarm(leaving) : { base: null, ripple: null };
+  const held = first ? claimWarm(leaving) : { ripple: null };
 
   try {
-    if (first) {
-      // The theme being left behind, under the whole wave.
-      //
-      // ⚠️ Only needed when that theme is NOT the neutral one. The root is about
-      // to be parked on NEUTRAL_THEME, so when the page is already there the
-      // live document underneath IS the layer this would have added.
-      base = held.base ?? (leaving === NEUTRAL_THEME ? null : clonePage(leaving));
-      if (base) {
-        base.dataset.themeBase = "";
-        holder.appendChild(base);
-      }
-    }
-
     const layer = held.ripple ?? clonePage(next);
     if (!layer) throw new Error("clone failed");
 
@@ -666,13 +724,14 @@ export function toggleThemeWithReveal(origin?: { x: number; y: number }): void {
     const entry: Ripple = { el: layer, theme: next, done: false };
     ripples.push(entry);
 
-    // ⚠️ Order matters, and it is not the obvious one. The root is parked on the
-    // neutral theme — NOT on `next` — because a light root would hand its own
-    // theme rules to the dark copies underneath (see NEUTRAL_THEME). The page
-    // behind the copies is therefore showing the neutral theme, which is also
-    // what makes the landing (`setRoot(final)`) a real swap rather than a no-op
-    // when the burst ends on dark.
-    setRoot(NEUTRAL_THEME);
+    // ⚠️ Order matters, and it is not the obvious one. The root is parked OFF the
+    // incoming theme — `holdRoot` takes the attribute off `light` — because a
+    // light root would hand its own theme rules to the dark copies underneath
+    // (see NEUTRAL_THEME). The page behind the copies keeps showing the OUTGOING
+    // theme, via the hold class when that theme is light, which is also what makes
+    // the landing (`setRoot(final)`) a real swap rather than a no-op when the
+    // burst ends on dark.
+    holdRoot(burstLeaving ?? leaving);
     persist(next);
     pending = next;
 

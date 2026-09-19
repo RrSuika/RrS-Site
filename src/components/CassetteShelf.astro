@@ -1118,14 +1118,16 @@ const coverUrls = items
     z-index: 8;
     pointer-events: none;
     background: linear-gradient(180deg, var(--shell-dim-a), var(--shell-dim-b));
-    opacity: min(1, var(--cas-depth, 0) * var(--dim-rate, 3.2));
+    opacity: min(var(--dim-max, 0.78), var(--cas-depth, 0) * var(--dim-rate, 2.4));
     /* Short on purpose: the depth term is already continuous, so a long transition
        would only make the veil lag behind the row it is describing. */
     transition: opacity 0.2s linear;
   }
 
-  /* ── AERIAL PERSPECTIVE — the light theme dissolves a far tape's print ──
-     (2026-09-19: "light mode下…模拟一种空气透视的效果，越远细节越模糊的滤镜".)
+  /* ── AERIAL PERSPECTIVE — the farther a tape is, the softer its print ──
+     (2026-09-19: "light mode下…模拟一种空气透视的效果，越远细节越模糊的滤镜", then
+     "dark mode也按照 light mode一样，距离画面越远的磁带盒越模糊".) Both themes now,
+     so the rule is not theme-scoped any more.
      ⚠️ SAFE ONLY BECAUSE THIS IS INSIDE THE FACE. A `filter` on `.cas` — or on any
      other ancestor of a `.cas-f` — forces `transform-style: flat` and collapses the
      whole box into a flat card. `.cas` is the preserve-3d box and the faces are its
@@ -1135,7 +1137,7 @@ const coverUrls = items
      ⚠️ `.is-far` keeps `filter` off the tapes that do not need it — `blur(0px)` is
      still a filter, which costs a rasterisation pass and switches off subpixel text
      antialiasing, so the hero's title would lose its edge for nothing. */
-  :global(:root[data-theme="light"]) .cas.is-far .cas-f > * {
+  .cas.is-far .cas-f > * {
     filter: blur(calc(var(--cas-depth, 0) * var(--depth-blur, 2.4px)));
   }
 
@@ -1325,6 +1327,14 @@ const coverUrls = items
     position: absolute;
     inset: var(--shell-frame, 0);
     overflow: hidden;
+    /* ⚠️ The same radius as the J-card lip (`.cas-label::after`), and that is the
+       whole point: the lip draws a ROUNDED 1px ring at the label's edge, so with a
+       square label the print showed through the four corner arcs as square corners
+       poking out of a rounded frame (2026-09-19: "封面的四周会稍微超出边框的范围，在角落
+       则会变成直角的封面超出了圆角的边框"). Rounding the label clips the cover — the
+       `<img>` is `width/height: 100%` inside this box — to exactly the lip's arc.
+       Keep the two numbers equal. */
+    border-radius: 5px;
     background: var(--shell-mid);
   }
 
@@ -1699,10 +1709,15 @@ const coverUrls = items
        `--dim-near` is the neighbour veil's opacity at the near end: at 1 the veil
        is flat (what it used to be), below it the row gains a continuous
        near→far gradient — the nearest neighbour is the clearest, the far ones go
-       all the way to the full veil. `--depth-blur` is how far the LIGHT theme
-       dissolves a far tape's print (see `.cas-label`); it is unused on the dark
-       theme, where distance is carried by the dim alone. */
-    --dim-near: 0.55;
+       all the way to the full veil. `--depth-blur` is how far a far tape's print
+       dissolves (both themes now — see `.cas-label`).
+       ⚠️ `--dim-max` caps the veil: at 1 the farthest tape is buried under the
+       full `--shell-dim-*` gradient, which on the dark theme is nearly black
+       (2026-09-19: "目前的随距离压暗太强了，可以稍微弱一点，让最远处的磁带盒能勉强看见
+       层次"). 0.78 leaves the far tapes dark but still readable — the layers of the
+       object (bezel, card, window) survive instead of merging into one silhouette. */
+    --dim-rate: 2.4;
+    --dim-max: 0.78;
     --depth-blur: 2.4px;
     /* Bezel: the shell showing around the printed J-card. Raising it thickens the
        frame and shrinks the artwork inside it. */

@@ -96,12 +96,15 @@ const SLIDERS: Slider[] = [
   // Both are read by `.cas-f::after` / `.cas.is-far .cas-f > *` against the
   // per-tape `--cas-depth` the render loop writes (0 at the selection, 1 at the
   // far end of the painted band).
-  // ⚠️ `depth rate` is the veil's opacity at depth 1, scaled: opacity =
-  // min(1, depth × rate). 3.2 means the veil reaches full strength by depth 0.31
-  // (about two slots out); 1.0 would make the whole row nearly flat again.
-  // ⚠️ `depth blur` is LIGHT-THEME ONLY — the dark theme recedes by dimming alone.
-  { group: "depth", name: "--dim-rate", label: "depth rate (veil falloff)", min: 1, max: 8, step: 0.1, value: 3.2 },
-  { group: "depth", name: "--depth-blur", label: "depth blur (light)", min: 0, max: 6, step: 0.1, value: 2.4, unit: "px" },
+  // ⚠️ `depth rate` is how fast the veil ramps with distance and `depth cap` is
+  // where it stops: opacity = min(cap, depth × rate). Shipped 2.4 / 0.78, i.e. the
+  // veil reaches its ceiling by depth ~0.33 (about two slots out) and the farthest
+  // tape keeps ~a fifth of the full dim so its own layers still read.
+  // ⚠️ `depth blur` applies to BOTH themes now — the dark theme recedes by dimming
+  // and by dissolving the print, exactly like the light one.
+  { group: "depth", name: "--dim-rate", label: "depth rate (veil falloff)", min: 0.5, max: 8, step: 0.1, value: 2.4 },
+  { group: "depth", name: "--dim-max", label: "depth cap (max veil)", min: 0.1, max: 1, step: 0.01, value: 0.78 },
+  { group: "depth", name: "--depth-blur", label: "depth blur", min: 0, max: 6, step: 0.1, value: 2.4, unit: "px" },
   // ── the selected tape ──
   // Defaults are the BAKED pose (2026-09-19), so RESET returns to what ships.
   { group: "hero", name: "ryCenter", label: "yaw", min: -0.5, max: 0.6, step: 0.002, value: 0.222, unit: "deg" },
