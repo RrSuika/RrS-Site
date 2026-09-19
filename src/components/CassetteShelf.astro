@@ -912,22 +912,28 @@ const coverUrls = items
      pair: the fix is not "make it cool", it is "warm body, cool shadow, real
      specular". The gloss itself lives in `.cas-label::before` (`--gloss-*`), and
      it is a corner sheen on the moulding — never a band across the printed
-     J-card, which reads as a sticker lying on the artwork. */
+     J-card, which reads as a sticker lying on the artwork.
+     ⚠️ **LIGHTENED once more 2026-09-19** ("light mode 下磁带盒的外壳太暗了，导致侧面
+     标题看不清"). Two things were fighting the spine titles: the shell family sat a
+     full step darker than the page it stands on, and the neighbour veil took
+     another ~45% of the light off it. The tokens below are lifted roughly one step
+     (`--shell-spine-b` #c4b89c → #d5caae and so on), `--shell-ink*` is darkened,
+     and the veil is pulled back — see the measurement in the `--shell-dim-*` note. */
   :global(:root[data-theme="light"]) .cas {
-    --shell-top: #f2e9d5;
-    --shell-mid: #e0d5bb;
-    --shell-bot: #bfb094;
+    --shell-top: #f8f1e2;
+    --shell-mid: #eae0ca;
+    --shell-bot: #cec1a6;
 
-    --shell-spine-a: #9d9077;
-    --shell-spine-b: #c4b89c;
-    --shell-spine-c: #ded2b6;
-    --shell-spine-d: #a99c81;
+    --shell-spine-a: #b3a68b;
+    --shell-spine-b: #d5caae;
+    --shell-spine-c: #efe6cf;
+    --shell-spine-d: #c0b399;
 
-    --shell-edge-a: #ece2cc;
-    --shell-edge-b: #b1a48a;
-    --shell-edge-under-a: #a2957a;
-    --shell-edge-under-b: #d5c9ad;
-    --shell-back: #c9bda1;
+    --shell-edge-a: #f4ecda;
+    --shell-edge-b: #c4b79c;
+    --shell-edge-under-a: #b5a88c;
+    --shell-edge-under-b: #e2d8be;
+    --shell-back: #d7cbb0;
 
     --shell-rim: rgba(255, 255, 255, 0.95);
     --shell-rim-inner: rgba(74, 58, 36, 0.3);
@@ -942,8 +948,8 @@ const coverUrls = items
     --metal-mid: #ece1c7;
     --metal-lo: #a2957a;
 
-    --shell-ink: rgba(52, 42, 24, 0.88);
-    --shell-ink-dim: rgba(70, 56, 32, 0.62);
+    --shell-ink: rgba(38, 29, 14, 0.93);
+    --shell-ink-dim: rgba(56, 44, 24, 0.75);
 
     /* Gloss: a warm-white sheen, present but restrained — the tape is glossy
        plastic, not a mirror. */
@@ -976,10 +982,18 @@ const coverUrls = items
     --reel-occl: rgba(0, 0, 0, 0.36);
     --reel-far-light: 0.5;
 
-    /* The dim veil stays COOL and dense: on a beige shell a warm veil would
-       simply make the neighbours a darker version of the selection. */
-    --shell-dim-a: rgba(42, 50, 66, 0.4);
-    --shell-dim-b: rgba(24, 30, 42, 0.54);
+    /* ⚠️ The veil stays COOL — a warm veil on a beige shell just makes the
+       neighbours a darker version of the selection — but it is much LIGHTER than
+       the first pass (0.40/0.54 → 0.26/0.38, 2026-09-19: "light mode 下磁带盒的
+       外壳太暗了，导致侧面标题看不清"). The spine titles are dark ink on this
+       shell, so the veil is what decides their contrast: at 0.40 over the old
+       mid-tone spine the composite measured ~3.2:1 against `--shell-ink`, which
+       is the AA-large floor and reads as mush at a 0.72em title. With the
+       lightened spine bed plus this veil it measures ~6:1 (see the note on the
+       light spine tokens above). Depth still reads because the selection is also
+       pulled forward in Z and lit. */
+    --shell-dim-a: rgba(52, 62, 80, 0.26);
+    --shell-dim-b: rgba(32, 40, 54, 0.38);
 
     --tape-drop-far: 0 26px 52px rgba(34, 44, 62, 0.34);
     --tape-drop-near: 0 5px 14px rgba(34, 44, 62, 0.3);
@@ -1483,7 +1497,11 @@ const coverUrls = items
     --reel-near-shadow: 0.81;
     --reel-far-light: 0.4;
     --reel-rim: 0.21;
-    --reel-hub-inset: 34%;
+    --reel-hub-w: 32%;
+    --reel-hub-h: 32%;
+    --reel-hub-alpha: 0.97;
+    --reel-hub-gloss: 0;
+    --reel-hub-grain: 0;
   }
 
   /* ⚠️ MATTE, and recessed by LIGHTING rather than by a bright ring (2026-09-19:
@@ -1557,23 +1575,63 @@ const coverUrls = items
   /* The hub is a counter-sunk bore: the shadow sits top-left, the lit edge
      bottom-right, and the cut edge is a hairline rather than a rim.
      ⚠️ No highlight on the bore face — it is a hole, and a lit face turned it
-     into a silver dot with a halo. */
+     into a silver dot with a halo.
+     ⚠️ Three tunable tokens, added 2026-09-19 so the bore can be fitted rather
+     than guessed at:
+       · `--reel-hub-w` / `--reel-hub-h` — the bore's own width and height as a
+         percentage of the well. They are separate because the moulding's bore is
+         not obliged to be a circle: `border-radius: 50%` on a box that is wider
+         than it is tall gives an ellipse, which is what a slipped hub actually
+         looks like. Equal values (the default, 32/32 — the same disc the old
+         `inset: 34%` drew) give the circle.
+       · `--reel-hub-alpha` — the bore's opacity. Below 1 the spokes read through
+         the face, which is the cue for a hub that has lifted off the pack.
+       · `--reel-hub-gloss` / `--reel-hub-grain` — the FACE material. Both ship at
+         0, i.e. dead flat matte, which is the look the matte pass asked for; they
+         exist so the depth of the falloff and a fine machined ring set can be
+         dialled in without touching the shape. */
   .cas-reel-hub {
     position: absolute;
-    inset: var(--reel-hub-inset, 34%);
+    left: 50%;
+    top: 50%;
+    width: var(--reel-hub-w, 32%);
+    height: var(--reel-hub-h, 32%);
+    transform: translate(-50%, -50%);
     border-radius: 50%;
 
-    background: radial-gradient(
-      circle at 50% 52%,
-      rgba(9, 9, 13, 0.94) 0%,
-      rgba(5, 5, 8, 0.97) 62%,
-      rgba(11, 11, 16, 0.99) 100%
-    );
+    background: rgb(7 7 10 / var(--reel-hub-alpha, 0.97));
 
     box-shadow:
       inset 0.5px 0.5px 1px rgba(0, 0, 0, 0.9),
       inset -0.5px -0.5px 0 rgba(226, 218, 202, 0.13),
       0 0 0 0.5px rgba(0, 0, 0, 0.5);
+  }
+
+  /* The bore's face. It draws NOTHING at the shipped defaults: a flat fill with
+     no falloff and no grain is the whole point of the matte pass, and a knob
+     that ships at 0 cannot quietly re-introduce the highlight ramp the user
+     rejected. ⚠️ `calc()` inside the alpha is deliberate — it lets one slider
+     scale the layer without a second custom property to keep in step. */
+  .cas-reel-hub::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+
+    background-image:
+      /* grain: fine concentric rings, the machining of a turned part */
+      repeating-radial-gradient(
+        circle at 50% 52%,
+        rgba(226, 218, 202, calc(var(--reel-hub-grain, 0) * 0.14)) 0 0.5px,
+        transparent 0.5px 2.5px
+      ),
+      /* gloss: depth of a radial falloff away from the centre */
+      radial-gradient(
+        circle at 50% 52%,
+        rgba(2, 2, 5, calc(var(--reel-hub-gloss, 0) * 0.55)) 0%,
+        transparent 70%
+      );
   }
 
   .cas-reel-ring {
@@ -3884,8 +3942,16 @@ const coverUrls = items
       // was already deciding about, so a hard flick cannot skip a tape the drag
       // never reached.
       let land = Math.round(progress);
-      if (velocity <= -FLICK_COMMIT && land > Math.min(progress, -maxStep)) land -= 1;
-      else if (velocity >= FLICK_COMMIT && land < Math.max(progress, maxStep)) land += 1;
+      // ⚠️ The flick may only carry the round to the NEXT WHOLE SLOT in the
+      // direction of motion — never a slot beyond it. `progress` grows to the
+      // RIGHT, so a rightward flick commits to `ceil(progress)` and a leftward one
+      // to `floor(progress)`; `max` / `min` makes that a no-op when the round had
+      // already reached it (a 1.5-slot flick lands on 2, not 3). The earlier
+      // `land += 1` did not check, so any release above `FLICK_COMMIT` added a
+      // whole slot on top of a round that had already committed one — a flick that
+      // travelled 0.8 of a slot skipped a tape the drag never reached.
+      if (velocity >= FLICK_COMMIT) land = Math.max(land, Math.ceil(progress));
+      else if (velocity <= -FLICK_COMMIT) land = Math.min(land, Math.floor(progress));
       land = clamp(land, -maxStep, maxStep);
 
       // ⚠️ **Two different numbers, and conflating them was a bug.** `travel` is

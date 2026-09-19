@@ -327,11 +327,17 @@ const websiteSchema = {
         <p class="site-intro__corner site-intro__corner--bl">Archive // 2026</p>
       </div>
 
-      {/* One full-width striped rail along the bottom edge — the reference's own
-          geometry: the live stripes fill from the RIGHT, clipped by `--reveal`. */}
-      <div class="site-intro__rail" aria-hidden="true">
+      {/* One striped rail along the bottom edge, filled by TWO live bars — one
+          growing rightward from the left end, one leftward from the right end —
+          so the count closes on the middle from both sides. ⚠️ Both live layers
+          are FULL WIDTH and clipped to their own half-window: two half-width
+          elements would put the 8/3px stripe phase out of step at the join,
+          because the centre lands mid-period on every viewport that is not a
+          multiple of 11px. */}
+      <div class="site-intro__rail" id="site-intro-rail" aria-hidden="true">
         <span class="site-intro__rail-dim" />
-        <span class="site-intro__rail-on" id="site-intro-rail" />
+        <span class="site-intro__rail-on site-intro__rail-on--l" />
+        <span class="site-intro__rail-on site-intro__rail-on--r" />
       </div>
 
       {/* The exit: the signal colour grows from the bottom edge, holds, then

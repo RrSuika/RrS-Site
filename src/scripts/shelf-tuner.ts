@@ -35,7 +35,13 @@ const SLIDERS: Slider[] = [
   // ── the two hubs ──
   // Defaults are the BAKED values (2026-09-19), so RESET returns to what ships.
   { group: "reels", name: "--reel-size", label: "well size", min: 1.6, max: 3.6, step: 0.01, value: 3.1, unit: "em" },
-  { group: "reels", name: "--reel-hub-inset", label: "hub inset", min: 16, max: 44, step: 0.5, value: 34, unit: "pct" },
+  // ⚠️ `--reel-hub-inset` is GONE: one inset can only ever describe a circle.
+  // Width and height are separate so the bore can be fitted in both axes.
+  { group: "reels", name: "--reel-hub-w", label: "hub width", min: 8, max: 52, step: 0.5, value: 32, unit: "pct" },
+  { group: "reels", name: "--reel-hub-h", label: "hub height", min: 8, max: 52, step: 0.5, value: 32, unit: "pct" },
+  { group: "reels", name: "--reel-hub-alpha", label: "hub opacity", min: 0, max: 1, step: 0.01, value: 0.97 },
+  { group: "reels", name: "--reel-hub-gloss", label: "hub gloss", min: 0, max: 1, step: 0.01, value: 0 },
+  { group: "reels", name: "--reel-hub-grain", label: "hub grain", min: 0, max: 1, step: 0.01, value: 0 },
   { group: "reels", name: "--reel-cavity", label: "cavity fill", min: 0, max: 1, step: 0.01, value: 0.02 },
   { group: "reels", name: "--reel-occl", label: "well occlusion", min: 0, max: 0.9, step: 0.01, value: 0.44 },
   { group: "reels", name: "--reel-near-shadow", label: "well near", min: 0, max: 1, step: 0.01, value: 0.81 },
