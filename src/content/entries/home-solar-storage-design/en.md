@@ -1,5 +1,6 @@
 ---
 title: Home Low-Load Solar Panel Circuit Design
+spineTitle: "HOME SOLAR PANEL CIRCUIT DESIGN"
 date: 2026-09-03
 description: "DIY off-grid solar storage: 600W portable panels, 2×12V LiFePO₄ in series for 24V, 6-port MPPT with built-in bus feeding LED lighting and a pure-sine inverter. "
 

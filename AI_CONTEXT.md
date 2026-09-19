@@ -408,7 +408,7 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 
 | 需求                         | 优先检查位置                                                                                                            |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| 改首页 Hero / 恢复终端       | `src/components/home/Hero.astro` + `src/styles/global.css` §14（删除隐藏规则）                                          |
+| 改首页 Hero / 恢复终端       | `src/components/home/Hero.astro` + `src/styles/global.css` §14（删除隐藏规则）；标题那 20 条逐字偏移与调音面板见 `docs/hero-title.md`（面板开关 = `src/scripts/hero-tuner.ts` 顶部的 `TUNER_ENABLED`）                                          |
 | 改背景星空 / 恢复神经网络 | `src/layouts/Layout.astro`（`#starfield-canvas` + 3D 星空脚本；神经网络恢复设 `data-neural="enabled"`）+ `global.css §10`。⚠️ **动手前读 `docs/backgrounds.md`** |
 | 改首页黑洞视频 / 位置大小 | `global.css §10` 里 `#blackhole-layer` 的 `--blackhole-*`（**y 是 `calc(122px + 37.8vh)`，两点实测拟合**）+ `#blackhole-video` 的 `object-fit`；换视频改 `public/media/blackhole.mp4`；关掉黑洞 = 去掉三个首页 `<Layout>` 的 `blackhole` prop；手机端开关 = Layout 脚本与 §10 的 `min-width: 769px` 双保险。⚠️ 详情与「不要假设视口 = 屏幕分辨率」的教训见 `docs/backgrounds.md` |
 | 改引力透镜 / 调每个圈的位置 | `src/components/GravitationalLens.astro` + `global.css §10` 的 `--lens-*`；现场调参：导航栏齿轮 / 反引号 / `?lens=tune`（方向键调、Shift ×10 / Alt ×0.1、COPY 复制参数）。⚠️ §10 默认值与组件内 `FALLBACK`/`SCALED` 互为镜像，改一处须两处同步（决策 21）——规格见 `docs/backgrounds.md` |

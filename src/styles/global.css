@@ -1445,10 +1445,34 @@ body::after {
   letter-spacing: var(--tracking-micro);
   cursor: pointer;
   transition:
-    background 0.25s var(--ease-out),
-    border-color 0.25s var(--ease-out),
-    color 0.25s var(--ease-out),
+    /* ⚠️ These three ride the FILL's clock, not a faster one of their own
+       (2026-09-19: "边框和橙色块往上的动画一致，而不是目前先让边框变色然后覆盖动画").
+       At 0.25s the ring and the label ink had already landed before the fill
+       arrived 0.15s later, which reads as two events rather than one gesture.
+       0.4s `--ease-out` is exactly what the `::before` slide runs on, so the ring,
+       the ink and the leading edge progress and finish together. */
+    background 0.4s var(--ease-out),
+    border-color 0.4s var(--ease-out),
+    color 0.4s var(--ease-out),
     transform 0.2s var(--spring-snappy);
+}
+
+/* ── Apple-style continuous corners on the chip's two ends ──
+   (2026-09-19: "按钮两侧视觉上过渡不够圆…苹果产品的边缘过渡不止一个简单的倒角，而是有细节
+   设计的".) A pill's ends are circular arcs, so the curvature jumps from 0 along the
+   straight top/bottom edges to 1/r at the tangent point: the end reads as a
+   separate shape butted onto the edge, and that junction is the "not round enough"
+   part. Apple's corners are SUPERELLIPSES — same extents, but the curvature ramps
+   in from the edge instead of appearing all at once — which is what `corner-shape`
+   exposes (CSS Borders 4; MDN `corner-shape`, Smashing Magazine "Beyond
+   border-radius"). Progressive enhancement on purpose: the `@supports` guard keeps
+   the plain round pill everywhere the property is not implemented, and the hover
+   fill is clipped by the chip's own `overflow: hidden`, so it follows whatever
+   shape this resolves to. */
+@supports (corner-shape: squircle) {
+  .tag-chip {
+    corner-shape: squircle;
+  }
 }
 
 /* ⚠️ FLAT, not a gradient (2026-09-19: "我不希望他的带有白色渐变的立体拟物风格，平面

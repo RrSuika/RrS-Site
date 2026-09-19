@@ -1,5 +1,6 @@
 ---
 title: "AI-Assisted Personal Website: From One Page to a Complex Database"
+spineTitle: "BUILD A PERSONAL WEBSITE"
 date: 2026-05-19
 dateLabel: "May 19"
 description: "Learning to build and deploy a personal website with AI. A record of the iterations, lessons learned, and what AI can do versus what still needs a human."
@@ -306,6 +307,7 @@ The visuals did not appear from nowhere. These sources gave me important referen
 - **Starfield reference**: [OpenAI GPT-6 Astra page](https://openai.com/index/gpt-6-astra/)
 - **Black hole implementation reference**: [Shadertoy — lstSRS](https://www.shadertoy.com/view/lstSRS)
 - **Gravitational lensing reference**: [BH+disk](https://guitrj.github.io/BH+disk/)
+- **Cassette shelf reference**: the tape shelf you pick a story from in Zenless Zone Zero’s Agent Story chapters ([official site](https://zenless.hoyoverse.com/en-us/)). The finished visuals have moved a long way from the original; the way the tapes move is what I took from it.
 
 > Note: these are references for inspiration, visuals and implementation ideas. Different Shadertoy works may use different licences; always check the original author’s notes.
 

@@ -17,8 +17,19 @@
 
 const KEY = "rrsuika-shelf-tune-v1";
 
+/**
+ * ⚠️ TEMPORARILY OFF (2026-09-19: "tune reels + 3d 面板可以暂时隐藏").
+ *
+ * Flip this to `true` and everything below comes back exactly as it was — the
+ * shipped values are baked into the CSS tokens and into the pose constants, and
+ * the panel's own defaults match them, so RESET still returns to what ships.
+ * With it off `apply()` never runs, so the pages are styled by the stylesheet
+ * alone, which is also what makes this a clean way to check the baked values.
+ */
+const TUNER_ENABLED = false;
+
 type Slider = {
-  group: "reels" | "plate" | "shell" | "depth" | "hero";
+  group: "reels" | "plate" | "shell" | "depth" | "motion" | "hero";
   /** CSS custom property (reels/plate) or `__shelfTune` key (hero). */
   name: string;
   label: string;
@@ -105,6 +116,13 @@ const SLIDERS: Slider[] = [
   { group: "depth", name: "--dim-rate", label: "depth rate (veil falloff)", min: 0.5, max: 8, step: 0.1, value: 2.4 },
   { group: "depth", name: "--dim-max", label: "depth cap (max veil)", min: 0.1, max: 1, step: 0.01, value: 0.78 },
   { group: "depth", name: "--depth-blur", label: "depth blur", min: 0, max: 6, step: 0.1, value: 2.4, unit: "px" },
+  // ── MOTION — how the row hands off ──
+  // `release glide` is the damping rate of the spring that runs when the pointer
+  // is let go, i.e. how long the row takes to settle onto the selection. `1/rate`
+  // is the time constant: 9.2 ≈ 110ms (the archive-end push, feels snatched),
+  // 5.4 ≈ 185ms (the old release), **3.8 ≈ 265ms** (shipped). Lower is slower and
+  // softer; below ~3 the landing starts to read as drifting.
+  { group: "motion", name: "glideRate", label: "release glide (1/rate sec)", min: 2, max: 9.2, step: 0.1, value: 3.8 },
   // ── the selected tape ──
   // Defaults are the BAKED pose (2026-09-19), so RESET returns to what ships.
   { group: "hero", name: "ryCenter", label: "yaw", min: -0.5, max: 0.6, step: 0.002, value: 0.222, unit: "deg" },
@@ -114,6 +132,13 @@ const SLIDERS: Slider[] = [
   { group: "hero", name: "lift", label: "lift", min: 0, max: 1.4, step: 0.01, value: 0.21 },
   { group: "hero", name: "yBase", label: "row height", min: -0.8, max: 0.6, step: 0.01, value: -0.18 },
   { group: "hero", name: "zNear", label: "pull forward", min: 0.2, max: 3.6, step: 0.02, value: 2.6 },
+  // ── THE PASS — the two terms that stop the tapes crossing mid-step ──
+  // Both are shaped 4·|p|·(1 − |p|): exactly zero at the selection and from one
+  // slot out, full at the half slot where the tape either side of the centre would
+  // otherwise intersect. Set either to 0 to see the old behaviour (0.95 world
+  // units of overlap at the halfway point of every step).
+  { group: "hero", name: "passTwist", label: "pass twist (extra yaw)", min: 0, max: 0.8, step: 0.01, value: 0.3, unit: "deg" },
+  { group: "hero", name: "passGap", label: "pass gap (slide apart)", min: 0, max: 0.6, step: 0.01, value: 0.2 },
 ];
 
 const state: Record<string, number> = Object.fromEntries(SLIDERS.map((s) => [s.name, s.value]));
@@ -184,6 +209,7 @@ const GROUP_TITLE: Record<Slider["group"], string> = {
   plate: "PLATE — the narrow frame between them",
   shell: "SHELL — moulding + window",
   depth: "DEPTH — how the row recedes",
+  motion: "MOTION — how the row hands off",
   hero: "HERO — selected tape",
 };
 
@@ -192,6 +218,7 @@ const GROUP_COPY: Record<Slider["group"], string> = {
   plate: "PLATE",
   shell: "SHELL",
   depth: "DEPTH",
+  motion: "MOTION",
   hero: "HERO 3D",
 };
 
@@ -255,6 +282,7 @@ const STYLE = `
 `;
 
 export function initShelfTuner(): void {
+  if (!TUNER_ENABLED) return;
   load();
   apply();
 
@@ -288,7 +316,7 @@ export function initShelfTuner(): void {
 
   const outputs = new Map<string, HTMLOutputElement>();
 
-  for (const group of ["reels", "plate", "shell", "depth", "hero"] as const) {
+  for (const group of ["reels", "plate", "shell", "depth", "motion", "hero"] as const) {
     const box = document.createElement("div");
     box.className = "tune-group";
     const title = document.createElement("h4");

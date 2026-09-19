@@ -118,6 +118,14 @@ const items = await Promise.all(
       slug,
       url: buildEntryUrl(entry, entry.data.lang),
       title: entry.data.title as string,
+      // The short label printed on the spine (falls back to the full title). See
+      // `spineTitle` in `content.config.ts` — it is printed matter, not copy.
+      // ⚠️ The cast is because the content layer's GENERATED type does not carry
+      // this field yet, even after `astro sync` — the schema, the build and the
+      // rendered HTML all do (the short titles are in the output). Drop the cast
+      // once `astro check` sees it.
+      spineTitle: ((entry.data as { spineTitle?: string }).spineTitle ??
+        entry.data.title) as string,
       description: (entry.data.description ?? "") as string,
       category: (entry.data.category ?? "") as string,
       type: entry.data.type.toUpperCase() as string,
@@ -344,7 +352,7 @@ const coverUrls = items
               <div class="cas-f cas-left">
                 <span class="cas-spine-stripe" aria-hidden="true" />
                 <span class="cas-spine-brand">{brand}</span>
-                <span class="cas-spine-title">{item.title}</span>
+                <span class="cas-spine-title">{item.spineTitle}</span>
                 <span class="cas-spine-idx">{item.index}</span>
               </div>
 
@@ -352,7 +360,7 @@ const coverUrls = items
               <div class="cas-f cas-right">
                 <span class="cas-spine-stripe" aria-hidden="true" />
                 <span class="cas-spine-brand">{brand}</span>
-                <span class="cas-spine-title">{item.title}</span>
+                <span class="cas-spine-title">{item.spineTitle}</span>
                 <span class="cas-spine-idx">{item.index}</span>
               </div>
 
@@ -568,6 +576,22 @@ const coverUrls = items
     min-height: calc(100vh - 76px); /* 76px = sticky navbar */
     min-height: calc(100svh - 76px);
     /* No bottom padding: the shelf runs all the way down to the footer rule. */
+    /* ⚠️ The whole page is a DRAG SURFACE (2026-09-19: "在 projects 和 labs 容易误触
+       导致选中画面文本内容而非拖动，需要在这两个界面禁用鼠标复制或右键"). A pointer
+       that starts on a tape and moves has to drag the row; if the browser decides
+       the gesture is a text selection instead, the visitor gets a blue smear and
+       no drag — and the panel's brief is the biggest target on the page. Nothing
+       here is meant to be copied.
+       ⚠️ `-webkit-user-select` lives in its OWN rule below: written as a pair the
+       build's minifier (lightningcss) folds them and keeps only the last one. */
+    user-select: none;
+  }
+
+  :global(.shelf-page) {
+    /* Safari ≤ 17 needs the prefixed form; one declaration per rule, see above.
+       `user-select` propagates to the subtree, so this covers the panel, the
+       titles and the footer readout too. */
+    -webkit-user-select: none;
   }
 
   /* The global footer carries a 120px section gap, which on these six pages
@@ -599,9 +623,29 @@ const coverUrls = items
 
   .shelf-head h1 {
     flex: 0 0 auto;
-    font-size: 32px;
+    /* ⚠️ Bigger AND opened up (2026-09-19: "针对 projects 和 labs 界面左上角的字体
+       进行放大，同时字母和字母之间间隙拉开，目前看起来太挤了"). The tracking was
+       `--tracking-tight` = **-2px** — a negative value borrowed from the display
+       headings, where it is tuned for a lowercase Latin wordmark. On a short
+       all-caps word like PROJECTS or LAB it just packs the glyphs together. This
+       is the page's own name, so it now carries positive tracking instead: the
+       letterforms get a gap of their own rather than sharing an edge. */
+    font-size: 40px;
     line-height: 1.1;
-    letter-spacing: var(--tracking-tight);
+    letter-spacing: 0.075em;
+    /* ⚠️ A layout-NEUTRAL nudge, not a margin. The header row is
+       `align-items: flex-end`, which aligns the two BOXES — and a line box carries
+       the font's descender space below the baseline, so the visible type stopped
+       ~7px above the chips (2026-09-19: "让字体的底部贴着右侧几个按钮的底部").
+       ⚠️ A negative `margin-bottom` is the wrong tool here even though it looks
+       right: it shrinks the h1's MARGIN box, which is what sets the flex line's
+       height, so the chips came up by the same 7px and nothing was aligned
+       (measured: chip bottom 149 → 141.8 while the box bottom stayed at 153).
+       `position: relative` + `top` moves only what is painted, so the row's layout
+       is untouched and the two bottoms actually meet. In `em`, so the mobile
+       breakpoint's 32px scales with it. */
+    position: relative;
+    top: 0.18em;
     margin: 0;
   }
 
@@ -2277,6 +2321,15 @@ const coverUrls = items
   .cas-spine-brand,
   .cas-spine-idx {
     position: relative;
+    /* ⚠️ `flex: 0 0 auto`, and that is the whole fix for a long title
+       (2026-09-19: "当标题过长时，磁带盒的书脊／侧面会出现 RRSUIKA 和标题，标题和 01, 02
+       数字重叠"). As flex items they defaulted to `flex-shrink: 1`, so a long title
+       squeezed THEM instead of itself — and because both are `white-space: nowrap`
+       with no `overflow: hidden`, their text simply spilled out of the squashed box
+       and landed on top of the title. The title is the thing that has to give: it
+       is the only one of the three with `overflow: hidden` + `text-overflow:
+       ellipsis`, so pin these two and let it clip. */
+    flex: 0 0 auto;
     font-size: 0.44em;
     letter-spacing: var(--tracking-label);
     text-transform: uppercase;
@@ -2290,9 +2343,16 @@ const coverUrls = items
     flex: 1 1 auto;
     min-height: 0;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    /* ⚠️ A plain BLOCK, not a flex container (2026-09-19: spine titles were still
+       running over the index number even after the brand/idx were pinned). A flex
+       container turns its bare text into an ANONYMOUS FLEX ITEM, and
+       `text-overflow: ellipsis` only applies to the text of the box that declares
+       it — with the text inside a child box no ellipsis is ever produced, so the
+       glyphs kept their full length and pushed straight through the number below.
+       `text-align: center` gives the same centring along the inline axis (vertical
+       here) and leaves the text reachable by the ellipsis and the clip. */
+    display: block;
+    text-align: center;
 
     /* Vertical spine text: the only orientation that survives the ~76°
        foreshortening of a spine face. Both spines read top→bottom; CSS 3D
@@ -3379,7 +3439,9 @@ const coverUrls = items
     }
 
     .shelf-head h1 {
-      font-size: 26px;
+      /* Scaled with the desktop value (40 → 26 keeps the same ratio as 32 → 21),
+         and the positive tracking is inherited from the base rule. */
+      font-size: 32px;
     }
 
     .shelf-tag-bar {
@@ -3468,7 +3530,20 @@ const coverUrls = items
     const casEls = Array.from(
       root.querySelectorAll<HTMLAnchorElement>(".cas"),
     ).filter((el) => !el.closest("[data-fillers]"));
-    if (casEls.length === 0) return;
+    if (casEls.length === 0) {
+      // An archive with nothing in it has no entrance to play — the ladder, the
+      // camera and the drag all need tapes to move — so the world is never
+      // built. The curtain, however, is markup, and this script is the only
+      // thing that ever lifts it: bailing out silently left the page sitting on
+      // `MOUNTING ARCHIVE` forever with no console error to show for it
+      // (2026-09-19: a dev server serving an empty collection did exactly that
+      // to `/lab`). Lift it here and say what the shelf is actually showing.
+      root.classList.add("is-ready");
+      document.getElementById("shelf-intro")?.classList.add("is-done");
+      const emptyEl = document.getElementById("shelf-empty");
+      if (emptyEl) emptyEl.hidden = false;
+      return;
+    }
 
     /* ══════════════════════════════════════════
        WORLD CONSTANTS
@@ -3529,6 +3604,26 @@ const coverUrls = items
     const RZ_SPREAD2 = 0.012;
     const LIFT = 0.21;
     const LIFT_FALL = 7.2;
+
+    /* ── THE PASS — why two tapes used to cross mid-step ──
+       Every pose value is a function of `|p|`, so the two tapes straddling the
+       centre during a step (p = ±0.5) are MIRROR IMAGES: same |p|, therefore the
+       same z, the same y and the same scale. They cannot be separated in depth by
+       anything that only reads |p| — measured with a separating-axis test on the
+       real boxes, they interpenetrate by **0.95 world units** at progress 0.5, and
+       `Z_FALL` makes no difference at all (0.950 at every value from 1.55 to 3.5).
+       At REST they are fine, which is why this only shows while switching: at an
+       integer slot the neighbours differ by a whole slot of z (1.55).
+       The fix is two terms shaped like `4·|p|·(1 − |p|)` — a bump that is exactly
+       zero at |p| = 0 and at |p| ≥ 1, so **the shipped rest pose is untouched to
+       the last decimal** and only the half-slot positions move:
+         · `PASS_TWIST` turns both tapes further out of the way as they pass;
+         · `PASS_GAP` slides them apart.
+       Together they take the worst penetration from 0.95 to **0** (twist 0.3 rad =
+       17.2° extra yaw at the crossing, gap 0.2 world units = 4% of the card width,
+       0.2 each side). Either one alone only gets to ~0.24/0.58. */
+    const PASS_TWIST = 0.3;
+    const PASS_GAP = 0.2;
 
     /* ── Live overrides for the hero pose ──
        The tuning panel writes numbers into `window.__shelfTune`; every pose read
@@ -3600,23 +3695,30 @@ const coverUrls = items
     // handoff, so a flick keeps going and a slow drag settles where it was let
     // go (RhineLabUI's `damp()`, same solver).
     //  · `SPRING_RATE` — a push against the end of the archive easing back.
-    //  · `GLIDE_RATE`  — the release after a drag. Deliberately slower: the
-    //    damping time constant is `1/rate`, so 9.2 settles in ~110ms, which
-    //    read as the tape being snatched rather than gliding. 5.4 gives ~185ms
-    //    and a visible taper on the way out.
+    //  · `GLIDE_RATE`  — the release after a drag, and the dial for how long the
+    //    hand-off to the selection takes. The damping time constant is `1/rate`:
+    //    9.2 (what the archive-end push uses) settles in ~110ms and reads as the
+    //    tape being snatched; 5.4 gives ~185ms; **3.8 gives ~265ms**, which is the
+    //    slow, soft landing the release wanted (2026-09-19: "从拖动磁带盒状态过渡到
+    //    选择磁带盒的动画放慢一点，目前太快了").
     const SPRING_RATE = 9.2;
-    const GLIDE_RATE = 5.4;
+    const GLIDE_RATE = 3.8;
     const SPRING_STOP = 0.0025;
     const SPRING_STOP_V = 0.02;
     /**
-     * ⚠️ A hard cap on how long a spring may run. The velocity threshold alone
-     * does not bound the duration: near the target the critically damped solver
-     * decays `|v|` roughly as `e^-rate·t`, so waiting for `|v| < 0.02` from a
-     * whole-slot glide is several seconds of motion that is invisible on screen
-     * but keeps `lock` set — which makes every later gesture refused, and reads
-     * as the shelf freezing for a moment after each flick.
+     * ⚠️ A hard cap on how long a spring may run, and it is COUPLED to `1/rate`:
+     * the solver leaves `e^(−rate·t)` of its amplitude behind, so the residual at
+     * the cut is `amplitude · e^(−rate·cap)`. At the old 5.4/620ms that was 3.5%;
+     * keeping the SAME 3.5% at 3.8 needs `620 · 5.4/3.8 ≈ 880`. Letting the cap
+     * lag the rate turns the cut into a visible snap — the row would be ~5% of a
+     * slot (≈11px) short of its slot when the tween is cut and `recycleFromSpring`
+     * zeroes the difference.
+     * The cap itself cannot go: the velocity threshold alone does not bound the
+     * duration, because waiting for `|v| < 0.02` from a whole-slot glide is
+     * several seconds of invisible motion that keeps `lock` set, which makes every
+     * later gesture refused and reads as the shelf freezing after each flick.
      */
-    const SPRING_MAX_MS = 620;
+    const SPRING_MAX_MS = 900;
 
     /**
      * Release velocity, in slots per second, at which a flick commits a step.
@@ -3847,7 +3949,14 @@ const coverUrls = items
       const abs = Math.abs(p);
       const side = smooth(clamp(abs / SIDE_SPAN));
 
-      const x = p * SPREAD_X + p * abs * SPREAD_X2;
+      // The pass bump: 0 at the selection, 0 from one slot out, 1 at the half
+      // slot where the two tapes either side of the centre cross. See `PASS_TWIST`.
+      const pass = 4 * abs * Math.max(0, 1 - abs);
+
+      const x =
+        p * SPREAD_X +
+        p * abs * SPREAD_X2 +
+        Math.sign(p) * TUNE("passGap", PASS_GAP) * pass;
       const z = TUNE("zNear", Z_NEAR) - Math.pow(abs, Z_POW) * Z_FALL;
 
       // A slow breath while the shelf is alive, frozen once it settles. Keeping
@@ -3867,11 +3976,9 @@ const coverUrls = items
       // while the row travelled) makes the selected tape swing 60° in the middle
       // of a 620ms step, which is what made the transition feel abrupt. The
       // tape now only ever slides and recedes — never turns against the motion.
-      const ry = lerp(
-        TUNE("ryCenter", RY_CENTER) + hoverX * 0.035,
-        p >= 0 ? -RY_SIDE : RY_SIDE,
-        side,
-      );
+      const ry =
+        lerp(TUNE("ryCenter", RY_CENTER) + hoverX * 0.035, p >= 0 ? -RY_SIDE : RY_SIDE, side) +
+        (p >= 0 ? -1 : 1) * TUNE("passTwist", PASS_TWIST) * pass;
 
       const rz = TUNE("rzBase", RZ_BASE) + p * (RZ_SPREAD + RZ_SPREAD2 * abs);
       const heroMask = Math.exp(-p * p * LIFT_FALL);
@@ -4331,7 +4438,9 @@ const coverUrls = items
 
       spring.value = progress;
       spring.target = land;
-      spring.rate = GLIDE_RATE;
+      // The hand-off to the selection is the one motion the visitor is waiting
+      // for, so its speed is a knob (`MOTION — release glide` in the tuner panel).
+      spring.rate = TUNE("glideRate", GLIDE_RATE);
       spring.elapsed = 0;
       spring.active = true;
     }
@@ -4770,6 +4879,14 @@ const coverUrls = items
        ══════════════════════════════════════════ */
 
     stage.addEventListener("dragstart", (event) => event.preventDefault());
+
+    /* ⚠️ Right-click is off for the whole page, not just the stage (2026-09-19:
+       "在这两个界面禁用鼠标复制或右键"). These six pages are drag surfaces: a
+       context menu that opens mid-gesture strands the pointer and the row, and
+       nothing on the page is meant to be copied. Together with `user-select: none`
+       on `.shelf-page` this is what stops a slightly-missed drag from turning into
+       a text selection. */
+    page.addEventListener("contextmenu", (event) => event.preventDefault());
 
     stage.addEventListener("pointerdown", (event) => {
       if (launching || lock || !introDone) return;

@@ -1,5 +1,6 @@
 ---
 title: "AI-ondersteunde persoonlijke website: van één pagina naar een complexe database"
+spineTitle: "BUILD A PERSONAL WEBSITE"
 date: 2026-05-19
 dateLabel: "19 mei"
 description: "Leren hoe je met AI een persoonlijke website bouwt en live zet. Een verslag van de iteraties, de lessen en wat AI kan doen versus wat mensen moeten doen."
@@ -306,6 +307,7 @@ De visuals zijn niet uit het niets ontstaan. Deze bronnen gaven belangrijke refe
 - **Sterrenveld-referentie**: [OpenAI GPT-6 Astra-pagina](https://openai.com/index/gpt-6-astra/)
 - **Zwart gat-implementatie**: [Shadertoy — lstSRS](https://www.shadertoy.com/view/lstSRS)
 - **Zwaartekrachtlens-referentie**: [BH+disk](https://guitrj.github.io/BH+disk/)
+- **Cassetteplank-referentie**: het rek met cassettebandjes waar je in de Agent Story-hoofdstukken van Zenless Zone Zero een verhaal kiest ([officiële site](https://zenless.hoyoverse.com/en-us/)). Het eindresultaat wijkt inmiddels ver van het origineel af; de beweging van de bandjes komt daarvandaan.
 
 > Opmerking: dit zijn referenties voor inspiratie, beeld en implementatie-ideeën. Verschillende Shadertoy-werken kunnen verschillende licenties hebben; controleer altijd de notities van de originele maker.
 

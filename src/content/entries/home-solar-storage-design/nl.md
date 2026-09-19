@@ -1,5 +1,6 @@
 ---
 title: "Circuitontwerp: zonnepaneelsysteem voor thuis"
+spineTitle: "HOME SOLAR PANEL CIRCUIT DESIGN"
 date: 2026-09-03
 description: "DIY off-grid zonne-opslag: 600 W draagbare panelen, 2×12V LiFePO4 in serie voor 24 V, 6-poorts MPPT met interne bus voor LED-verlichting en een zuivere sinus-omvormer."
 

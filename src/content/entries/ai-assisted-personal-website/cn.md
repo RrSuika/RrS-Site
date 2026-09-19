@@ -1,5 +1,6 @@
 ---
 title: AI 协作个人网站：从一张主页到一个复杂数据库
+spineTitle: "BUILD A PERSONAL WEBSITE"
 date: 2026-05-19
 dateLabel: "May 19"
 description: 学习通过 AI 搭建 + 部署个人网站。这里记录迭代过程和经验心得，以及 AI 能做什么、人必须负责什么。
@@ -306,6 +307,7 @@ translationKey: ai-assisted-personal-website
 - **星空视觉参考**：[OpenAI GPT-6 Astra 页面](https://openai.com/index/gpt-6-astra/)
 - **黑洞实现参考**：[Shadertoy — lstSRS](https://www.shadertoy.com/view/lstSRS)
 - **引力透镜参考**：[BH+disk](https://guitrj.github.io/BH+disk/)
+- **磁带盒动效参考**：《绝区零》「代理人秘闻」的选带界面（[官方网站](https://zzz.mihoyo.com/)）。现在成品的视觉已经和原作差得很远，磁带盒的动作结构仍然来自这里。
 
 > 说明：以上为灵感、视觉与实现思路的参考来源。不同 Shadertoy 作品的授权方式可能不同，务必以原作者说明为准。
 

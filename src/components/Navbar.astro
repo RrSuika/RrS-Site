@@ -683,33 +683,74 @@ const t = getTranslations(currentLanguage);
       background: linear-gradient(180deg, #1c1c24 0%, #121218 100%);
       border: 1px solid #3a3a44; border-radius: 3px;
       cursor: pointer; flex-shrink: 0; overflow: hidden;
-      transition: background 0.3s var(--ease-out), border-color 0.3s var(--ease-out), transform 0.16s var(--ease-out);
+      transition: border-color 0.45s var(--ease-out), transform 0.16s var(--ease-out);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 1px 3px rgba(0,0,0,0.4);
     }
     .theme-switch:active { transform: scale(0.92); transition: transform 0.08s var(--spring-snappy); }
     .theme-switch:hover { border-color: var(--accent); }
 
+    /* ── The DAY layer, cross-faded over the night one ──
+       ⚠️ The two skies used to be one `background` swapped by the theme, and CSS
+       CANNOT interpolate between two different gradients — it snaps, which is
+       most of what made the switch read as "not silky" (2026-09-19: "星空/白天切换
+       有丝滑动画过渡"). Now the night gradient stays on the element and the day
+       gradient is a layer whose OPACITY animates: both ends are pixel-identical to
+       what shipped, and everything between them is a real blend.
+       ⚠️ `inset: 0` on an absolutely positioned child covers the PADDING box, so
+       the 1px border stays its own colour instead of being washed by the layer. */
+    .theme-switch::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #87ceeb 0%, #b8e4f0 50%, #e0f0ff 100%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.45s var(--ease-out);
+    }
+    :root[data-theme="light"] .theme-switch::before { opacity: 1; }
+
+    /* Apple-style continuous corners, same progressive enhancement as `.tag-chip`
+       (CSS Borders 4 `corner-shape`). At a 3px radius the difference is
+       sub-pixel — it is applied for consistency of treatment, not for a visible
+       change; raise the radius and the difference grows with it. */
+    @supports (corner-shape: squircle) {
+      .theme-switch { corner-shape: squircle; }
+    }
+
+    /* ── The knob: the moon that slides right and becomes the sun ──
+       ⚠️ ONE clock for the slide and the colour (0.45s). They used to be 0.4s and
+       0.3s, so the disc finished changing colour before it had finished moving —
+       the same two-events feel the filter chips had.
+       ⚠️ AND the disc's own shading is `background-image` with an interpolating
+       `background-color` under it. It used to be two whole radial gradients, one
+       per theme, and gradients do not interpolate: the moon SNAPPED to the sun
+       halfway through the slide. The shading now rides both faces (a highlight at
+       the top-right, a shade at the bottom-left) and only the body colour
+       animates, so the moon turns amber as it travels. */
     .switch-knob {
       position: absolute; top: 2px; left: 2px; z-index: 2;
       display: block; width: 16px; height: 16px; border-radius: 50%;
-      transition: transform 0.4s var(--spring-bounce);
+      transition: transform 0.45s var(--spring-gentle);
     }
     .knob-face {
       display: block; width: 100%; height: 100%; border-radius: 50%;
-      background: radial-gradient(circle at 55% 40%, #999 0%, #ccc 30%, #888 60%, #555 100%);
+      background-color: #8d8d99;
+      background-image:
+        radial-gradient(circle at 55% 40%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 62%),
+        radial-gradient(circle at 30% 72%, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 68%);
       box-shadow: 0 1px 2px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
-      transition: background 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
+      transition: background-color 0.45s var(--ease-out), box-shadow 0.45s var(--ease-out);
     }
     :root[data-theme="light"] .switch-knob { transform: translateX(20px); }
     :root[data-theme="light"] .knob-face {
-      background: radial-gradient(circle at 40% 40%, #ffe484 0%, #f7b731 50%, #e89a1a 100%);
+      background-color: #f7b731;
       box-shadow: 0 0 4px rgba(247,183,49,0.6), 0 0 8px rgba(247,183,49,0.3), 0 1px 2px rgba(0,0,0,0.3);
     }
 
     .switch-stars {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       pointer-events: none; opacity: 1;
-      transition: opacity 0.3s var(--ease-out);
+      transition: opacity 0.45s var(--ease-out);
     }
     .switch-stars::before {
       content: "";
@@ -729,7 +770,7 @@ const t = getTranslations(currentLanguage);
     .switch-cloud {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       pointer-events: none; opacity: 0;
-      transition: opacity 0.3s var(--ease-out);
+      transition: opacity 0.45s var(--ease-out);
     }
     .switch-cloud::before {
       content: "";
@@ -743,10 +784,70 @@ const t = getTranslations(currentLanguage);
     :root[data-theme="light"] .switch-cloud { opacity: 1; }
 
     :root[data-theme="light"] .theme-switch {
-      background: linear-gradient(180deg, #87ceeb 0%, #b8e4f0 50%, #e0f0ff 100%);
       border-color: #8ab8cc;
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 1px 2px rgba(0,0,0,0.08);
     }
+
+    /* ── THE MORPH ──
+       ⚠️ These are KEYFRAME ANIMATIONS, not transitions, and that is the whole
+       reason the switch felt stiff: the theme reveal lands with
+       `html.theme-land { transition: none !important }` (see theme-transition.ts),
+       because letting `body`'s 400ms colour transition run after the copies are
+       dropped is what made the page "surface out of the dark". That kill-switch
+       takes every transition on the page with it — including this switch's — so
+       the knob and the disc used to JUMP to their new state on the landing frame.
+       Animations are not covered by `transition: none`, so the morph plays through
+       the wave and the landing: 0.5s, moon sliding right while the disc turns
+       amber, the day layer fading up and the stars handing over to the clouds.
+       ⚠️ The `to` of every keyframe equals the element's own state under the theme
+       it animates toward, which is why none of them need a fill-mode.
+       ⚠️ The animations are attached to the COPIES (below), not to the live page:
+       a copy's switch is a fresh element, so inserting it restarts the animation
+       from the frame the wave reaches it. That is what makes the button change in
+       step with the circle instead of after it. */
+    @keyframes knobToLight { from { transform: translateX(0); } to { transform: translateX(20px); } }
+    @keyframes knobToDark { from { transform: translateX(20px); } to { transform: translateX(0); } }
+    @keyframes faceToLight { from { background-color: #8d8d99; } to { background-color: #f7b731; } }
+    @keyframes faceToDark { from { background-color: #f7b731; } to { background-color: #8d8d99; } }
+    @keyframes dayIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes dayOut { from { opacity: 1; } to { opacity: 0; } }
+
+    /* ── What the switch shows INSIDE a ripple copy ──
+       ⚠️ The copies are snapshots of the page in the INCOMING theme, so the switch
+       inside them is already in its new state. That is what made the morph read as
+       a SECOND transition (2026-09-19: "点击一次按钮，出现了两次从白天变成黑夜的动画"):
+       the wave flipped the button to night, then the live morph had to put it back
+       to day before it could animate forward again.
+       The fix is to key these rules on the COPY'S OWN `data-theme`, which is always
+       the INCOMING theme, so "show the opposite of what the copy carries" is always
+       "show the theme being left" — one pair of blocks covers both directions and
+       nothing has to know which way the burst is going. (An earlier version keyed on
+       `theme-hold-light`, the class `holdRoot()` puts on <html> for a light→dark
+       burst, and that only fixed light→dark.)
+       ⚠️ `html` is in the selector for SPECIFICITY, not for meaning: `buildScope`
+       re-emits the switch's light rules as `.theme-scope[data-theme="light"]
+       .theme-switch[cid]` (0-4-0) into a sheet appended to <head> LAST, so an
+       override at the same weight would lose on source order.
+       ⚠️ The ancestor part is wrapped in `:global()` on purpose: `.theme-ripple` is
+       created by `document.createElement` in theme-transition.ts, so it carries no
+       `data-astro-cid-*`, and a plain scoped selector compiles to
+       `.theme-ripple[cid] .theme-switch[cid]` — which matches NOTHING. (The switch
+       itself IS scoped: it is a clone of the real markup and keeps its cid.)
+       ⚠️ These are the ONLY rules that drive the switch morph now: the copies carry
+       it, and `applyInstant()` no longer adds anything to the live page. The
+       `html.theme-morph-*` rules that did that were deleted — see
+       docs/theme-switch.md, 追加（2026-09-19）：morph 搬进拷贝。 */
+    :global(html .theme-ripple[data-theme="dark"]) .theme-switch::before { animation: dayOut 0.5s var(--ease-out); }
+    :global(html .theme-ripple[data-theme="dark"]) .switch-knob { animation: knobToDark 0.5s var(--spring-gentle); }
+    :global(html .theme-ripple[data-theme="dark"]) .knob-face { animation: faceToDark 0.5s var(--ease-out); }
+    :global(html .theme-ripple[data-theme="dark"]) .switch-stars { animation: dayIn 0.5s var(--ease-out); }
+    :global(html .theme-ripple[data-theme="dark"]) .switch-cloud { animation: dayOut 0.5s var(--ease-out); }
+
+    :global(html .theme-ripple[data-theme="light"]) .theme-switch::before { animation: dayIn 0.5s var(--ease-out); }
+    :global(html .theme-ripple[data-theme="light"]) .switch-knob { animation: knobToLight 0.5s var(--spring-gentle); }
+    :global(html .theme-ripple[data-theme="light"]) .knob-face { animation: faceToLight 0.5s var(--ease-out); }
+    :global(html .theme-ripple[data-theme="light"]) .switch-stars { animation: dayOut 0.5s var(--ease-out); }
+    :global(html .theme-ripple[data-theme="light"]) .switch-cloud { animation: dayIn 0.5s var(--ease-out); }
 
     /*
     =========================================================

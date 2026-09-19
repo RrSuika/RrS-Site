@@ -253,6 +253,7 @@ function applyInstant(next: Theme): void {
   // them and the visitor would still see the field cut in. This is the one swap
   // that is actually visible, so this is where the class goes.
   if (next === "dark" && cameFrom !== "dark") arriveBackground();
+
 }
 
 /** A usable click point, or null.

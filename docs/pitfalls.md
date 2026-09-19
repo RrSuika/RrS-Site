@@ -54,3 +54,16 @@ Headless Chrome 的虚拟时间会**饿死 `requestAnimationFrame`**，所有 rA
 - `box-shadow` 的复合值里**永远不要用 `none`**：`none` 只在它是该属性唯一值时才合法，写进逗号串会让**整条声明**失效，连带把同一串里的 bevel 内阴影一起丢掉。想去掉就用 `0 0 0 rgba(0,0,0,0)`。
 - Astro 内容层把渲染结果缓存在 `node_modules/.astro/data-store.json`，**只按文件摘要失效** → 改了 markdown 管线/插件配置后必须删掉 `node_modules/.astro` 强制重渲（Cloudflare 从干净环境构建，部署不受影响）。
 - `import.meta.glob(eager)` 的**值**在 astro.config 打包的插件里没有 astro:assets 处理（`.src` 还是 `/src/...` 原始路径，生产 404）——插件内只能用 lazy glob 的**键**做存在性检查。
+
+## 9. 删文件：只按确切名字，绝不用通配符清共享目录
+
+Windows 文件系统**大小写不敏感**，所以 `rrs-*` 会连 `RRS-*.log` 一起命中。2026-09-19 清理本轮探针脚本时，用 `rrs-*` 通配扫了 `%TEMP%`，把用户自己放在那里的 5 个 `RRS-*.log`（7–9 月的旧日志）一并删掉了——`%TEMP%` 是**共享目录**，里面从来不只是本次会话的东西。
+
+规则：
+
+1. 删除一律按**确切路径**：`Remove-Item -LiteralPath '<完整文件名>'`；多个文件就一条条列出来。
+2. 一定要用通配符时，先 `Get-ChildItem <模式> | Select-Object -ExpandProperty FullName` **把命中列表打出来核对**，确认「这些全都是我这一轮创建的」再删。
+3. 只删自己创建的文件。不要「顺手清理」更早的临时文件、别人的临时文件、以及任何不是自己刚写出来的东西。
+4. 同理：不认识的路径不要删，只报告。
+
+（`RrSuika` / `RRS` 的大小写差异在这台机器上不是差异——判断「是不是我的文件」不能靠前缀大小写。）

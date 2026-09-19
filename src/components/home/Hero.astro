@@ -29,9 +29,28 @@ const projectsPath = getLocalizedPath("/projects", language);
         <div></div><div></div><div></div>
       </div>
       <h1>
-        <span class="type-line">{t.hero.title.line1}</span>
+        {/* ⚠️ One span per letter, so each glyph can carry its own nudge
+            (`--lx`/`--ly`). The shipped offsets are baked per letter in the
+            `<style>` block below; the panel that produced them (`hero-tuner.ts`)
+            is kept in the repo but switched off. A condensed
+            900 display face has very uneven pair advances — FU reads tight, CT
+            loose — and at `--text-scale-hero` those differences are metres wide, so
+            the gaps have to be set per letter rather than by one `letter-spacing`.
+            The typewriter types these lines as PLAIN TEXT and then restores the
+            original innerHTML, so the spans come back untouched once typing ends —
+            `innerHTML` serialises the `data-astro-cid-*` attributes too, which is
+            why the scoped `.ltr` rules still match the restored spans. */}
+        <span class="type-line">
+          {t.hero.title.line1.split("").map((ch, i) => (
+            <span class="ltr" data-line="1" data-i={i}>{ch}</span>
+          ))}
+        </span>
         <br />
-        <span class="type-line accent">{t.hero.title.line2}</span>
+        <span class="type-line accent">
+          {t.hero.title.line2.split("").map((ch, i) => (
+            <span class="ltr" data-line="2" data-i={i}>{ch}</span>
+          ))}
+        </span>
       </h1>
     </div>
 
@@ -75,6 +94,8 @@ const projectsPath = getLocalizedPath("/projects", language);
 </section>
 
 <script>
+  import { initHeroTuner } from "../../scripts/hero-tuner";
+
   // ── Terminal boot lines ──
   const bootLines = [
     { text: "CRISP_FONT_RENDERING...", result: "STABILIZED." },
@@ -232,6 +253,10 @@ const projectsPath = getLocalizedPath("/projects", language);
 
   typeTerminalSequence();
   typeLeftSequence();
+
+  // The per-letter nudge panel. Kept, not deleted — it is switched off inside
+  // `hero-tuner.ts` (`TUNER_ENABLED`) and this call is a no-op while it is off.
+  initHeroTuner();
 </script>
 
 <style>
@@ -442,6 +467,58 @@ const projectsPath = getLocalizedPath("/projects", language);
   h1 .accent {
     color: var(--accent);
   }
+
+  /* ── Per-letter nudge ──
+     `inline-block` so a transform can apply to a single glyph. The font's own
+     kerning pairs are already being overridden by the negative `letter-spacing`
+     above, so nothing is lost by taking the letters out of the text run — and the
+     advance between them is still the font's, which is what keeps the letters from
+     colliding when only one of them is nudged.
+     `--lx`/`--ly` come from the baked block below; the tuning panel
+     (`hero-tuner.ts`, hidden behind `TUNER_ENABLED`) starts from those same values
+     and writes inline overrides on top of them while it is switched on. */
+  .ltr {
+    display: inline-block;
+    transform: translate(var(--lx, 0px), var(--ly, 0px));
+  }
+
+  /* ── Per-letter offsets — BAKED VALUES (2026-09-19) ──
+     The COPY output of the `hero-tuner.ts` panel, pasted back verbatim: this block
+     is the shipped baseline, and the panel seeds its sliders from it (see `baked`
+     in that file) so it opens on these numbers rather than on zero. The grid line
+     below is a record of what the glyphs were tuned against — the panel's
+     `GRID_DEFAULTS` are the same numbers, so opening the panel reproduces that grid
+     exactly. The measuring grid itself is a tool and never ships (see
+     docs/hero-title.md).
+
+       grid: density 11 · cell 46x34.5 · gap 0 → pitch 46x34.5, fine 4.18x3.14, coarse 230x172.5
+       hero letter offsets — FUNCTIONAL / AESTHETICS
+
+     One rule per glyph, in reading order; data-line 2 is the accent line.
+
+     Revised the same day after a second tuning pass (the panel's COPY output
+     again): line 1 `C` −1.5 → −2.5; line 2 `H` 8 → 7.75, `T` (i=6) 8 → 8.5,
+     `C` (i=8) 9.5 → 8.5. */
+  .ltr[data-line="1"][data-i="0"] { --lx: 0px; --ly: 0px } /* F */
+  .ltr[data-line="1"][data-i="1"] { --lx: 0px; --ly: 0px } /* U */
+  .ltr[data-line="1"][data-i="2"] { --lx: -1.5px; --ly: 0px } /* N */
+  .ltr[data-line="1"][data-i="3"] { --lx: -2.5px; --ly: 0px } /* C */
+  .ltr[data-line="1"][data-i="4"] { --lx: 1px; --ly: 0px } /* T */
+  .ltr[data-line="1"][data-i="5"] { --lx: 2px; --ly: 0px } /* I */
+  .ltr[data-line="1"][data-i="6"] { --lx: 1.5px; --ly: 0px } /* O */
+  .ltr[data-line="1"][data-i="7"] { --lx: 1px; --ly: 0px } /* N */
+  .ltr[data-line="1"][data-i="8"] { --lx: 3px; --ly: 0px } /* A */
+  .ltr[data-line="1"][data-i="9"] { --lx: 4.5px; --ly: 0px } /* L */
+  .ltr[data-line="2"][data-i="0"] { --lx: 3px; --ly: 0px } /* A */
+  .ltr[data-line="2"][data-i="1"] { --lx: 5px; --ly: 0px } /* E */
+  .ltr[data-line="2"][data-i="2"] { --lx: 5.5px; --ly: 0px } /* S */
+  .ltr[data-line="2"][data-i="3"] { --lx: 6.5px; --ly: 0px } /* T */
+  .ltr[data-line="2"][data-i="4"] { --lx: 7.75px; --ly: 0px } /* H */
+  .ltr[data-line="2"][data-i="5"] { --lx: 6px; --ly: 0px } /* E */
+  .ltr[data-line="2"][data-i="6"] { --lx: 8.5px; --ly: 0px } /* T */
+  .ltr[data-line="2"][data-i="7"] { --lx: 9.5px; --ly: 0px } /* I */
+  .ltr[data-line="2"][data-i="8"] { --lx: 8.5px; --ly: 0px } /* C */
+  .ltr[data-line="2"][data-i="9"] { --lx: 9.5px; --ly: 0px } /* S */
 
   /* Typewriter cursor */
   .type-line.typing::after {
