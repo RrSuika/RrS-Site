@@ -152,8 +152,9 @@ const topTags = filterTags
  * markup needs the count at build time.
  */
 const MAX_SLOT_COUNT = 4;
-/** Blanks to author: enough to fill both ends of a short shelf. */
-const MAX_FILLERS = MAX_SLOT_COUNT * 2;
+/** Blanks to author: enough to fill both ends of a short shelf, with the slack
+ *  the drag needs to step past either end. */
+const MAX_FILLERS = MAX_SLOT_COUNT * 4;
 
 const brand = "RrSuika";
 
@@ -293,11 +294,10 @@ const coverUrls = items
                     </span>
 
                     {/* The tape path: the ribbon runs hub to hub behind the
-                        bottom of the window, over two guide rollers. */}
+                        bottom of the window. The guide rollers that used to sit
+                        on it are gone — see `.cas-path` in the stylesheet. */}
                     <span class="cas-path">
                       <span class="cas-path-ribbon" />
-                      <span class="cas-path-roller" />
-                      <span class="cas-path-roller" />
                     </span>
                   </div>
 
@@ -356,7 +356,23 @@ const coverUrls = items
                 <div class="cas-label">
                   <div class="cas-label-fallback" aria-hidden="true" />
                   <div class="cas-label-scrim" aria-hidden="true" />
-                  <span class="cas-blank-mark" aria-hidden="true" />
+
+                  {/* An unwritten tape still has a printed J-card: brand band,
+                      ruled writable label, neutral type code. See
+                      `.cas-blank-header` in the stylesheet.
+                      ⚠️ The type code is language-neutral on purpose — a blank
+                      cassette's print is not translated copy, and adding three
+                      strings to `translations.ts` for scenery nobody reads would
+                      be the wrong trade. */}
+                  <span class="cas-blank-header" aria-hidden="true">
+                    <span>{brand}</span>
+                    <span>TYPE I</span>
+                  </span>
+                  <span class="cas-blank-sheet" aria-hidden="true" />
+                  <span class="cas-blank-type" aria-hidden="true">
+                    LOW NOISE · C-60
+                  </span>
+
                   <span class="cas-window" aria-hidden="true">
                     <span class="cas-reel">
                       <span class="cas-reel-spokes" />
@@ -371,18 +387,14 @@ const coverUrls = items
                     </span>
                     <span class="cas-path">
                       <span class="cas-path-ribbon" />
-                      <span class="cas-path-roller" />
-                      <span class="cas-path-roller" />
                     </span>
                   </span>
                 </div>
               </div>
               <div class="cas-f cas-left">
-                <span class="cas-spine-stripe" aria-hidden="true" />
                 <span class="cas-spine-brand">{brand}</span>
               </div>
               <div class="cas-f cas-right">
-                <span class="cas-spine-stripe" aria-hidden="true" />
                 <span class="cas-spine-brand">{brand}</span>
               </div>
               <div class="cas-f cas-top" />
@@ -788,40 +800,47 @@ const coverUrls = items
     --shell-ink: rgba(233, 227, 214, 0.78);
     --shell-ink-dim: rgba(196, 189, 175, 0.5);
 
-    /* The window: frosted plastic over the reels. */
-    --glass-a: rgba(255, 255, 255, 0.13);
-    --glass-b: rgba(255, 255, 255, 0.03);
+    /* The window: a matte recessed moulding, not a pane of glass. `lip` is the
+       shadow the shell casts into its own opening (top edge), `edge` the
+       hairline the far wall catches (bottom edge). */
+    --glass-lip: rgba(0, 0, 0, 0.55);
+    --glass-edge: rgba(226, 218, 202, 0.14);
     --glass-cavity-a: rgba(10, 10, 15, 0.86);
     --glass-cavity-b: rgba(4, 4, 7, 0.94);
+
+    /* Gloss: a corner sheen on the moulding. The dark shell is graphite, so it
+       only just catches the light; the light theme is where the sheen reads. */
+    --gloss-a: 0.1;
+    --gloss-c: rgba(226, 232, 244, 1);
+
+    /* The plate between the hubs. A milky, low-contrast translucent
+       fill — no bright edge anywhere, which is what separates frosted plastic
+       from a chrome insert. */
+    --plate-frost: rgba(176, 172, 164, 0.24);
+    --plate-frost-hi: rgba(255, 255, 255, 0.1);
+    --plate-frost-lo: rgba(0, 0, 0, 0.16);
+    --plate-edge: rgba(255, 255, 255, 0.13);
+    --plate-shade: rgba(0, 0, 0, 0.7);
+    --plate-ink: rgba(232, 226, 214, 0.82);
+
+    /* The blank J-card: a printed header band, a ruled writable label, and a
+       neutral type code. No accent colour — an unused tape is the quietest
+       object on the shelf. */
+    --blank-head: rgba(12, 12, 16, 0.5);
+    --blank-sheet: rgba(255, 252, 244, 0.1);
+    --blank-rule: rgba(28, 28, 34, 0.5);
+    --blank-ink: rgba(226, 220, 206, 0.8);
+    --blank-ink-dim: rgba(206, 200, 186, 0.58);
+
+    /* The ribbon inside the window. Tokenised because the light theme's window
+       cavity is warm and dark, and an ivory ribbon at 0.5 alpha vanished on it. */
+    --path-ink: rgba(228, 220, 204, 0.5);
 
     /* Neighbours are dimmed with this, never with `opacity`: a see-through tape
        lets the tape behind it show through and the row reads as stacked ghosts
        (worst on the light theme, where the bleed is obvious). */
     --shell-dim-a: rgba(7, 10, 20, 0.68);
     --shell-dim-b: rgba(4, 6, 14, 0.84);
-
-    /* ── The reels ──
-       Geometry and material of the two hubs, all custom properties so the
-       temporary tuning panel can drive them live (and so the final numbers are
-       one block to bake). The recessed lighting is the point: inside a dent the
-       NEAR wall (top-left) is in shadow and the FAR wall (bottom-right) catches
-       the light, which is the inverse of every raised part on the shell. */
-    --reel-size: 2.35em;
-    --reel-spoke-inset: 12%;
-    --reel-spoke-alpha: 0.34;
-    --reel-spoke-on: 4deg;
-    --reel-spoke-gap: 60deg;
-    --reel-cavity-a: 0.72;
-    --reel-cavity-b: 0.86;
-    --reel-cavity-c: 0.9;
-    --reel-near-shadow: 0.8;
-    --reel-far-light: 0.16;
-    --reel-rim: 0.16;
-    --reel-hub-inset: 30%;
-    --hub-lit-x: 66%;
-    --hub-lit-y: 76%;
-    --hub-lit-alpha: 0.5;
-    --hub-shadow: 0.85;
 
     /* Cast shadow: cold and deep on graphite, warm and shorter on ivory. */
     --tape-drop-far: 0 30px 64px rgba(0, 0, 0, 0.62);
@@ -881,58 +900,90 @@ const coverUrls = items
     will-change: auto;
   }
 
-  /* ── Chrome shell for the light theme ──
-     Retro-futurism on a paper page is *metal on paper*: a cool silver body with
-     blue-grey shadows and a cool charcoal ink, so the tape reads as a machined
-     object sitting on a technical document. ⚠️ The previous set was warm ivory
-     with warm brown shadows on a warm paper background — the user's verdict was
-     "像屎黄色" and they were right: nothing in that set had any temperature
-     contrast against the page, so every value collapsed into mud. Keep this set
-     COOL; the only warmth on a light-theme tape is the accent stripe. */
+  /* ── Warm glossy plastic for the light theme ──
+     The era's cassette was not chrome: it was an off-white / pale-buff
+     polystyrene moulding with a hard specular sheen, and that is what the user
+     asked for (2026-09-19: "冷铬银外壳不是很贴合，那个时代更多是一种偏黄偏白的塑料，带高光感的").
+     ⚠️ This DOES NOT repaint the page. The page stays paper-white and cool
+     shadows stay cool, so the warm body has something to sit against; an earlier
+     all-warm pass collapsed into mud ("像屎黄色") because the shell, its shadows
+     and the page were all the same temperature. Read that pass and this one as a
+     pair: the fix is not "make it cool", it is "warm body, cool shadow, real
+     specular". The gloss itself lives in `.cas-label::before` (`--gloss-*`), and
+     it is a corner sheen on the moulding — never a band across the printed
+     J-card, which reads as a sticker lying on the artwork. */
   :global(:root[data-theme="light"]) .cas {
-    --shell-top: #e9edf2;
-    --shell-mid: #c2c9d3;
-    --shell-bot: #98a1ad;
+    --shell-top: #f2e9d5;
+    --shell-mid: #e0d5bb;
+    --shell-bot: #bfb094;
 
-    --shell-spine-a: #79828f;
-    --shell-spine-b: #a7afba;
-    --shell-spine-c: #c5cbd4;
-    --shell-spine-d: #89919d;
+    --shell-spine-a: #9d9077;
+    --shell-spine-b: #c4b89c;
+    --shell-spine-c: #ded2b6;
+    --shell-spine-d: #a99c81;
 
-    --shell-edge-a: #dfe3e9;
-    --shell-edge-b: #929aa6;
-    --shell-edge-under-a: #8b93a0;
-    --shell-edge-under-b: #c0c6cf;
-    --shell-back: #b4bac4;
+    --shell-edge-a: #ece2cc;
+    --shell-edge-b: #b1a48a;
+    --shell-edge-under-a: #a2957a;
+    --shell-edge-under-b: #d5c9ad;
+    --shell-back: #c9bda1;
 
-    --shell-rim: rgba(255, 255, 255, 0.94);
-    --shell-rim-inner: rgba(54, 64, 80, 0.32);
-    --shell-hi: rgba(255, 255, 255, 0.96);
-    --shell-ao: rgba(48, 58, 74, 0.32);
-    --shell-seam: rgba(255, 255, 255, 0.92);
+    --shell-rim: rgba(255, 255, 255, 0.95);
+    --shell-rim-inner: rgba(74, 58, 36, 0.3);
+    --shell-hi: rgba(255, 252, 240, 0.98);
+    --shell-ao: rgba(64, 48, 28, 0.3);
+    --shell-seam: rgba(255, 253, 244, 0.9);
 
-    --relief-hi: rgba(255, 255, 255, 0.94);
-    --relief-lo: rgba(52, 62, 78, 0.36);
+    --relief-hi: rgba(255, 252, 240, 0.95);
+    --relief-lo: rgba(94, 70, 38, 0.4);
 
-    --metal-hi: #ffffff;
-    --metal-mid: #dfe3e9;
-    --metal-lo: #7e8795;
+    --metal-hi: #fffdf6;
+    --metal-mid: #ece1c7;
+    --metal-lo: #a2957a;
 
-    --shell-ink: rgba(36, 44, 58, 0.88);
-    --shell-ink-dim: rgba(52, 62, 78, 0.6);
+    --shell-ink: rgba(52, 42, 24, 0.88);
+    --shell-ink-dim: rgba(70, 56, 32, 0.62);
 
-    --glass-a: rgba(255, 255, 255, 0.52);
-    --glass-b: rgba(255, 255, 255, 0.14);
-    --glass-cavity-a: rgba(36, 42, 54, 0.62);
-    --glass-cavity-b: rgba(20, 24, 32, 0.82);
+    /* Gloss: a warm-white sheen, present but restrained — the tape is glossy
+       plastic, not a mirror. */
+    --gloss-a: 0.4;
+    --gloss-c: rgba(255, 247, 224, 1);
 
-    --shell-dim-a: rgba(42, 50, 66, 0.38);
-    --shell-dim-b: rgba(24, 30, 42, 0.52);
+    --glass-lip: rgba(52, 40, 22, 0.46);
+    --glass-edge: rgba(255, 252, 240, 0.72);
+    --glass-cavity-a: rgba(64, 54, 36, 0.92);
+    --glass-cavity-b: rgba(38, 32, 20, 0.97);
 
-    --tape-drop-far: 0 26px 52px rgba(34, 44, 62, 0.36);
-    --tape-drop-near: 0 5px 14px rgba(34, 44, 62, 0.32);
-    --wall-drop: 0 18px 36px rgba(34, 44, 62, 0.32);
-    --tape-drop-short: 0 10px 18px rgba(34, 44, 62, 0.32);
+    --plate-frost: rgba(255, 250, 234, 0.3);
+    --plate-frost-hi: rgba(255, 253, 244, 0.34);
+    --plate-frost-lo: rgba(86, 66, 36, 0.2);
+    --plate-edge: rgba(255, 253, 244, 0.34);
+    --plate-shade: rgba(74, 56, 30, 0.62);
+    --plate-ink: rgba(255, 252, 242, 0.86);
+
+    /* The blank J-card on a beige shell: the same printed header, but the rules
+       and the type code have to be dark to read against warm paper. */
+    --blank-head: rgba(96, 78, 48, 0.22);
+    --blank-sheet: rgba(255, 252, 242, 0.42);
+    --blank-rule: rgba(96, 78, 48, 0.34);
+    --blank-ink: rgba(58, 44, 24, 0.82);
+    --blank-ink-dim: rgba(76, 60, 34, 0.6);
+
+    --path-ink: rgba(255, 250, 238, 0.42);
+
+    --reel-cavity: #46402f;
+    --reel-occl: rgba(0, 0, 0, 0.36);
+    --reel-far-light: 0.5;
+
+    /* The dim veil stays COOL and dense: on a beige shell a warm veil would
+       simply make the neighbours a darker version of the selection. */
+    --shell-dim-a: rgba(42, 50, 66, 0.4);
+    --shell-dim-b: rgba(24, 30, 42, 0.54);
+
+    --tape-drop-far: 0 26px 52px rgba(34, 44, 62, 0.34);
+    --tape-drop-near: 0 5px 14px rgba(34, 44, 62, 0.3);
+    --wall-drop: 0 18px 36px rgba(34, 44, 62, 0.3);
+    --tape-drop-short: 0 10px 18px rgba(34, 44, 62, 0.3);
 
     --key-glow: rgba(255, 186, 116, 0.24);
     --key-edge: rgba(190, 118, 44, 0.4);
@@ -986,66 +1037,131 @@ const coverUrls = items
     transition: opacity 0.5s var(--ease-out);
   }
 
-  /* ── Blank cassette: same shell, no record on it ──
-     A blank is an unwritten tape, so it keeps the hardware (window, reels,
-     screws, plate) and loses only the print. */
+  /* ── Blank cassette: an UNWRITTEN tape ──
+     Same shell, no record on it — but "no record" is not "no design". The first
+     version was a dark grid with a hairline cross on it, which read as an empty
+     slot with a glitch rather than as a tape (2026-09-19: "给空磁带做一个好看点的
+     设计，现在封面什么都没有，可以加入比如磁带盒的默认外观").
+
+     So it is a blank J-card, drawn from the same language as a printed one:
+       · a printed brand header band at the top — the same ink and tracking as
+         `Sheet`, so the row still reads as one product family;
+       · the ruled writable label below it (five hairlines), which is what an
+         unrecorded cassette actually carries;
+       · a neutral type code, no accent colour, no title.
+     ⚠️ NO accent stripe and NO gloss hot-spot: a blank is the tape you have not
+     used yet, so it must be the quietest object on the shelf. It keeps the
+     window, the wells and the ribbon so it is unmistakably the same moulding. */
   .cas-blank .cas-label-fallback {
-    background-size: 22px 22px;
-    background-color: var(--shell-mid);
+    background-color: transparent;
+    background-size: 100% 42%;
+    background-position: 0 33%;
+    background-repeat: no-repeat;
+    /* Four writable rules inside the sheet's 42% band (33% → 75%): 12% apart. */
+    background-image: linear-gradient(
+      180deg,
+      transparent 0 23%,
+      var(--blank-rule) 23% 24.4%,
+      transparent 24.4% 47%,
+      var(--blank-rule) 47% 48.4%,
+      transparent 48.4% 71%,
+      var(--blank-rule) 71% 72.4%,
+      transparent 72.4% 95%,
+      var(--blank-rule) 95% 96.4%,
+      transparent 96.4%
+    );
+  }
+
+  /* The header band: same construction as a printed label's. */
+  .cas-blank-header {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 17.5%;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6%;
+
+    background: var(--blank-head);
+    border-bottom: 1px solid var(--blank-rule);
+
+    font-size: 0.44em;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--blank-ink);
+  }
+
+  /* The ruled label area: a lighter pocket of paper in the moulding. */
+  .cas-blank-sheet {
+    position: absolute;
+    left: 6%;
+    right: 6%;
+    top: 33%;
+    height: 42%;
+
+    background: var(--blank-sheet);
+    box-shadow:
+      inset 0 0 0 1px var(--blank-rule),
+      inset 0 1px 0 var(--relief-lo);
+    border-radius: 1px;
+  }
+
+  .cas-blank-type {
+    position: absolute;
+    left: 6%;
+    right: 6%;
+    top: 77%;
+
+    font-size: 0.4em;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--blank-ink-dim);
   }
 
   .cas-blank .cas-label-scrim {
     background: linear-gradient(
       180deg,
-      rgba(4, 4, 7, 0.28) 0%,
-      transparent 60%,
-      rgba(4, 4, 7, 0.3) 100%
+      rgba(4, 4, 7, 0.18) 0%,
+      transparent 34%,
+      transparent 72%,
+      rgba(4, 4, 7, 0.26) 100%
     );
   }
 
   :global(:root[data-theme="light"]) .cas-blank .cas-label-scrim {
     background: linear-gradient(
       180deg,
-      rgba(74, 58, 38, 0.16) 0%,
-      transparent 60%,
-      rgba(74, 58, 38, 0.18) 100%
+      rgba(74, 58, 38, 0.1) 0%,
+      transparent 34%,
+      transparent 72%,
+      rgba(74, 58, 38, 0.14) 100%
     );
   }
 
-  /* A single hairline cross marks an unwritten tape without pretending to be
-     content. */
-  .cas-blank-mark {
-    position: absolute;
-    left: 50%;
-    top: 36%;
-    width: 34%;
-    height: 1px;
-    transform: translate(-50%, -50%);
-    background: linear-gradient(
-      90deg,
-      transparent,
-      var(--shell-ink-dim),
-      transparent
-    );
+  /* The blank's ribbon is fainter than a printed tape's: the tape is wound
+     behind the window, not read through it. */
+  .cas-blank .cas-path-ribbon {
+    opacity: 0.7;
   }
 
-  .cas-blank-mark::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: -14px;
-    width: 1px;
-    height: 28px;
-    background: linear-gradient(
-      180deg,
-      transparent,
-      var(--shell-ink-dim),
-      transparent
-    );
+  /* The wells hold a full pack of tape, so the spokes are hidden — a blank has
+     no reel position to read. */
+  .cas-blank .cas-reel-spokes {
+    display: none;
+  }
+
+  /* No accent: a blank carries the neutral ink, not a stripe colour. The models
+     are hidden because a printed accent is the one thing an unwritten tape does
+     not have. */
+  .cas-blank {
+    --cas-accent: var(--blank-ink);
+    --cas-accent-soft: var(--blank-ink-dim);
   }
 
   .cas-blank .cas-accent-bar,
-  .cas-blank .cas-hairline,
   .cas-blank .cas-mould {
     display: none;
   }
@@ -1117,11 +1233,39 @@ const coverUrls = items
      ⚠️ Kept to HARD insets, no blur: this element exists on all ten tapes and
      they all repaint while the row moves. A stack of 10px-blur insets here
      measured -25% frame rate on a tape step (+17ms/frame) for a difference
-     nobody can see.
-     ⚠️ There is NO diagonal gloss sweep any more (removed 2026-09-19 on the
-     user's call): a specular band across a cover image reads as a sticker on
-     the artwork rather than as light on plastic. The lip and the rim light
-     already carry the material. */
+     nobody can see. */
+
+  /* ── GLOSS ──
+     The shell is glossy plastic, and this is the only place the sheen lives.
+     ⚠️ It is a CORNER falloff held in the top-left, and it must never become a
+     BAND crossing the face: a diagonal specular band over a cover image reads as
+     a sticker lying on the artwork, which is why the earlier sweep was deleted
+     (2026-09-19). A wide radial anchored outside the corner is the difference —
+     it is the same light source as every bevel and every relief on the tape
+     (top-left), so it reads as light ON the object rather than a shape over it.
+     One gradient, hard-edged box: no blur, so ten tapes can carry it. */
+  .cas-label::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 7;
+    pointer-events: none;
+
+    background:
+      radial-gradient(
+        108% 128% at -6% -14%,
+        var(--gloss-c) 0%,
+        transparent 58%
+      ),
+      radial-gradient(
+        52% 62% at 0% -6%,
+        var(--gloss-c) 0%,
+        transparent 60%
+      );
+
+    opacity: var(--gloss-a, 0.1);
+  }
+
   .cas-label::after {
     content: "";
     position: absolute;
@@ -1137,10 +1281,6 @@ const coverUrls = items
       inset -3px -3px 0 -1px var(--relief-lo);
   }
 
-  /* Gloss: REMOVED. The diagonal specular sweep used to live here; it read as a
-     sticker lying on the cover image, not as light on plastic. If a highlight is
-     ever wanted back, put it on the SHELL (a rim or a lip), never across the
-     printed J-card. */
 
   /* Moulded model code, embossed rather than printed: a light edge below and a
      dark edge above is what makes type look pressed into plastic. */
@@ -1280,8 +1420,11 @@ const coverUrls = items
   /* ── Tape window: reels over the cover, as if seen through the shell ──
      A real cassette's hub window sits just above the colour rail; here it
      straddles the title band so the artwork above it stays clean. It is built
-     as a recessed glass strip: dark cavity, frosted front, lit top edge, with a
-     raised plate between the hubs and the tape path running underneath. */
+     as a RECESSED, MATTE strip — an unpolished moulding, not a glass pane:
+     ⚠️ the 128° "frost" sweep and the bright top rim are gone (2026-09-19,
+     "哑光凹陷… 高光渐变会让质感很廉价"): a specular ramp across a window that
+     small reads as chrome. What is left is a flat cavity, a dark inner shadow
+     where the shell turns in, and a hairline of light on the far edge only. */
   .cas-window {
     position: absolute;
     left: 6%;
@@ -1297,40 +1440,72 @@ const coverUrls = items
     padding: 0.42em 0.7em 0.5em;
     border-radius: 3px;
 
-    /* The frost is folded into the window's own background stack: a separate
-       `::after` layer meant one more full-size paint per tape, per frame. */
-    background:
-      linear-gradient(
-        128deg,
-        var(--glass-a) 0%,
-        transparent 34%,
-        transparent 72%,
-        var(--glass-b) 100%
-      ),
-      linear-gradient(180deg, var(--glass-b) 0%, transparent 42%),
-      linear-gradient(180deg, var(--glass-cavity-a), var(--glass-cavity-b));
+    background: linear-gradient(
+      180deg,
+      var(--glass-cavity-a),
+      var(--glass-cavity-b)
+    );
 
     box-shadow:
-      inset 0 1px 0 var(--shell-hi),
       inset 0 0 0 1px var(--shell-rim),
-      inset 0 2px 4px -2px rgba(0, 0, 0, 0.75);
+      inset 0 1px 2px var(--glass-lip),
+      inset 0 -1px 0 var(--glass-edge);
 
     pointer-events: none;
   }
 
+  /* ══════════════════════════════════════════
+     THE REELS — one tunable parameter set on :root.
+
+     ⚠️ These live on `:root`, NOT on `.cas`, and that is load-bearing: the
+     tuning panel writes them as inline properties on <html>, and a custom
+     property declared on `.cas` itself would shadow that inherited value
+     completely — which is exactly why the panel's REELS sliders did nothing
+     while the HERO sliders worked. Defaults belong at the root of the scope, so
+     an override from above can win.
+
+     The recessed lighting is the point: inside a dent the NEAR wall (top-left)
+     falls into shadow and the FAR wall (bottom-right) catches the light, the
+     inverse of every raised part on the shell. It is carried by two hairlines
+     and one occlusion band — NOT by a highlight ramp, which is what made it look
+     like chrome.
+     ══════════════════════════════════════════ */
+
+  :global(:root) {
+    --reel-size: 3.1em;
+    --reel-spoke-inset: 25%;
+    --reel-spoke-alpha: 0.25;
+    --reel-spoke-on: 7deg;
+    --reel-spoke-gap: 120deg;
+    --reel-cavity: #050505;
+    --reel-occl: rgba(0, 0, 0, 0.44);
+    --reel-near-shadow: 0.81;
+    --reel-far-light: 0.4;
+    --reel-rim: 0.21;
+    --reel-hub-inset: 34%;
+  }
+
+  /* ⚠️ MATTE, and recessed by LIGHTING rather than by a bright ring (2026-09-19:
+     "磁带盒内部的轮盘和旁边的框则是哑光凹陷，而不是现在这样这么明显的高光渐变。这会让质感很廉价").
+     The wells used to carry a three-stop highlight down the cavity wall and a
+     lit hub face, which reads as a glossy button — a moulded part inside a
+     cassette is unpolished and the key light barely reaches in. The values below
+     are the user's own tune: cavity fully opaque, hub highlight at zero, the
+     recess carried only by the near dark / far light hairline pair. Do not
+     re-introduce a highlight ramp here. */
+
   .cas-reel {
     position: relative;
-    width: var(--reel-size, 2.35em);
+    width: var(--reel-size, 3.1em);
     aspect-ratio: 1;
     flex: 0 0 auto;
     border-radius: 50%;
 
-    background: radial-gradient(
-      circle at 50% 46%,
-      rgba(10, 10, 14, var(--reel-cavity-a, 0.72)) 0%,
-      rgba(4, 4, 7, var(--reel-cavity-b, 0.86)) 62%,
-      rgba(12, 12, 17, var(--reel-cavity-c, 0.9)) 100%
-    );
+    /* ⚠️ FLAT cavity fill, not a highlight ramp (2026-09-19). The well used to
+       carry a three-stop radial down its inner wall, which reads as a glossy
+       pressed button rather than an unpolished moulding. The recess is carried
+       by the hairline pair below plus the occlusion ring in `::after`. */
+    background: var(--reel-cavity, #050505);
 
     /* ⚠️ A RECESSED well, not a raised disc. Inside a dent the far wall catches
        the key light and the near wall falls into shadow, so the bright edge is
@@ -1339,45 +1514,64 @@ const coverUrls = items
        ring here reads as a button, which is what made the first version look
        cheap. */
     box-shadow:
-      inset 0.5px 0.5px 1px rgba(0, 0, 0, var(--reel-near-shadow, 0.8)),
-      inset -0.5px -0.5px 0 rgba(226, 218, 202, var(--reel-far-light, 0.16)),
+      inset 0.5px 0.5px 1px rgba(0, 0, 0, var(--reel-near-shadow, 0.81)),
+      inset -0.5px -0.5px 0 rgba(226, 218, 202, var(--reel-far-light, 0.4)),
       0 0 0 0.5px rgba(0, 0, 0, 0.45);
+  }
+
+  /* The one material cue the well keeps: a soft occlusion band where the shell
+     face turns into the bore. One radial, hard edged, identical on ten tapes. */
+  .cas-reel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    pointer-events: none;
+
+    background: radial-gradient(
+      124% 184% at 50% -20%,
+      var(--reel-occl, rgba(0, 0, 0, 0.44)) 0%,
+      rgba(0, 0, 0, 0.16) 48%,
+      transparent 74%
+    );
   }
 
   .cas-reel-spokes {
     position: absolute;
-    inset: var(--reel-spoke-inset, 12%);
+    inset: var(--reel-spoke-inset, 25%);
     border-radius: 50%;
 
-    /* Fainter than the first pass: the spokes are behind glass in a dark well,
-       so they should be a hint of structure, not a bright gear. */
+    /* Fainter than the first pass: the spokes are structure behind glass in a
+       dark well, so they are a hint, not a bright gear. */
     background: repeating-conic-gradient(
       from 0deg,
-      rgba(214, 206, 190, var(--reel-spoke-alpha, 0.34)) 0deg
-        var(--reel-spoke-on, 4deg),
-      transparent var(--reel-spoke-on, 4deg) var(--reel-spoke-gap, 60deg)
+      rgba(214, 206, 190, var(--reel-spoke-alpha, 0.25)) 0deg
+        var(--reel-spoke-on, 7deg),
+      transparent var(--reel-spoke-on, 7deg) var(--reel-spoke-gap, 120deg)
     );
 
     transform: rotate(var(--reel-spin, 0rad));
   }
 
-  /* The hub is a counter-sunk bore: the shadow sits top-left, the lit face
-     bottom-right, and the cut edge is a hairline rather than a rim. */
+  /* The hub is a counter-sunk bore: the shadow sits top-left, the lit edge
+     bottom-right, and the cut edge is a hairline rather than a rim.
+     ⚠️ No highlight on the bore face — it is a hole, and a lit face turned it
+     into a silver dot with a halo. */
   .cas-reel-hub {
     position: absolute;
-    inset: var(--reel-hub-inset, 30%);
+    inset: var(--reel-hub-inset, 34%);
     border-radius: 50%;
 
     background: radial-gradient(
-      circle at var(--hub-lit-x, 66%) var(--hub-lit-y, 76%),
-      rgba(120, 114, 104, var(--hub-lit-alpha, 0.5)) 0%,
-      rgba(16, 16, 20, 0.86) 46%,
-      rgba(6, 6, 9, 0.94) 100%
+      circle at 50% 52%,
+      rgba(9, 9, 13, 0.94) 0%,
+      rgba(5, 5, 8, 0.97) 62%,
+      rgba(11, 11, 16, 0.99) 100%
     );
 
     box-shadow:
-      inset 0.5px 0.5px 1px rgba(0, 0, 0, var(--hub-shadow, 0.85)),
-      inset -0.5px -0.5px 0 rgba(226, 218, 202, var(--reel-far-light, 0.16)),
+      inset 0.5px 0.5px 1px rgba(0, 0, 0, 0.9),
+      inset -0.5px -0.5px 0 rgba(226, 218, 202, 0.13),
       0 0 0 0.5px rgba(0, 0, 0, 0.5);
   }
 
@@ -1385,14 +1579,21 @@ const coverUrls = items
     position: absolute;
     inset: 2%;
     border-radius: 50%;
-    border: 1px solid rgba(228, 220, 204, var(--reel-rim, 0.16));
+    border: 1px solid rgba(228, 220, 204, var(--reel-rim, 0.21));
   }
 
   /* ── The plate between the hubs ──
      One honest mark, not a wall of micro-print. The recessed well carries a
      single wide-tracked line with an accent tick; an earlier version stacked
      three 5px lines and a fake barcode here, which at 400px reads as noise and
-     is exactly what made the tape look cheap. */
+     is exactly what made the tape look cheap.
+     ⚠️ It is FROSTED TRANSLUCENT PLASTIC, not a metal insert (2026-09-19:
+     "磁带盒中间的那个长方形长框改成磨砂塑料质感，目前的看起来太金属了"). The
+     metallic read came from a near-black fill with a single bright rule along
+     its bottom edge plus a glowing tick — a black bezel with a specular line is
+     chrome. A frosted strip is the opposite: a *lighter*, milky, low-contrast
+     fill whose light comes from the whole face, with no bright edge anywhere and
+     a wide soft shadow instead of a hard one. */
   .cas-plate {
     position: relative;
     flex: 1 1 auto;
@@ -1406,22 +1607,34 @@ const coverUrls = items
     padding: 0.34em 0.7em;
     border-radius: 2px;
 
-    background: linear-gradient(
-      180deg,
-      rgba(8, 8, 12, 0.62),
-      rgba(4, 4, 7, 0.78)
-    );
+    background: var(--plate-frost);
 
     box-shadow:
-      inset 0 1px 0 rgba(0, 0, 0, 0.5),
-      inset 0 -1px 0 var(--relief-hi);
+      inset 0 0 0 1px var(--plate-edge),
+      inset 0 3px 6px -4px var(--plate-shade);
 
     font-size: 0.46em;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: rgba(226, 219, 205, 0.7);
+    color: var(--plate-ink);
     white-space: nowrap;
     overflow: hidden;
+  }
+
+  /* A frosted part diffuses: one wide, very soft vertical falloff across the
+     strip, no band edges. Cheap (a single gradient, hard-edged box). */
+  .cas-plate::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+
+    background: linear-gradient(
+      180deg,
+      var(--plate-frost-hi) 0%,
+      transparent 46%,
+      var(--plate-frost-lo) 100%
+    );
   }
 
   .cas-plate-mark {
@@ -1446,8 +1659,12 @@ const coverUrls = items
   }
 
   /* ── Tape path ──
-     The ribbon leaves one hub, passes the guide rollers and returns: a light
-     line along the bottom of the window with two dark rollers on it. */
+     The ribbon runs hub to hub behind the bottom of the window.
+     ⚠️ The two `0.42em` guide rollers that used to sit on this line are GONE
+     (2026-09-19: "两个大环的下面有一个小球，这个球去掉"). At this scale two lit
+     spheres under the reels read as beads stuck to the window, not as
+     hardware — and they sat on the ribbon rather than in the shell's own guide
+     channels, which is where a real deck's rollers are. Just the ribbon now. */
   .cas-path {
     position: absolute;
     left: 0.9em;
@@ -1467,34 +1684,11 @@ const coverUrls = items
 
     background: linear-gradient(
       90deg,
-      rgba(228, 220, 204, 0.12),
-      rgba(228, 220, 204, 0.5) 18%,
-      rgba(228, 220, 204, 0.5) 82%,
-      rgba(228, 220, 204, 0.12)
+      transparent,
+      var(--path-ink) 18%,
+      var(--path-ink) 82%,
+      transparent
     );
-  }
-
-  .cas-path-roller {
-    position: absolute;
-    top: 50%;
-    width: 0.42em;
-    height: 0.42em;
-    margin-top: -0.21em;
-    border-radius: 50%;
-
-    background: radial-gradient(
-      circle at 36% 30%,
-      rgba(210, 204, 190, 0.7),
-      rgba(12, 12, 16, 0.95) 70%
-    );
-  }
-
-  .cas-path-roller:nth-child(2) {
-    left: 0;
-  }
-
-  .cas-path-roller:nth-child(3) {
-    right: 0;
   }
 
   /* ── Index + date on the foot band, above the colour rail ── */
@@ -2914,25 +3108,30 @@ const coverUrls = items
     // selected book sits at z = 0.95 with the rear wall falling to ≈ −7.6, which
     // is a big separation: the row loses itself in depth, and the pull-out reads
     // as the selection coming FORWARD rather than the others sliding sideways.
-    const Z_NEAR = 1.15;
+    const Z_NEAR = 2.6;
     const Z_FALL = 1.55;
     const Z_POW = 1.12;
-    const Y_BASE = -0.1;
+    const Y_BASE = -0.18;
     const Y_FALL = 0.2;
     const Y_POW = 1.18;
     // Neighbours keep most of the hero's size on top of the perspective shrink.
     const SCALE_FALL = 0.105;
-    const RY_CENTER = Math.PI / 12; // — the 15° hero rotation (left spine out)
+    const RY_CENTER = 0.222; // — the hero rotation, 12.7° (left spine out)
     // The rear wall sits at the reference's 58°, not fully edge-on: a 90° turn
     // projects almost no width, which is what made the outer tapes unreadable.
     const RY_SIDE = 1.01;
     const SIDE_SPAN = 0.72;
-    const RX_BASE = -0.13; // — tips the bottom edge into view
+    const RX_BASE = -0.13; // — the ROW's pitch; tips every tape's bottom into view
     const RX_SIDE = 0.055;
-    const RZ_BASE = 0.045;
+    /* ⚠️ Hero-only pitch, on top of `RX_BASE`, faded out with the same falloff as
+       `LIFT`. The row-wide pitch cannot be used to "look at the bottom of the
+       selected tape": it tilts all ten together, which was reported straight
+       away. This one moves the selection alone. */
+    const RX_HERO = 0;
+    const RZ_BASE = 0.074;
     const RZ_SPREAD = 0.06;
     const RZ_SPREAD2 = 0.012;
-    const LIFT = 0.36;
+    const LIFT = 0.21;
     const LIFT_FALL = 7.2;
 
     /* ── Live overrides for the hero pose ──
@@ -2974,19 +3173,64 @@ const coverUrls = items
     const PULL_DUR = 1700;
     const CURTAIN_FADE = 320;
 
-    const DRAG_SPAN = 0.3; // viewport fraction = progress 1
-    const DRAG_CLAMP = 1.15;
-    const SWIPE_MIN = 92;
-    const SWIPE_FRACTION = 0.065;
-    const FLICK_VELOCITY = 2.5; // progress/s at release that commits a step
-    const VELOCITY_WINDOW = 100; // ms of pointer history used to measure it
+    /* ── Drag: the row follows the pointer, and a flick throws it ──
+       ⚠️ The gesture is a **position**, not a step count. `dragOffset` is the
+       pointer's whole travel, `[SLOT_MIN, SLOT_MAX]` px buys one slot, and
+       `progress` is the continuous result — so dragging past five tapes lands on
+       the fifth, because that is where the pointer went. Two earlier revisions
+       clamped `progress` to about one slot and re-based at most one tape per
+       gesture, which is exactly what the user reported twice: "水平移动拖到一定距离就无法继续拖动，而这时才拖动了 2 个磁带盒的距离，并且松开鼠标时画面会回退到 1 个磁带盒，而不是 2 个磁带盒" and "无论我滑动多块，比如从 1 滑动到 5，松开鼠标后又会回退到 2 而不是 5".
+       ⚠️ **The re-base is what makes it work**, and it has to happen once, at the
+       end: `current` stays fixed for the whole gesture, and `recycle` moves it by
+       the WHOLE landing in a single frame, so `ring − current + progress` is
+       unchanged for every tape. Normalising `current` mid-drag (or in single
+       steps) is what forced the clamp in the first place. */
+    const SLOT_MIN = 170; // px of travel that buys one slot, small screens
+    const SLOT_MAX = 280; // …and large ones
+    const SLOT_DRAG = (): number =>
+      Math.min(SLOT_MAX, Math.max(SLOT_MIN, window.innerWidth * 0.17));
+    /**
+     * How many slots one gesture may travel.
+     *
+     * ⚠️ It is bounded by the RING, not by taste. A release re-bases `current` by
+     * the whole landing, and for that to be picture-preserving the landing has to
+     * stay inside the ring: `ring ≥ n + 2·(half + DRAG_MAX)`. Five slots therefore
+     * wants a 25-slot ring, which is why `MAX_FILLERS` is `6 × MAX_SLOT_COUNT`.
+     * Raising this without raising that walks the painting off the end of the ring.
+     */
+    const DRAG_MAX = 5;
 
-    // Release spring: critically damped position solver with a velocity
+    // Release springs: critically damped position solvers with a velocity
     // handoff, so a flick keeps going and a slow drag settles where it was let
-    // go (RhineLabUI's `damp()`, same numbers).
+    // go (RhineLabUI's `damp()`, same solver).
+    //  · `SPRING_RATE` — a push against the end of the archive easing back.
+    //  · `GLIDE_RATE`  — the release after a drag. Deliberately slower: the
+    //    damping time constant is `1/rate`, so 9.2 settles in ~110ms, which
+    //    read as the tape being snatched rather than gliding. 5.4 gives ~185ms
+    //    and a visible taper on the way out.
     const SPRING_RATE = 9.2;
+    const GLIDE_RATE = 5.4;
     const SPRING_STOP = 0.0025;
     const SPRING_STOP_V = 0.02;
+    /**
+     * ⚠️ A hard cap on how long a spring may run. The velocity threshold alone
+     * does not bound the duration: near the target the critically damped solver
+     * decays `|v|` roughly as `e^-rate·t`, so waiting for `|v| < 0.02` from a
+     * whole-slot glide is several seconds of motion that is invisible on screen
+     * but keeps `lock` set — which makes every later gesture refused, and reads
+     * as the shelf freezing for a moment after each flick.
+     */
+    const SPRING_MAX_MS = 620;
+
+    /**
+     * Release velocity, in slots per second, at which a flick commits a step.
+     * Below it a release is judged on POSITION alone (past halfway ⇒ carry on,
+     * short of it ⇒ play the tape back) — which is what makes a slow drag feel
+     * continuous instead of snapping. Above it the flick has a vote of its own.
+     */
+    const FLICK_COMMIT = 2.6;
+
+    const VELOCITY_WINDOW = 100; // ms of pointer history used to measure it
 
     // ── The step tween: the reference's exact numbers ──
     // One eased tween moves the WHOLE row (`progress` shifts every tape's slot
@@ -2996,8 +3240,9 @@ const coverUrls = items
     const STEP_FROM_REST = 620; // reference: `progress === 0 ? 620 : …`
     const STEP_BASE = 380; //            `380 + distance * 180`
     const STEP_PER_UNIT = 180;
-    const SETTLE_AFTER_DRAG = 440; //     the swipe that passes the threshold
-    const SETTLE_BACK = 320; //           the release that snaps home
+    /** One blank stepped out of the scenery after a release that ran past the end
+     *  of the archive. Short: it is a correction, not a navigation. */
+    const WALK_BACK_MS = 260;
     const REVEAL_SMOOTH = 12;
 
     const CARD_KEY = "rrsuika-shelf-card";
@@ -3094,23 +3339,43 @@ const coverUrls = items
     let pointerDown = false;
     let dragging = false;
     let dragMoved = false;
-    let dragStartX = 0;
-    let dragLastX = 0;
+    /**
+     * The pointer's TOTAL travel since `pointerdown`, in px, and `progress` at
+     * the moment it went down. The row is the difference between them, which is
+     * what makes a long slow drag walk several slots instead of committing one.
+     */
+    let dragAnchor = 0;
+    let dragOffset = 0;
+    let dragOffsetStart = 0;
     let lock = false;
     // Recent (x, time) samples. A single frame's delta is far too noisy to
     // decide a flick from a slow drag; the release velocity is measured over a
     // real time window instead.
     let dragSamples: { x: number; t: number }[] = [];
 
-    // Release physics + step tween
-    const spring = { value: 0, velocity: 0, target: 0, active: false };
+    // Release physics + step tween. `target` is the slot offset the solver runs
+    // on; `dir` is the DIRECTION the release chose (`−1` = forward through the
+    // archive, `+1` = back) and `dest` the absolute ring index it lands on. Keeping
+    // the direction and the destination rather than a relative step is what makes
+    // the landing survive `recycle` re-basing `current` while the spring is still
+    // travelling — deriving either from `current − dragOriginCurrent` at settle time
+    // is ambiguous once the ring has moved under it.
+    const spring = {
+      value: 0,
+      velocity: 0,
+      target: 0,
+      dest: 0,
+      dir: 0,
+      rate: SPRING_RATE,
+      elapsed: 0,
+      active: false,
+    };
     const snap = {
       from: 0,
       to: 0,
       t: 0,
       active: false,
       dur: STEP_FROM_REST,
-      dir: 1 as 1 | -1,
     };
 
     let launching = false;
@@ -3206,8 +3471,9 @@ const coverUrls = items
       );
 
       const rz = TUNE("rzBase", RZ_BASE) + p * (RZ_SPREAD + RZ_SPREAD2 * abs);
-      const rx = TUNE("rxBase", RX_BASE) + RX_SIDE * side;
-      const lift = TUNE("lift", LIFT) * Math.exp(-p * p * LIFT_FALL);
+      const heroMask = Math.exp(-p * p * LIFT_FALL);
+      const rx = TUNE("rxBase", RX_BASE) + RX_SIDE * side + TUNE("rxHero", RX_HERO) * heroMask;
+      const lift = TUNE("lift", LIFT) * heroMask;
 
       return { x, y: y + lift, z, rx, ry, rz, scale, abs, side };
     }
@@ -3267,17 +3533,29 @@ const coverUrls = items
     function buildRing(filtered: Tape[]) {
       // ── How long does the ring have to be? ──
       //
-      // The painted band is `current ± half`, so every real tape needs `half`
-      // positions of room on BOTH sides, or the band runs off the end of the
-      // ring and the shelf silently loses half its tapes. That sets a minimum
-      // ring length of `n + 2·half`. A short archive is padded all the way to
-      // the full row (`2·half + 1`) so the blanks fill the frame; a long one is
-      // padded just enough to keep the band centred, and those extras sit
-      // off-stage where they are never seen.
+      // The painted band is `current ± half`, plus the park lane a recycled tape
+      // waits in, so every real tape needs `span` positions of room on BOTH sides
+      // or the band runs off the end of the ring and the shelf silently loses
+      // half its tapes. That sets a minimum ring length of `n + 2·span`.
+      //
+      // ⚠️ It is `span`, not `half`, and that is what gives the row somewhere to
+      // go at the ends: `recycle` may only re-base onto a slot it can still paint
+      // the band around, so every spare slot here is one more slot of drag travel
+      // past the last real tape. With `2·half` a nine-tape archive had exactly
+      // zero slack, every drag was clamped against the edge, and a fast flick
+      // could not advance at all.
+      //
+      // ⚠️ And the pad is `2·span − 1`, not `2·half`. The band shrinks with the
+      // row's offset while the park distance does not, so a forward step from a
+      // slot needs `next ≤ list.length − 1 − (span − 1)`. Padding to `2·half` left
+      // exactly zero slack, which is why a fast flick against either end of the
+      // archive was refused and the row sprang back: there was no readable slot to
+      // land on.
+      const slack = Math.max(1, span);
       const floorSize = MAX_SLOTS * 2 + 1;
       const need = Math.max(
         0,
-        Math.max(floorSize, filtered.length + MAX_SLOTS * 2) - filtered.length,
+        Math.max(floorSize, filtered.length + slack * 2) - filtered.length,
       );
       const used = blankTapes.slice(0, Math.min(need, blankTapes.length));
       const lead = Math.ceil(used.length / 2);
@@ -3355,22 +3633,60 @@ const coverUrls = items
       updateUI(true);
     }
 
-    /** Step the carousel by ±1. `progress` must already be at the far end. */
-    function recycle(direction: 1 | -1) {
+    /**
+     * Re-seat the row after a step, or settle it where it is.
+     *
+     * ⚠️ `step` is a **signed integer, not a direction**, and that is what makes
+     * a multi-tape throw possible: a fast flick can land two or three slots along,
+     * and the whole row is re-based in ONE frame so every tape's
+     * `ring − current + progress` is unchanged. Recycling them one at a time
+     * would paint the wrong tape in the middle of the wrap.
+     *
+     * ⚠️ `step === 0` is NOT a no-op — it means "the row landed on the slot it set
+     * off from", which still has to round `progress` to exactly 0 and release the
+     * step lock. Returning early here instead left the spring armed for ever with
+     * `progress` drifting by hundredths, which is invisible on screen and jams
+     * every later gesture (`lock` never clears, so `pointerdown` is refused).
+     *
+     * The caller has already eased `progress` onto `-step`, so changing `current`
+     * by `step` and zeroing `progress` is a no-op for the picture.
+     */
+    function recycle(step: number, stay = false) {
       if (list.length === 0) return;
-      const next = wrap(current + direction, list.length);
-      // A blank is scenery, not a destination: refuse to step onto one, and
-      // unwind `progress` so the row eases back instead of sticking mid-step.
-      if (next < walkFrom || next > walkTo) {
-        lock = true;
+
+      if (stay || step === 0) {
+        progress = 0;
+        spring.value = 0;
+        spring.velocity = 0;
+        spring.active = false;
+        lock = false;
+        return;
+      }
+
+      const dir = step > 0 ? 1 : -1;
+      let next = current + step;
+      // ⚠️ **A blank may not be SELECTED, but it may be RE-BASED onto.** Those are
+      // different questions and conflating them broke the walk-back: the range is
+      // the walkable band PLUS the one blank past either end, so a release can seat
+      // the overshoot (`walkTo + 1`) and the walk-back can then step back in
+      // (`walkTo + 1 → walkTo`). Refusing the second one left `current` stranded on
+      // the blank with the walk-back re-arming for ever — measured as `lock` never
+      // clearing and `progress` cycling 0 → −1.
+      const lo = Math.max(0, walkFrom - 1);
+      const hi = Math.min(list.length - 1, walkTo + 1);
+      if (next < lo || next > hi) {
+        const allowedProgress = clamp((current - clamp(next, lo, hi)) * dir, -1, 1);
+        // Only the part of the travel the ring cannot hold eases away.
+        progress = Math.abs(allowedProgress) < Math.abs(progress) ? allowedProgress : progress;
         spring.value = progress;
         spring.velocity = 0;
         spring.target = 0;
+        spring.rate = SPRING_RATE;
         spring.active = true;
         return;
       }
 
-      current = next;
+      current = wrap(next, list.length);
       progress = 0;
       spring.value = 0;
       spring.velocity = 0;
@@ -3378,6 +3694,100 @@ const coverUrls = items
       lock = false;
       reseat(false);
     }
+
+    /**
+     * Land the release spring on its slot.
+     *
+     * ⚠️ **EVERY gesture moves at most ONE tape**, in either direction — mid
+     * archive, at either end, slow drag and hard flick alike. That is the invariant
+     * that keeps the drag honest: the row only ever travels one slot, so nothing can
+     * be skipped past and no gesture can land somewhere the visitor did not see.
+     *
+     * ⚠️ **The landing is stored as a DIRECTION (`spring.dir`), applied to the live
+     * `current` at settle time.** Deriving it from `current − dragOriginCurrent`
+     * instead is ambiguous, because `recycle` re-bases `current` while a spring is
+     * still in flight — that bug produced a step of `-16`, which `wrap` read as
+     * "sixteen slots the other way" and teleported the row from the last tape to the
+     * sixth (reported as "in lab the left arrow does not work from ABS 3D Printing").
+     *
+     * ⚠️ **What the edge of the archive does**: a release past either end lets the
+     * row give — the solver overshoots into the blank scenery and eases back — but
+     * the SELECTION never moves onto a blank and never moves the wrong way. Land
+     * there and the row simply stays, which is what "the archive ends here" should
+     * feel like.
+     */
+    function recycleFromSpring() {
+      // ⚠️ Three things have to hold at once here, and each was a separate bug:
+      //
+      //  1. **The selection never lands on a blank.** `dest` is clamped to a real
+      //     tape. `recycle` would seat a blank quite happily otherwise, and the
+      //     detail panel would then be describing scenery.
+      //  2. **The row may still GIVE.** `spring.target` is the raw lean aimed the
+      //     whole way out, so the solver runs its overshoot into the scenery and
+      //     eases back out — that travel is what makes the end of the archive feel
+      //     like a wall rather than a dead zone. (Easing only as far as the clamped
+      //     destination is the alternative, and it reads as the row lurching and
+      //     being snatched back.)
+      //  3. **The intent is CONSUMED, and the landing is clamped to a real tape.**
+      //     Letting it seat the blank past the end and then stepping the selection
+      //     back is the obvious way to get a "walk back through the scenery"
+      //     animation, and it does not survive contact: the spring has already eased
+      //     the row a full slot into the scenery, so the correction is a second
+      //     full slot-width in the opposite direction — the row is flung out and
+      //     snatched back, and `recycle` cannot even express it, because re-basing
+      //     twice inside one gesture is exactly what its range check exists to
+      //     prevent. What the end does instead: the release reaches a tape or it
+      //     does not, and the row eases to rest where it is.
+      const dir = spring.dir;
+      spring.dir = 0;
+      const dest = clamp(current + dir, walkFrom, walkTo);
+      recycle(dest - current);
+    }
+
+    /**
+     * Step the selection back onto a real tape if it ever ends up on scenery.
+     *
+     * ⚠️ **This is a safety net, not the normal path** — `recycleFromSpring` clamps
+     * the landing to a real tape, so a release cannot seat a blank in the first
+     * place. It exists because seating one is the single worst outcome available
+     * here (the detail panel would describe scenery), and because the ring's slack
+     * is derived from constants rather than stored, so a future change to
+     * `MAX_SLOTS`/`PARK_SLOTS` could put a walkable slot somewhere this code does
+     * not expect.
+     *
+     * ⚠️ **One step per pass, through `recycle`, never a direct assignment.**
+     * Moving `current` by hand would skip the re-base the whole row depends on:
+     * every tape's painted slot is `ring − current + progress`, so changing
+     * `current` alone shifts the entire row by that many slots in one frame.
+     * `recycle` is what keeps `slotIndex` invariant.
+     *
+     * Each pass is a short eased tween on `progress` (a `snap`), so the blank slides
+     * out and the real tape slides in rather than the two cutting.
+     */
+    function walkBackToTape() {
+      if (current >= walkFrom && current <= walkTo) return;
+
+      // ⚠️ The destination is recomputed on EVERY pass, because `current` moves
+      // between them: `recycle` only ever moves it by the step it is given, so
+      // aiming at `walkFrom` up front would ask for a step it then refuses
+      // (`next` outside the re-base range) and the walk-back would stall one blank
+      // short. Aiming one slot back and letting the final pass over-shoot is
+      // self-correcting: the last call lands exactly on the tape.
+      const step = current < walkFrom ? -1 : 1;
+      const next = clamp(current + step, walkFrom, walkTo);
+
+      snap.dur = WALK_BACK_MS;
+      snap.from = 0;
+      snap.to = next - current;
+      snap.t = 0;
+      snap.active = true;
+      // `recycle(-snap.to)` at the end of the tween is what actually moves
+      // `current`, and it lands on a real tape by construction.
+      lock = true;
+    }
+
+    /** Does the ring hold a real tape at this position? */
+    const isRealSlot = (index: number) => index >= walkFrom && index <= walkTo;
 
     function syncEmptyState(empty: boolean) {
       const emptyEl = document.getElementById("shelf-empty");
@@ -3399,66 +3809,159 @@ const coverUrls = items
 
       // Refuse to walk onto the blank scenery at either end and ease back
       // instead — the shelf continues past the frame, but the archive stops.
-      const next = wrap(current + direction, list.length);
-      if (next < walkFrom || next > walkTo) {
+      // ⚠️ The bound is checked against the CONTINUOUS landing, not `current + 1`:
+      // a drag can now leave the row resting on a fractional slot, and then
+      // `current + 1` is already the slot the spring is on its way to, which made
+      // the arrow fire a second step out of the same gesture.
+      const landing = current + Math.round(progress) + direction;
+      if (landing < walkFrom || landing > walkTo) {
         lock = true;
         spring.value = progress;
         spring.velocity = 0;
         spring.target = 0;
+        spring.rate = SPRING_RATE;
         spring.active = true;
         return;
       }
 
-      // The reference: a step from rest takes 620ms, and a step that starts
-      // mid-flight gets `380 + distance * 180` — so an interrupted transition
-      // finishes the remainder rather than restarting.
-      const target = direction > 0 ? -1 : 1;
-      const distance = Math.abs(target - progress);
+      // ⚠️ **`snap.to` is a PROGRESS value, not a ring step** — `progress`
+      // decreases as `current` increases, so a forward step (direction `+1`)
+      // targets `−1`. And it is measured from the LIVE `current`, not written as a
+      // flat `±1`: when the row is resting on a fractional slot, `−1` would be a
+      // step and a half. `progress` is zeroed by every `recycle`, so a settled row
+      // gives exactly `±1` anyway. ⚠️ The wheel handler and the arrow share this,
+      // and `walkBackToTape` writes `snap.to` the same way — a tween that mixes
+      // the two conventions lands the row a whole extra slot along.
+      const from = progress;
+      const target = -direction;
+      const distance = Math.abs(target - from);
       snap.dur =
         mode === "flat"
           ? 380
-          : progress === 0
+          : Math.abs(from) < 0.001
             ? STEP_FROM_REST
             : STEP_BASE + distance * STEP_PER_UNIT;
-      snap.from = progress;
+      snap.from = from;
       snap.to = target;
       snap.t = 0;
       snap.active = true;
-      snap.dir = direction;
     }
 
+    /**
+     * The pointer's release velocity, in slots per second.
+     *
+     * ⚠️ Least-squares slope over the samples in `VELOCITY_WINDOW`, not
+     * first-to-last. Two-point differencing over a real 100ms window is fine at
+     * 60Hz (six samples), but a pointer that only reports every ~10ms-30ms — or a
+     * gesture whose last event lands early in the window — can leave the window
+     * holding one or two samples, and then the whole flick decision rides on a
+     * single frame's jitter. Fitting the line through every sample in the window
+     * costs nothing and is stable at any report rate.
+     */
+    function sampleVelocity(slot: number): number {
+      const now = performance.now();
+      const recent = dragSamples.filter((s) => now - s.t <= VELOCITY_WINDOW);
+      if (recent.length < 2) return 0;
+
+      const meanT = recent.reduce((sum, s) => sum + s.t, 0) / recent.length;
+      const meanX = recent.reduce((sum, s) => sum + s.x, 0) / recent.length;
+      let cov = 0;
+      let varT = 0;
+      for (const s of recent) {
+        cov += (s.t - meanT) * (s.x - meanX);
+        varT += (s.t - meanT) * (s.t - meanT);
+      }
+      if (varT < 1) return 0;
+
+      // px per ms → slots per second. A fast leftward flick is a NEGATIVE slope
+      // and `progress` decreases as the row moves forward, so the sign carries
+      // straight through.
+      return (cov / varT) * (1000 / slot);
+    }
+
+    /**
+     * Let go: the row glides to a slot near where the drag left it.
+     *
+     * ⚠️ Position decides the landing; velocity only gets a VOTE (2026-09-19:
+     * "慢慢拖能慢慢拖动磁带，而快速的拖能快速切换多个磁带"). Adding a projected
+     * throw to the position — the obvious "physics" answer — does not survive
+     * contact with the numbers: `max(Δ) = v0/(e·rate)` reaches a whole slot at
+     * about seven slots per second, so gearing it down makes it too weak to matter
+     * and leaving it honest makes an ordinary quick flick overshoot two tapes. The
+     * two effects also fight across the rounding boundary, and a hard flick then
+     * lands BEHIND where the pointer already put the row.
+     *
+     * So:
+     *   · land on the nearest whole slot — past halfway carries on to the next
+     *     tape, short of it plays the tape back where it was. That is the
+     *     "slow drag moves slowly" half;
+     *   · a release above `FLICK_COMMIT` in either direction commits to the step
+     *     it was already leaning toward, permissively: it only has to be moving
+     *     that way. That is the "fast flick switches" half — a real flick commits
+     *     with a third of a slot of travel, which position alone would never
+     *     round up.
+     *   · hand the position AND the release velocity to the damped solver, so the
+     *     glide keeps the pointer's speed and tapers out on its own.
+     */
     function settleDrag() {
       dragging = false;
       pointerDown = false;
       stage.classList.remove("is-dragging");
       lock = true;
+      // ⚠️ Samples belong to ONE gesture. Leaving them behind feeds the next
+      // gesture's velocity a slope across a gap where the pointer was up, which
+      // reads as a very fast flick in whichever direction the two drags happened
+      // to differ.
+      const velocity = spring.velocity;
+      dragSamples = [];
 
-      const canStep = walkTo > walkFrom;
-      const distance = dragLastX - dragStartX;
-      const threshold = Math.max(SWIPE_MIN, window.innerWidth * SWIPE_FRACTION);
-      // A fast flick commits even under the distance threshold: the velocity
-      // the pointer actually left with is carried into the decision.
-      const flick = Math.abs(spring.velocity) > FLICK_VELOCITY;
-      const forward = flick ? spring.velocity < 0 : distance < 0;
-      const direction: 1 | -1 = forward ? 1 : -1;
-      const next = wrap(current + direction, Math.max(1, list.length));
-      const allowed =
-        canStep && next >= walkFrom && next <= walkTo;
+      const maxStep = Math.round(DRAG_MAX);
+      // ⚠️ **The range is SYMMETRIC** — dragging backward has to be able to land
+      // on a positive offset. Clamping to `[-maxStep, 0]` looks harmless because
+      // forward is negative `progress`, but it silently made every rightward drag
+      // a no-op: a 300 px backward drag reaches `progress = +1.07`, rounds to
+      // `+1`, and that got clamped straight back to `0`, so the row played itself
+      // back to the tape it set off from (the user's "从左往右拖动时，松开鼠标他会回到之前选中的磁带盒"). Only
+      // the FLICK could still move backward, and only when velocity happened to
+      // push the (already clamped) value past the boundary.
+      let glide = clamp(Math.round(progress), -maxStep, maxStep);
+      // A flick commits to one more slot in the direction it is already going.
+      if (velocity <= -FLICK_COMMIT && glide > -maxStep) glide -= 1;
+      else if (velocity >= FLICK_COMMIT && glide < maxStep) glide += 1;
 
-      if (allowed && (flick || Math.abs(distance) > threshold)) {
-        snap.dur = mode === "flat" ? 380 : SETTLE_AFTER_DRAG;
-        snap.from = progress;
-        snap.to = direction > 0 ? -1 : 1;
-        snap.t = 0;
-        snap.active = true;
-        snap.dir = direction;
-        return;
-      }
+      // ⚠️ **ONE TAPE PER GESTURE.** The landing is where the drag began plus one
+      // slot, in whichever direction the release was leaning — never the raw
+      // travel. Dragging 600 px is a gesture, not a request for two tapes: the row
+      // only ever moved one slot away from the selection, so landing two along
+      // would skip a tape the visitor never saw. `Math.sign` is the leaning; the
+      // magnitude is discarded on purpose.
+      const leaning = glide === 0 ? 0 : Math.sign(glide);
+      // The direction is stored as `−1` = forward (a higher ring index, which is
+      // what a leftward drag means) so nothing has to be re-derived at settle time,
+      // when `current` may have been re-based under the spring.
+      //
+      // ⚠️ It is the **leaning**, not the landing: the solver is given the
+      // DIRECTION even when the step it implies is off the archive, so the row
+      // gives against the end of the shelf instead of stopping dead. `recycleFromSpring`
+      // is what keeps that from moving the selection.
+      //
+      // ⚠️ But the give is ONE slot, not the whole `DRAG_MAX`. Aiming the solver at
+      // `DRAG_MAX` (1.6 slots) at the boundary is worse than not giving at all: the
+      // spring coasts well past the target on its own momentum — measured to
+      // `progress = −2.82`, i.e. 1.2 slots deeper into the scenery than intended —
+      // and because the overshoot is only corrected once the spring SETTLES, the
+      // visitor sees the row flung a full slot past the end before it snaps home.
+      // One slot is the travel the drag already made, so the give is invisible and
+      // the stop is clean.
+      spring.dir = clamp(-leaning, -1, 1);
+      spring.target = -spring.dir;
 
-      // Under threshold — or against the end of the archive: play the tape back
-      // onto the shelf.
+      // A release that leans nowhere has no velocity to spend.
+      spring.velocity = spring.dir === 0 ? 0 : velocity;
+
       spring.value = progress;
-      spring.target = 0;
+      spring.rate = GLIDE_RATE;
+      spring.elapsed = 0;
       spring.active = true;
     }
 
@@ -3468,32 +3971,40 @@ const coverUrls = items
 
     function stepTweens(dt: number) {
       // ── release spring (critically damped, velocity preserved) ──
-      if (spring.active) {
-        const rate = reduceMotion ? 60 : SPRING_RATE;
+      //
+      // ⚠️ `wasActive` gates the `progress = spring.value` write. A settled spring
+      // has just re-based the ring (`recycleFromSpring` zeroes `progress`, and a
+      // multi-slot landing changes `current` under it), so writing `spring.value`
+      // unconditionally would immediately re-apply the offset that was just
+      // consumed — the row would sit permanently one spring-length off its slot
+      // with the spring deactivated, and nothing would ever move it again.
+      const wasActive = spring.active;
+      if (wasActive) {
+        const rate = reduceMotion ? 60 : spring.rate;
         const delta = spring.value - spring.target;
         const impulse = spring.velocity + rate * delta;
         const decay = Math.exp(-rate * dt);
         spring.value = spring.target + (delta + impulse * dt) * decay;
         spring.velocity = (spring.velocity - rate * impulse * dt) * decay;
+        spring.elapsed += dt * 1000;
 
-        if (
-          Math.abs(spring.value - spring.target) < SPRING_STOP &&
-          Math.abs(spring.velocity) < SPRING_STOP_V
-        ) {
+        const settled =
+          (Math.abs(spring.value - spring.target) < SPRING_STOP &&
+            Math.abs(spring.velocity) < SPRING_STOP_V) ||
+          spring.elapsed >= SPRING_MAX_MS;
+
+        if (settled) {
           spring.value = spring.target;
           spring.velocity = 0;
           spring.active = false;
-          if (Math.abs(spring.target) > 0.5) {
-            recycle(spring.target < 0 ? 1 : -1);
-          } else {
-            // Landed back on the shelf. The row may have come to rest short of
-            // the slot (an end-of-archive push), so settle it exactly.
-            progress = 0;
-            lock = false;
-          }
-        }
-        progress = spring.value;
+          spring.elapsed = 0;
+          // Cut the tween where the solver was heading, which is the slot the row
+          // is over: the cap can fire while `value` is still a little short of
+          // `target`, and the picture difference is under a hundredth of a slot.
+          recycleFromSpring();
+          if (!isRealSlot(current)) walkBackToTape();        }
       }
+      if (wasActive) progress = spring.value;
 
       // ── the step: ONE eased tween drives the whole row ──
       if (snap.active) {
@@ -3502,7 +4013,7 @@ const coverUrls = items
         progress = lerp(snap.from, snap.to, easeOutQuart(t));
         if (t >= 1) {
           snap.active = false;
-          recycle(snap.dir);
+          recycle(-snap.to);
         }
       }
     }
@@ -3541,8 +4052,17 @@ const coverUrls = items
         // ── reveal fade: 1 inside the painted row, 0 outside it. Parked tapes
         // sit beyond this and are culled outright, and because a tape is only
         // ever teleported while it is invisible, a step never pops. ──
+        //
+        // ⚠️ The band SHRINKS with the row's offset. A drag can now hold the row
+        // between two slots for as long as the pointer keeps moving, and the
+        // outermost tape then sits in the park lane (`|slot| > half`) — painting
+        // it there would have it drift in from off-stage and then jump a whole
+        // slot back into the row. Fading it out on the way is the same trick the
+        // step tween uses, but for every intermediate position instead of only at
+        // a landing.
         const inRing = tape.ring >= 0;
-        const within = inRing && Math.abs(sink) <= span;
+        const band = span - Math.abs(progress);
+        const within = inRing && Math.abs(sink) <= band;
 
         tape.vis = smoothTo(
           tape.vis,
@@ -3869,8 +4389,9 @@ const coverUrls = items
       pointerDown = true;
       dragging = false;
       dragMoved = false;
-      dragStartX = event.clientX;
-      dragLastX = event.clientX;
+      dragAnchor = event.clientX;
+      dragOffset = 0;
+      dragOffsetStart = progress;
       dragSamples = [{ x: event.clientX, t: performance.now() }];
 
       // Any in-flight motion is cancelled and taken over from where it is.
@@ -3892,32 +4413,51 @@ const coverUrls = items
 
       if (!pointerDown || launching || lock) return;
 
-      dragLastX = event.clientX;
-      const distance = dragLastX - dragStartX;
+      // The pointer's TOTAL travel, not its offset from the last frame: the row
+      // is a continuous function of it, so a slow drag of three slots' worth of
+      // pixels walks three tapes.
+      //
+      // ⚠️ The sign: dragging LEFT moves the row forward, and forward is
+      // NEGATIVE `progress` (see `slotIndex`). `progress` therefore *decreases*
+      // with `dragOffset`, which grows positive as the pointer moves right.
+      dragOffset = event.clientX - dragAnchor;
+      const distance = dragOffset;
 
-      if (Math.abs(distance) > 7) dragMoved = true;
-      if (Math.abs(distance) > 9 && !dragging) {
+      // ⚠️ The engage threshold is small (4px) on purpose: the row now follows
+      // the pointer continuously, so a 9px dead zone would read as the tape
+      // sticking before it starts to move.
+      if (Math.abs(distance) > 4 && !dragging) {
         dragging = true;
+        dragMoved = true;
         stage.classList.add("is-dragging");
       }
 
       if (!dragging) return;
 
       const now = performance.now();
-      dragSamples.push({ x: dragLastX, t: now });
+      dragSamples.push({ x: event.clientX, t: now });
       dragSamples = dragSamples.filter((s) => now - s.t <= VELOCITY_WINDOW);
 
-      const span = window.innerWidth * DRAG_SPAN;
-      progress = clamp(distance / span, -DRAG_CLAMP, DRAG_CLAMP);
+      // ⚠️ The whole travel is used, and one slot is a fixed metric distance, so
+      // a long slow drag walks the row one tape per `SLOT_DRAG()` px instead of
+      // being clamped at a single slot. The clamp is only the archive's edge.
+      // ⚠️ The clamp is `±DRAG_MAX` slots, not the archive's edge and not ±1.
+      // Clamping at `walkFrom - current` looked right and was not: on the first
+      // tape that difference is 0, so the row could not be dragged at all in that
+      // direction — the pointer moved and nothing happened. And ±1 is the *base*
+      // step only: the throw is added on top, so the drag has to be able to hold
+      // the row a little past the next slot for a hard flick to be distinguishable
+      // from a gentle one. Beyond `DRAG_MAX` the row stops — that is the archive
+      // answering, not a bug.
+      const slot = SLOT_DRAG();
+      const raw = dragOffsetStart + dragOffset / slot;
+      progress = clamp(raw, -DRAG_MAX, DRAG_MAX);
       spring.value = progress;
 
-      // Release velocity for the flick handoff, in progress-units per second.
-      const first = dragSamples[0];
-      const last = dragSamples[dragSamples.length - 1];
-      spring.velocity =
-        last && first && last.t > first.t
-          ? ((last.x - first.x) / span) * (1000 / (last.t - first.t))
-          : 0;
+      // Release velocity for the flick handoff, in slots per second. Same
+      // window as before, but divided by the slot metric rather than the old
+      // viewport fraction, so the number means the same thing as `progress`.
+      spring.velocity = sampleVelocity(slot);
     });
 
     stage.addEventListener("pointerup", (event) => {

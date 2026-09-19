@@ -1661,9 +1661,19 @@ html.theme-land *::after {
      the light set; the dark block follows the same roles. */
   --intro-paper: #f1ece1;
   --intro-ink: #16161a;
-  --intro-rail: rgba(22, 22, 26, 0.16);
-  --intro-dim: rgba(22, 22, 26, 0.5);
-  --intro-accent: var(--accent, #c07020);
+  /* ⚠️ The clear rail is a LOOKUP TABLE, not an alpha.
+     `color-mix(in srgb, ACCENT n%, PAPER)` at a single `n` cannot work in both
+     themes: the accent is a dark burnt orange on paper and a bright amber on
+     black, so the same mix that reads as a track on one is invisible on the
+     other. The two ramps below are already mixed against the theme's own paper,
+     which is exactly what a stepped progress rail needs — it has to sit just
+     above the cover and below the ink, in both. */
+  --intro-rail: color-mix(in srgb, var(--intro-accent) 26%, var(--intro-paper));
+  --intro-rail-on: color-mix(
+    in srgb,
+    var(--intro-accent) 46%,
+    var(--intro-paper)
+  );
 
   font-family: var(--font-mono);
   color: var(--intro-ink);
@@ -1672,7 +1682,6 @@ html.theme-land *::after {
 :root[data-theme="dark"] .site-intro {
   --intro-paper: #0a0a11;
   --intro-ink: #f2ece0;
-  --intro-rail: rgba(242, 236, 224, 0.18);
   --intro-dim: rgba(242, 236, 224, 0.52);
   --intro-accent: var(--accent, #e8943a);
 }
@@ -1713,55 +1722,50 @@ html.is-intro {
   transform: translateY(100.5%);
 }
 
-/* Registration marks: four thin crosses, the print-shop tell that says this is
-   a document rather than a splash screen. */
-.site-intro__tick {
+/* Registration crosses: REMOVED (2026-09-19, user call). Four tiny crosses
+   scattered in the corners read as a print-shop joke at this size; the readout
+   and the rail are what carry the "functional boot" idea now. */
+
+/* A single hairline sweeping the field — the one moving part of the still.
+   ⚠️ REDESIGNED (2026-09-19: "开场动画的扫描带和进度条太丑了"). It used to be a
+   24vh amber wash that crossfaded in and out twice, which is a soft "scanning"
+   decoration — the kind of thing a loading screen does when it has nothing to
+   report. The reference's language is PRINT + INSTRUMENT (cream paper, ink,
+   hard edges, one saturated signal), so the sweeping element is now a 2px rule
+   that crosses the field ONCE, left to right, the way a plotter head or a
+   registration bar travels. Its motion is linear, not eased: a scanner does not
+   accelerate, and the linearity is what makes it read as machinery.
+   The faint wash behind it is carried by the rule's own leading edge, not by a
+   second gradient band. */
+.site-intro__scan {
   position: absolute;
-  z-index: 2;
-  width: 13px;
-  height: 13px;
-  opacity: 0.45;
-}
-
-.site-intro__tick::before,
-.site-intro__tick::after {
-  content: "";
-  position: absolute;
-  background: var(--intro-ink);
-}
-
-.site-intro__tick::before {
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 1px;
-}
-
-.site-intro__tick::after {
   top: 0;
   bottom: 0;
-  left: 50%;
-  width: 1px;
+  left: 0;
+  width: 2px;
+  z-index: 1;
+  pointer-events: none;
+
+  background: var(--intro-accent);
+  opacity: 0;
+  animation: site-intro-scan 900ms linear 120ms 1 both;
 }
 
-.site-intro__tick--tl {
-  top: 28px;
-  left: 28px;
-}
+@keyframes site-intro-scan {
+  0% {
+    transform: translateX(-2px);
+    opacity: 0;
+  }
 
-.site-intro__tick--tr {
-  top: 28px;
-  right: 28px;
-}
+  6%,
+  92% {
+    opacity: 0.9;
+  }
 
-.site-intro__tick--bl {
-  bottom: 28px;
-  left: 28px;
-}
-
-.site-intro__tick--br {
-  bottom: 28px;
-  right: 28px;
+  100% {
+    transform: translateX(100vw);
+    opacity: 0;
+  }
 }
 
 .site-intro__body {
@@ -1769,7 +1773,7 @@ html.is-intro {
   z-index: 3;
   display: grid;
   justify-items: center;
-  gap: 16px;
+  gap: 12px;
   text-align: center;
   transition:
     opacity 0.3s var(--ease-out),
@@ -1782,7 +1786,7 @@ html.is-intro {
 }
 
 .site-intro__mark {
-  margin: 0;
+  margin: 0 0 2px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.44em;
@@ -1792,11 +1796,44 @@ html.is-intro {
   text-transform: uppercase;
 }
 
+/* ── THE RAIL ──
+   ⚠️ REDESIGNED (2026-09-19: "开场动画的扫描带和进度条太丑了，你直接尝试复刻我提供的终末地的网址开场动画吧").
+   It used to be 2px of translucent track with a solid accent fill, a 3×14px
+   glowy head riding it, and a wide glow under the fill — a soft "loading bar",
+   and the glow is what made it cheap: a blurred halo around a 2px line reads as
+   a lit tube, not as a printed instrument.
+
+   The reference's language is a technical drawing: hard edges, a ruled scale,
+   ONE saturated signal colour used for exactly the thing you must see. So the
+   rail is now a RULED SCALE — a hairline track, a 1px step every 5%, a heavier
+   step every 10%, and a plain accent-coloured fill block that covers the scale
+   as it climbs (which is why the scale is drawn in a colour that is NOT the
+   accent: it has to be legible while still filled and while already passed).
+   The head is a 3px accent crossbar, applied as a two-stop gradient rather than
+   a moving box so there is no sixth element to keep in sync with the fill.
+
+   Height goes back to 1px because the scale now carries the information; a thick
+   bar plus a scale is two ways of saying the same thing. */
 .site-intro__rail {
-  width: min(44vw, 260px);
+  position: relative;
+  width: min(58vw, 420px);
   height: 1px;
-  background: var(--intro-rail);
-  overflow: hidden;
+  margin: 4px 0 2px;
+
+  /* The scale: one hairline, with a step every 5% and a heavier one every 10%.
+     Drawn in the rail's own mix so it survives the accent fill passing over it. */
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 9.99%,
+      var(--intro-rail-on) 9.99% 10%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 4.99%,
+      var(--intro-rail) 4.99% 5%
+    ),
+    var(--intro-rail);
 }
 
 .site-intro__fill {
@@ -1807,10 +1844,57 @@ html.is-intro {
   transform-origin: left center;
 }
 
+/* The head: a 3px accent crossbar that rides the `left` the script writes on the
+   tip element. No blur — a hard 1px vertical rule above and below the rail is
+   what makes it read as a cursor on a scale instead of a glowing dot. */
+.site-intro__tip {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 3px;
+  height: 13px;
+  margin-top: -6.5px;
+  margin-left: -1.5px;
+  background: var(--intro-accent);
+}
+
+/* ── The readout: a number and the unit, nothing else ──
+   ⚠️ The `%` sign is GONE (2026-09-19, same pass as the rail). A progress bar
+   reads as a percentage on its own, and the full-size glyph was the loudest
+   thing on the cover for no information. What is left is the counter and a small
+   tracked unit, so the instrument has one voice instead of two. */
 .site-intro__pct {
   margin: 0;
-  font-size: 10px;
-  letter-spacing: 0.3em;
-  color: var(--intro-dim);
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--intro-ink);
+  /* ⚠️ Tabular figures are not cosmetic here: the counter is repainted every
+     frame, and proportional digits make the whole readout twitch as it climbs
+     through 11 → 22 → 33. */
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.site-intro__pct i {
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--intro-dim);
+}
+
+/* The band is decoration, not information: with reduced motion it simply stays
+   off, and the intro still opens on its own schedule. */
+@media (prefers-reduced-motion: reduce) {
+  .site-intro__scan {
+    animation: none;
+    opacity: 0;
+  }
 }

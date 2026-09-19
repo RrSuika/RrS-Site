@@ -76,6 +76,7 @@ export function initSiteIntro(): void {
   if (!el) return;
 
   const fill = el.querySelector<HTMLElement>(".site-intro__fill");
+  const tip = el.querySelector<HTMLElement>(".site-intro__tip");
   const pct = document.getElementById("site-intro-pct");
   const started = performance.now();
 
@@ -103,6 +104,7 @@ export function initSiteIntro(): void {
     const eased = 1 - Math.pow(1 - t, 3);
     const value = ready ? 100 : Math.min(92, eased * 92);
     if (fill) fill.style.transform = `scaleX(${(value / 100).toFixed(4)})`;
+    if (tip) tip.style.left = `${value.toFixed(2)}%`;
     if (pct) pct.textContent = String(Math.round(value));
     if (value >= 100) open();
     else requestAnimationFrame(paint);

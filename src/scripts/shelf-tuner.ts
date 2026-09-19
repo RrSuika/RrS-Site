@@ -33,29 +33,27 @@ type Slider = {
 
 const SLIDERS: Slider[] = [
   // ── the two hubs ──
-  { group: "reels", name: "--reel-size", label: "well size", min: 1.6, max: 3.1, step: 0.01, value: 2.35, unit: "em" },
-  { group: "reels", name: "--reel-hub-inset", label: "hub inset", min: 16, max: 44, step: 0.5, value: 30, unit: "pct" },
-  { group: "reels", name: "--hub-lit-x", label: "hub light X", min: 30, max: 86, step: 1, value: 66, unit: "pct" },
-  { group: "reels", name: "--hub-lit-y", label: "hub light Y", min: 30, max: 86, step: 1, value: 76, unit: "pct" },
-  { group: "reels", name: "--hub-lit-alpha", label: "hub lit", min: 0, max: 0.9, step: 0.01, value: 0.5 },
-  { group: "reels", name: "--hub-shadow", label: "hub shadow", min: 0, max: 1, step: 0.01, value: 0.85 },
-  { group: "reels", name: "--reel-cavity-a", label: "cavity near", min: 0.3, max: 1, step: 0.01, value: 0.72 },
-  { group: "reels", name: "--reel-cavity-b", label: "cavity far", min: 0.3, max: 1, step: 0.01, value: 0.86 },
-  { group: "reels", name: "--reel-cavity-c", label: "cavity edge", min: 0.3, max: 1, step: 0.01, value: 0.9 },
-  { group: "reels", name: "--reel-near-shadow", label: "well near", min: 0, max: 1, step: 0.01, value: 0.8 },
-  { group: "reels", name: "--reel-far-light", label: "well far", min: 0, max: 0.6, step: 0.01, value: 0.16 },
-  { group: "reels", name: "--reel-rim", label: "well rim", min: 0, max: 0.6, step: 0.01, value: 0.16 },
-  { group: "reels", name: "--reel-spoke-inset", label: "spoke inset", min: 2, max: 30, step: 0.5, value: 12, unit: "pct" },
-  { group: "reels", name: "--reel-spoke-alpha", label: "spoke alpha", min: 0, max: 0.9, step: 0.01, value: 0.34 },
-  { group: "reels", name: "--reel-spoke-on", label: "spoke width", min: 1, max: 14, step: 0.5, value: 4, unit: "deg" },
-  { group: "reels", name: "--reel-spoke-gap", label: "spoke pitch", min: 16, max: 120, step: 1, value: 60, unit: "deg" },
+  // Defaults are the BAKED values (2026-09-19), so RESET returns to what ships.
+  { group: "reels", name: "--reel-size", label: "well size", min: 1.6, max: 3.6, step: 0.01, value: 3.1, unit: "em" },
+  { group: "reels", name: "--reel-hub-inset", label: "hub inset", min: 16, max: 44, step: 0.5, value: 34, unit: "pct" },
+  { group: "reels", name: "--reel-cavity", label: "cavity fill", min: 0, max: 1, step: 0.01, value: 0.02 },
+  { group: "reels", name: "--reel-occl", label: "well occlusion", min: 0, max: 0.9, step: 0.01, value: 0.44 },
+  { group: "reels", name: "--reel-near-shadow", label: "well near", min: 0, max: 1, step: 0.01, value: 0.81 },
+  { group: "reels", name: "--reel-far-light", label: "well far", min: 0, max: 0.8, step: 0.01, value: 0.4 },
+  { group: "reels", name: "--reel-rim", label: "well rim", min: 0, max: 0.6, step: 0.01, value: 0.21 },
+  { group: "reels", name: "--reel-spoke-inset", label: "spoke inset", min: 2, max: 30, step: 0.5, value: 25, unit: "pct" },
+  { group: "reels", name: "--reel-spoke-alpha", label: "spoke alpha", min: 0, max: 0.9, step: 0.01, value: 0.25 },
+  { group: "reels", name: "--reel-spoke-on", label: "spoke width", min: 1, max: 14, step: 0.5, value: 7, unit: "deg" },
+  { group: "reels", name: "--reel-spoke-gap", label: "spoke pitch", min: 16, max: 120, step: 1, value: 120, unit: "deg" },
   // ── the selected tape ──
-  { group: "hero", name: "ryCenter", label: "yaw", min: -0.5, max: 0.6, step: 0.002, value: Math.PI / 12, unit: "deg" },
-  { group: "hero", name: "rxBase", label: "pitch", min: -0.45, max: 0.25, step: 0.002, value: -0.13, unit: "deg" },
-  { group: "hero", name: "rzBase", label: "roll", min: -0.25, max: 0.25, step: 0.002, value: 0.045, unit: "deg" },
-  { group: "hero", name: "lift", label: "lift", min: 0, max: 1.4, step: 0.01, value: 0.36 },
-  { group: "hero", name: "yBase", label: "row height", min: -0.8, max: 0.6, step: 0.01, value: -0.1 },
-  { group: "hero", name: "zNear", label: "pull forward", min: 0.2, max: 2.6, step: 0.02, value: 1.15 },
+  // Defaults are the BAKED pose (2026-09-19), so RESET returns to what ships.
+  { group: "hero", name: "ryCenter", label: "yaw", min: -0.5, max: 0.6, step: 0.002, value: 0.222, unit: "deg" },
+  { group: "hero", name: "rxBase", label: "row pitch", min: -0.45, max: 0.25, step: 0.002, value: -0.13, unit: "deg" },
+  { group: "hero", name: "rxHero", label: "hero pitch (bottom/top)", min: -0.4, max: 0.4, step: 0.002, value: 0, unit: "deg" },
+  { group: "hero", name: "rzBase", label: "roll", min: -0.25, max: 0.25, step: 0.002, value: 0.074, unit: "deg" },
+  { group: "hero", name: "lift", label: "lift", min: 0, max: 1.4, step: 0.01, value: 0.21 },
+  { group: "hero", name: "yBase", label: "row height", min: -0.8, max: 0.6, step: 0.01, value: -0.18 },
+  { group: "hero", name: "zNear", label: "pull forward", min: 0.2, max: 3.6, step: 0.02, value: 2.6 },
 ];
 
 const state: Record<string, number> = Object.fromEntries(SLIDERS.map((s) => [s.name, s.value]));
@@ -86,13 +84,36 @@ const cssValue = (s: Slider, v: number): string => {
   return String(Number(v.toFixed(4)));
 };
 
+/**
+ * A dark grey as a CSS colour, from a 0–1 lightness slider.
+ *
+ * ⚠️ The well's fill and its occlusion band are COLOURS, not numbers, and the
+ * rest of this panel is number-slider plumbing. Rather than grow a second
+ * control type for two knobs, they are driven as a grey level: `--reel-cavity:
+ * 0.02` in the shipped CSS means "2% grey", and every useful value for a bore
+ * inside a cassette is a dark one. Keep the tint neutral — the theme override
+ * in the component is where the warm and cool versions live.
+ */
+const greyValue = (v: number): string => {
+  const c = Math.round(Math.min(1, Math.max(0, v)) * 255);
+  return `rgb(${c} ${c} ${c})`;
+};
+
 /** Push the whole state at the page. */
 function apply(): void {
   const root = document.documentElement;
   const hero: Record<string, number> = {};
   for (const s of SLIDERS) {
-    if (s.group === "reels") root.style.setProperty(s.name, cssValue(s, state[s.name]));
-    else hero[s.name] = state[s.name];
+    if (s.group === "reels") {
+      root.style.setProperty(
+        s.name,
+        s.name === "--reel-occl"
+          ? `rgba(0, 0, 0, ${state[s.name]})`
+          : s.name === "--reel-cavity"
+            ? greyValue(state[s.name])
+            : cssValue(s, state[s.name]),
+      );
+    } else hero[s.name] = state[s.name];
   }
   (window as typeof window & { __shelfTune?: Record<string, number> }).__shelfTune = hero;
 }
@@ -104,6 +125,8 @@ function report(group: Slider["group"]): string {
     if (s.group === "hero" && s.unit === "deg") {
       return `${s.name}: ${v.toFixed(4)}   // ${((v * 180) / Math.PI).toFixed(2)}°`;
     }
+    if (s.name === "--reel-occl") return `${s.name}: rgba(0, 0, 0, ${v})   // ${s.label}`;
+    if (s.name === "--reel-cavity") return `${s.name}: ${greyValue(v)}   // ${s.label}`;
     return `${s.name}: ${cssValue(s, v)}   // ${s.label}`;
   });
   return `${group === "reels" ? "REELS" : "HERO 3D"}\n${lines.join("\n")}`;
