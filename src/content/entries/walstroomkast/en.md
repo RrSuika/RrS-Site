@@ -302,7 +302,7 @@ The project never quite lined up with what the client expected. The first few we
 - <strong style="color:var(--accent)">Material research only counts when it lands as a decision</strong>: comparing 316, 316L and 2205 duplex stainless, weighing HDPE against GFRP, all of it has to end in "so we pick this one". The research is not the hard part; collapsing it into a choice that can be questioned is.
 - <strong style="color:var(--accent)">Electrical standards are design input, not background reading</strong>: IP ratings, IK10, C5 coating, 1 Ω earthing, mounting height. These fixed how the cabinet could look.
 - <strong style="color:var(--accent)">When information does not arrive, decide anyway</strong>: the most expensive lesson here. The client's direction stayed unclear and we waited too long. Next time I set a deadline for the essential information and reroute or rewrite the brief when it passes.
-- <strong style="color:var(--accent)">Cross-discipline work runs on asking the right questions</strong>: I could follow the electrical students' reasoning because I had covered the fundamentals in my POW course, enough to ask about heat build-up, transformer efficiency and power supply selection.
+- <strong style="color:var(--accent)">Cross-discipline work runs on asking the right questions</strong>: I could follow the electrical students' reasoning because I had taught myself the fundamentals, enough to ask about heat build-up, transformer efficiency and power supply selection.
 - <strong style="color:var(--accent)">I want to be a hybrid designer</strong>: this project pushed me a step away from styling and concepts and toward the technical side. I want to keep building on electrical safety, embedded systems and basic electronics.
 
 ## Sources

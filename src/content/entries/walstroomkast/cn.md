@@ -303,7 +303,7 @@ translationKey: walstroomkast
 - <strong style="color:var(--accent)">材料研究的价值在于能不能落成决定</strong>：316、316L、2205 双相不锈钢的对比，HDPE 和 GFRP 的取舍，最后都要能给出一句"所以选这个"。研究本身不难，难的是把结论收成一个可以被追问的选择。
 - <strong style="color:var(--accent)">电气规范是设计输入，不是背景资料</strong>：IP 等级、IK10、C5 涂层、接地电阻 1 Ω、安装高度，这些都是决定柜体长什么样的硬约束。
 - <strong style="color:var(--accent)">等不到信息就要自己下决定</strong>：这个项目最贵的一课。委托方的方向一直不明确，我们等得太久。下次会先给关键信息定一个截止日期，到期没有就换路或自己重写题目。
-- <strong style="color:var(--accent)">跨专业协作靠问对问题</strong>：电气同学讲他们的方案时我能跟上，是因为在 POW 课上补过电工基础，能问到发热、变压器效率、电源选型这些具体的地方。
+- <strong style="color:var(--accent)">跨专业协作靠问对问题</strong>：电气同学讲他们的方案时我能跟上，是因为我自学过电工基础，能问到发热、变压器效率、电源选型这些具体的地方。
 - <strong style="color:var(--accent)">想成为混合型设计师</strong>：这个项目把我从"只管造型和概念"往技术那侧推了一截。我希望接下来在电气安全、嵌入式系统和基础电子上继续补。
 
 ## 来源

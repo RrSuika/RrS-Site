@@ -1583,17 +1583,16 @@ const gallery = project.data.gallery ?? [];
   @media (max-width: 800px) { .info-tabs { grid-template-columns: 1fr; } }
 
   /* --- Tab panel images ---
-     Markdown-emitted <img> inside a raw-HTML tab panel carries an inline
+     A markdown-emitted <img> inside a raw-HTML tab panel carries an inline
      `max-width:100%; display:block`, so it fills the panel width and, for a
      landscape render, blows straight past the panel's fixed height — the panel
-     then scrolls just to see one picture. Cap the height against the viewport
-     (`vh`, not `%`: the panel's height is definite, so a percentage would also
-     work, but vh keeps one image on screen at any window size) and let the
-     width follow from the aspect ratio. `width:auto` also has to beat the
-     site-wide `.project img { width:100% !important }`, hence `!important`. */
-  /* The height cap is generous on purpose: a `.tab-image` panel is tall enough
-     that the picture fills the remaining box, so the image lands flush with the
-     text column instead of floating in the middle of a 340px window. */
+     then scrolls just to see one picture. Capping the height against the PANEL
+     (`78%` of a definite height, not `vh`) keeps the picture inside the box and
+     lets the width follow from the aspect ratio. `width:auto` also has to beat
+     the site-wide `.project img { width:100% !important }`, hence `!important`.
+     `.tab-image` panels are tall enough (460px) that the picture fills the
+     remaining box, so it lands flush with the text column rather than floating
+     in the middle of a 340px window — see the height rule just below. */
   article .info-tabs .tab-panel img {
     max-width: 100% !important;
     max-height: 78%;
@@ -1632,16 +1631,24 @@ const gallery = project.data.gallery ?? [];
 
   /* --- Comparison table in a tab panel ---
      One row per option, one column per criterion (advantages / disadvantages),
-     which reads far calmer than a wall of pros/cons lines. A `verdict` row
-     spans the full width for the final choice. */
-  .tab-panel .mat-table {
+     which reads far calmer than a wall of pros/cons lines. The `verdict` row
+     spans the full width for the final choice.
+
+     ⚠️ SPECIFICITY: `article :global(table)` in this file compiles to
+     `article[data-astro-cid-…] table` — that is (0,1,1), which OUTRANKS a plain
+     `.tab-panel .mat-table` (0,2,0). Source order does not save you; specificity
+     is compared first. So these rules hang off `.project article .info-tabs` to
+     reach (0,2,2) and beat the global block, and the two tail rules the global
+     block steals (`tr:last-child td` border and `tr:hover td` tint) are restored
+     explicitly below. Check with the built CSS before changing selectors here. */
+  .project article .info-tabs .tab-panel .mat-table {
     width: 100%;
     border-collapse: collapse;
     margin: 0 0 12px;
     font-size: var(--text-scale-2xs);
     line-height: 1.65;
   }
-  .tab-panel .mat-table th {
+  .project article .info-tabs .tab-panel .mat-table th {
     text-align: left;
     vertical-align: bottom;
     padding: 0 12px 8px 0;
@@ -1651,29 +1658,36 @@ const gallery = project.data.gallery ?? [];
     text-transform: uppercase;
     color: var(--text-tertiary);
     border-bottom: 1px solid var(--border-strong);
+    white-space: normal;
   }
-  .tab-panel .mat-table td {
+  .project article .info-tabs .tab-panel .mat-table td {
     vertical-align: top;
     padding: 10px 12px 10px 0;
     color: var(--text-soft);
     border-bottom: 1px solid var(--border-divider);
   }
-  .tab-panel .mat-table td:first-child { color: var(--text-bright); width: 26%; }
-  .tab-panel .mat-table tr.verdict td {
+  .project article .info-tabs .tab-panel .mat-table td:first-child {
+    color: var(--text-bright);
+    width: 26%;
+  }
+  /* restore what the global block would otherwise take away */
+  .project article .info-tabs .tab-panel .mat-table tr:last-child td { border-bottom: none; }
+  .project article .info-tabs .tab-panel .mat-table tr.verdict td {
     border-bottom: none;
     padding-top: 12px;
     color: var(--text-soft);
   }
-  .tab-panel .mat-table .plus,
-  .tab-panel .mat-table .minus {
+  .project article .info-tabs .tab-panel .mat-table tr:hover td { background: transparent; }
+  .project article .info-tabs .tab-panel .mat-table .plus,
+  .project article .info-tabs .tab-panel .mat-table .minus {
     font-weight: 700;
     margin-right: 4px;
     font-size: var(--text-scale-sm);
   }
-  .tab-panel .mat-table .plus { color: #3fbf5f !important; }
-  .tab-panel .mat-table .minus { color: #e0483f !important; }
-  :root[data-theme="light"] .tab-panel .mat-table .plus { color: #1c7a38 !important; }
-  :root[data-theme="light"] .tab-panel .mat-table .minus { color: #b32a20 !important; }
+  .project article .info-tabs .tab-panel .mat-table .plus { color: #3fbf5f !important; }
+  .project article .info-tabs .tab-panel .mat-table .minus { color: #e0483f !important; }
+  :root[data-theme="light"] .project article .info-tabs .tab-panel .mat-table .plus { color: #1c7a38 !important; }
+  :root[data-theme="light"] .project article .info-tabs .tab-panel .mat-table .minus { color: #b32a20 !important; }
 
   /* --- Process scroll track --- */
   .process-scroll { overflow: hidden; cursor: grab; margin: 30px 0 0; user-select: none; -webkit-user-select: none; position: relative; height: 310px; }
