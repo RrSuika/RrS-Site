@@ -99,6 +99,25 @@ let posterCache: string | null = null;
  *  because the root's own attribute is parked on NEUTRAL_THEME until then. */
 let pending: Theme | null = null;
 
+/**
+ * The theme the visitor is actually LOOKING AT.
+ *
+ * ⚠️ **Not `rootTheme()`, and that distinction is a real bug that shipped.** For
+ * the length of a burst the root is parked on `NEUTRAL_THEME` (`dark`), so the
+ * attribute says "dark" no matter what the page was showing before the click.
+ * Any question of the form "did we just come from the light theme?" answered
+ * from the attribute therefore answers *no* on every click — which is exactly
+ * what happened to the starfield arrival: the fade was wired to
+ * `next === "dark" && rootTheme() !== "dark"`, the second half was always false
+ * during a burst, and the field cut in at full strength ("星空是突然刷新出来的").
+ * It only ever ran on a load or a reduced-motion swap, which is where it was
+ * originally measured.
+ *
+ * It is updated in `applyInstant` — the one place a theme actually lands — and
+ * deliberately NOT by `setRoot`, which is also used for the parking.
+ */
+let visibleTheme: Theme = rootTheme();
+
 /* ── theme plumbing ─────────────────────────────────────────────────────── */
 
 function reducedMotion(): boolean {
@@ -131,8 +150,12 @@ function intentTheme(): Theme {
  * It runs on the frame AFTER the swap, deliberately: `applyInstant` swaps with
  * transitions disabled, and starting the animation in that same frame would let
  * the "transitions off" rule swallow the first tick.
+ *
+ * ⚠️ 1.7 s, and it must stay over a second: the visitor asked for "一两秒的平滑从深到浅的
+ * 渐入", and a field of stars arriving over 1 s still reads as a cut because the
+ * rest of the page is already lit when it starts.
  */
-const ARRIVE_MS = 1100;
+const ARRIVE_MS = 1700;
 
 function arriveBackground(): void {
   const els = ["starfield-canvas", "lens-canvas"]
@@ -173,12 +196,16 @@ function persist(next: Theme): void {
  *  animates when they come back. */
 function applyInstant(next: Theme): void {
   const root = document.documentElement;
-  const cameFrom = rootTheme();
+  // ⚠️ `visibleTheme`, not `rootTheme()` — see the note on the variable. During a
+  // burst the attribute is parked on the neutral theme, so reading it here always
+  // says "dark" and the arrival below never fires.
+  const cameFrom = visibleTheme;
   root.classList.add("theme-land");
   setRoot(next);
   persist(next);
   void root.offsetHeight; // flush style + layout while transitions are off
   root.classList.remove("theme-land");
+  visibleTheme = next;
 
   // ⚠️ The starfield fade belongs HERE, at the landing — not in `setRoot`. During
   // a burst the root is parked on the neutral theme, so `setRoot` fires while the

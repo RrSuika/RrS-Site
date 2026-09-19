@@ -233,26 +233,33 @@ const aboutPath = getLocalizedPath("/about", language);
     color: #888;
   }
 
+  /* ⚠️ ONE grid for the whole block, with the row wrappers flattened by
+     `display: contents` (2026-09-19: the location / status / version lines must
+     line up with the LEFT edge of `RrSuika_STUDIO`).
+     It used to be one grid PER ROW — `10ch 1fr` with the labels right-aligned —
+     so the values started a fixed 10ch in, and the block's visible left edge sat
+     well to the right of the wordmark. A single grid gives both properties at
+     once: the labels' left edges land on the identity block's left edge (which is
+     the h3's, since neither has padding), and the values still share one column,
+     because `max-content` is the widest label — so en/nl
+     ("LOCATION:"/"STATUS:"/"VERSION:") stay aligned instead of going ragged. */
   .meta {
     margin-top: 30px;
 
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 10px;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    column-gap: 0.5ch;
+    row-gap: 10px;
 
     font-size: var(--text-scale-2xs);
   }
 
   .meta > div {
-    display: grid;
-    grid-template-columns: 10ch 1fr;
+    display: contents;
   }
 
   .meta-label {
-    text-align: right;
-    padding-right: 0.5ch;
+    text-align: left;
   }
 
   .meta strong {

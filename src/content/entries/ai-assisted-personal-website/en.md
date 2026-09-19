@@ -1,5 +1,5 @@
 ---
-title: "AI-Assisted Personal Website: From One Page to a Starfield"
+title: "AI-Assisted Personal Website: From One Page to a Complex Database"
 date: 2026-05-19
 dateLabel: "May 19"
 description: "Learning to build and deploy a personal website with AI. A record of the iterations, lessons learned, and what AI can do versus what still needs a human."

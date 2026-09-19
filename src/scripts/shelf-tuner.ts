@@ -18,8 +18,8 @@
 const KEY = "rrsuika-shelf-tune-v1";
 
 type Slider = {
-  group: "reels" | "hero";
-  /** CSS custom property (reels) or `__shelfTune` key (hero). */
+  group: "reels" | "plate" | "shell" | "depth" | "hero";
+  /** CSS custom property (reels/plate) or `__shelfTune` key (hero). */
   name: string;
   label: string;
   min: number;
@@ -28,7 +28,7 @@ type Slider = {
   /** Shipped value, and the fallback for RESET. */
   value: number;
   /** Optional display transform, e.g. radians → degrees. */
-  unit?: "deg" | "em" | "pct" | "";
+  unit?: "deg" | "em" | "px" | "pct" | "";
 };
 
 const SLIDERS: Slider[] = [
@@ -50,7 +50,58 @@ const SLIDERS: Slider[] = [
   { group: "reels", name: "--reel-spoke-inset", label: "spoke inset", min: 2, max: 30, step: 0.5, value: 25, unit: "pct" },
   { group: "reels", name: "--reel-spoke-alpha", label: "spoke alpha", min: 0, max: 0.9, step: 0.01, value: 0.25 },
   { group: "reels", name: "--reel-spoke-on", label: "spoke width", min: 1, max: 14, step: 0.5, value: 7, unit: "deg" },
-  { group: "reels", name: "--reel-spoke-gap", label: "spoke pitch", min: 16, max: 120, step: 1, value: 120, unit: "deg" },
+  { group: "reels", name: "--reel-spoke-gap", label: "spoke pitch (6 lines = 60°)", min: 16, max: 120, step: 1, value: 60, unit: "deg" },
+  // How far each well sits from the centre — the window's own flex gap. The plate
+  // between them is capped by whatever this leaves, so the two controls interact.
+  { group: "reels", name: "--well-gap", label: "well gap (from centre)", min: 0, max: 2, step: 0.02, value: 0.5, unit: "em" },
+  // ⚠️ NOT the same control as the gap: the wells are spaced with
+  // `justify-content: space-between`, so shrinking the gap only closes the middle
+  // — each well stays pinned to its own edge. This is the extra inline padding
+  // that actually pulls both wells toward the centre, which is what a real
+  // cassette needs (its hub centres sit about ±21% of the tape width).
+  // ⚠️ The budget: the window's content box is ~359px and two wells + two gaps
+  // take ~121px of it, so past ~2.9em the PLATE starts shrinking below its
+  // `--plate-w`, and past ~4.3em its print is clipped. Pull the wells in first,
+  // then re-fit `plate width` against what is left.
+  { group: "reels", name: "--well-inset", label: "well inset (from edges)", min: 0, max: 6, step: 0.05, value: 2.8, unit: "em" },
+  // ── the narrow frame between the two wells ──
+  // This is the plate the type code and the 100/50/0 scale are printed on. It is
+  // NOT a hub bore (that is `hub width/height` above) and not the window itself.
+  // ⚠️ `plate width` is a share of the tape WINDOW, and the top of its range is
+  // capped in practice by the gap the two wells leave: the wells are rigid and
+  // the plate is the only item that can shrink, so 100% means "as wide as that
+  // gap allows" rather than "as wide as the window".
+  // ⚠️ `plate opacity` SHIPS AT 0 — the shipped plate is the print and its
+  // hairline ring with no milky fill at all.
+  { group: "plate", name: "--plate-w", label: "plate width", min: 15, max: 100, step: 0.5, value: 46, unit: "pct" },
+  // ⚠️ 4.2em is the floor: the two rows (the type code over the 100/50/0 scale)
+  // need ~4.05em, and below that the frame crops its own print rather than
+  // getting thinner.
+  { group: "plate", name: "--plate-h", label: "plate height", min: 4.2, max: 10, step: 0.05, value: 4.7, unit: "em" },
+  { group: "plate", name: "--plate-alpha", label: "plate opacity", min: 0, max: 1, step: 0.01, value: 0 },
+  // ── the moulding around the print ──
+  // ⚠️ `window width` resizes the SMOKED FRAME ONLY. The wells and the plate keep
+  // their positions (the window's inline padding is derived from this value, so
+  // its content box never changes), which is why the slider's floor is 60%: below
+  // the wells' own span (~59%) there is nothing left for the padding to absorb.
+  // `plate width` in the PLATE group is the narrow printed frame BETWEEN them;
+  // `well inset` is how far each well is pulled off its own edge.
+  { group: "shell", name: "--window-w", label: "window width (frame only)", min: 60, max: 100, step: 0.5, value: 69.5, unit: "pct" },
+  // `frame` is the shell showing around the J-card: raise it and the frame gets
+  // thicker while the artwork inside shrinks. `top band` is the moulded strip
+  // across the top of the face.
+  { group: "shell", name: "--shell-frame", label: "frame thickness", min: 0, max: 2, step: 0.02, value: 0.98, unit: "em" },
+  { group: "shell", name: "--recess-h", label: "top band height", min: 0, max: 4, step: 0.05, value: 1.9, unit: "em" },
+  // ── DEPTH — how the row recedes ──
+  // Both are read by `.cas-f::after` / `.cas.is-far .cas-f > *` against the
+  // per-tape `--cas-depth` the render loop writes (0 at the selection, 1 at the
+  // far end of the painted band).
+  // ⚠️ `depth rate` is the veil's opacity at depth 1, scaled: opacity =
+  // min(1, depth × rate). 3.2 means the veil reaches full strength by depth 0.31
+  // (about two slots out); 1.0 would make the whole row nearly flat again.
+  // ⚠️ `depth blur` is LIGHT-THEME ONLY — the dark theme recedes by dimming alone.
+  { group: "depth", name: "--dim-rate", label: "depth rate (veil falloff)", min: 1, max: 8, step: 0.1, value: 3.2 },
+  { group: "depth", name: "--depth-blur", label: "depth blur (light)", min: 0, max: 6, step: 0.1, value: 2.4, unit: "px" },
   // ── the selected tape ──
   // Defaults are the BAKED pose (2026-09-19), so RESET returns to what ships.
   { group: "hero", name: "ryCenter", label: "yaw", min: -0.5, max: 0.6, step: 0.002, value: 0.222, unit: "deg" },
@@ -87,6 +138,7 @@ const cssValue = (s: Slider, v: number): string => {
   if (s.unit === "pct") return `${v}%`;
   if (s.unit === "deg") return `${v}deg`;
   if (s.unit === "em") return `${v}em`;
+  if (s.unit === "px") return `${v}px`;
   return String(Number(v.toFixed(4)));
 };
 
@@ -110,7 +162,7 @@ function apply(): void {
   const root = document.documentElement;
   const hero: Record<string, number> = {};
   for (const s of SLIDERS) {
-    if (s.group === "reels") {
+    if (s.group !== "hero") {
       root.style.setProperty(
         s.name,
         s.name === "--reel-occl"
@@ -124,6 +176,22 @@ function apply(): void {
   (window as typeof window & { __shelfTune?: Record<string, number> }).__shelfTune = hero;
 }
 
+const GROUP_TITLE: Record<Slider["group"], string> = {
+  reels: "REELS — the two rings in the window",
+  plate: "PLATE — the narrow frame between them",
+  shell: "SHELL — moulding + window",
+  depth: "DEPTH — how the row recedes",
+  hero: "HERO — selected tape",
+};
+
+const GROUP_COPY: Record<Slider["group"], string> = {
+  reels: "REELS",
+  plate: "PLATE",
+  shell: "SHELL",
+  depth: "DEPTH",
+  hero: "HERO 3D",
+};
+
 function report(group: Slider["group"]): string {
   const rows = SLIDERS.filter((s) => s.group === group);
   const lines = rows.map((s) => {
@@ -135,7 +203,7 @@ function report(group: Slider["group"]): string {
     if (s.name === "--reel-cavity") return `${s.name}: ${greyValue(v)}   // ${s.label}`;
     return `${s.name}: ${cssValue(s, v)}   // ${s.label}`;
   });
-  return `${group === "reels" ? "REELS" : "HERO 3D"}\n${lines.join("\n")}`;
+  return `${GROUP_COPY[group]}\n${lines.join("\n")}`;
 }
 
 const STYLE = `
@@ -217,11 +285,11 @@ export function initShelfTuner(): void {
 
   const outputs = new Map<string, HTMLOutputElement>();
 
-  for (const group of ["reels", "hero"] as const) {
+  for (const group of ["reels", "plate", "shell", "depth", "hero"] as const) {
     const box = document.createElement("div");
     box.className = "tune-group";
     const title = document.createElement("h4");
-    title.textContent = group === "reels" ? "REELS — both hubs" : "HERO — selected tape";
+    title.textContent = GROUP_TITLE[group];
     box.appendChild(title);
 
     for (const s of SLIDERS.filter((x) => x.group === group)) {
@@ -305,7 +373,9 @@ export function initShelfTuner(): void {
               ? `${v}%`
               : s.unit === "em"
                 ? `${v}em`
-                : v.toFixed(2);
+                : s.unit === "px"
+                  ? `${v}px`
+                  : v.toFixed(2);
     }
   }
 

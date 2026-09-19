@@ -258,11 +258,18 @@ const coverUrls = items
 
                   <div class="cas-label-scrim" aria-hidden="true" />
 
+                  {/* The moulded band across the top of the face. On a real shell
+                      this is where the second window / label strip sits; here it
+                      frames the record line. See `.cas-recess`. */}
+                  <div class="cas-recess" aria-hidden="true" />
+
                   <div class="cas-label-head">
                     <span class="cas-node">
                       {t.card.projectNode} {item.type}
                     </span>
-                    <span class="cas-deck-idx">{item.index}</span>
+                    {/* The date rides the header row, opposite the record node
+                        (2026-09-19: "日期则移动到右上角，和 PRJ_NODE // 一样高度"). */}
+                    <span class="cas-head-date">{item.date}</span>
                   </div>
 
                   <h2 class="cas-title">{item.title}</h2>
@@ -279,13 +286,25 @@ const coverUrls = items
                     </span>
 
                     {/* Between the hubs, as on the real moulding: a recessed well
-                        with the tape's technical mark. One line, generously
-                        tracked — a wall of 5px micro-type reads as printed noise
-                        at this size, which is what made the first version look
-                        cheap. */}
+                        with the tape's technical mark and, under it, the length
+                        scale. One line, generously tracked — a wall of 5px
+                        micro-type reads as printed noise at this size, which is
+                        what made the first version look cheap. */}
                     <span class="cas-plate">
-                      <span class="cas-plate-tick" />
-                      <span class="cas-plate-mark">TYPE II · C-90</span>
+                      <span class="cas-plate-head">
+                        <span class="cas-plate-tick" />
+                        <span class="cas-plate-mark">TYPE II · C-90</span>
+                      </span>
+                      {/* The tape-length scale: 100 at the left down to 0 at the
+                          right, the way a real cassette's window label reads. */}
+                      <span class="cas-plate-scale">
+                        <span class="cas-plate-ticks" />
+                        <span class="cas-plate-nums">
+                          <span>100</span>
+                          <span>50</span>
+                          <span>0</span>
+                        </span>
+                      </span>
                     </span>
 
                     <span class="cas-reel">
@@ -294,19 +313,23 @@ const coverUrls = items
                       <span class="cas-reel-hub" />
                     </span>
 
-                    {/* The tape path: the ribbon runs hub to hub behind the
-                        bottom of the window. The guide rollers that used to sit
-                        on it are gone — see `.cas-path` in the stylesheet. */}
-                    <span class="cas-path">
-                      <span class="cas-path-ribbon" />
-                    </span>
+                    {/* ⚠️ The tape ribbon (`.cas-path`) is GONE too (2026-09-19:
+                        "刻度条下方有一个两侧渐变的线去掉"): a 1px rule fading out at
+                        both ends, sitting under the plate's 100/50/0 scale, read as
+                        a stray underline rather than as the tape path behind the
+                        window. Its guide rollers had already been removed for the
+                        same reason. Do not bring the line back without a reason
+                        visible at 400px. */}
                   </div>
 
-                  {/* Moulded shell mark: embossed, not printed. */}
-                  <span class="cas-mould" aria-hidden="true">{brand} TYPE II</span>
+                  {/* Moulded shell mark: embossed, not printed. ⚠️ The brand is
+                      gone from it ("RRSUIKA TYPE II 可以去掉 RRSUIKA") — the
+                      brand is already on both spines and in the blank tape's
+                      header, and a third copy inside a 4px embossed strip is
+                      noise. */}
+                  <span class="cas-mould" aria-hidden="true">TYPE II</span>
 
                   <div class="cas-deck-meta" aria-hidden="true">
-                    <span class="cas-deck-date">{item.date}</span>
                     {item.team && (
                       <span class="cas-deck-team">{t.card.team.replace(/\//g, "")}</span>
                     )}
@@ -386,9 +409,6 @@ const coverUrls = items
                       <span class="cas-reel-ring" />
                       <span class="cas-reel-hub" />
                     </span>
-                    <span class="cas-path">
-                      <span class="cas-path-ribbon" />
-                    </span>
                   </span>
                 </div>
               </div>
@@ -452,8 +472,15 @@ const coverUrls = items
         {/* The way in. Routing it through the same launcher as a click on the
             tape keeps one transition, whichever affordance is used. */}
         <button class="shelf-open" id="shelf-open" type="button">
+          {/* ⚠️ ONE arrow, and it is the one inside the label. The label string is
+              `inspect: "INSPECT FILE >"` in all three languages, and this button
+              also carried a drawn arrow at its right edge — two chevrons on one
+              slab (2026-09-19: "INSPECT 按钮右侧有两个箭头，去掉最右侧的那个箭头").
+              The DRAWN one is the one that went. If the `>` should go instead (and
+              the animated arrow come back), delete the `>` from the three
+              `shelf.inspect` strings in `translations.ts` and restore
+              `.shelf-open-arrow` from git history — do not run both. */}
           <span class="shelf-open-label">{t.shelf.inspect}</span>
-          <span class="shelf-open-arrow" aria-hidden="true"></span>
         </button>
       </aside>
 
@@ -475,9 +502,6 @@ const coverUrls = items
 
       <div class="shelf-foot">
         <span class="shelf-hint">{t.shelf.instructions}</span>
-        <button class="shelf-replay" id="shelf-replay" type="button">
-          {t.shelf.replay}
-        </button>
       </div>
 
       <p class="shelf-empty" id="shelf-empty" hidden>{t.shelf.empty}</p>
@@ -735,11 +759,18 @@ const coverUrls = items
   }
 
   :global(:root[data-theme="light"]) .shelf-floor {
-    background: radial-gradient(
-      ellipse at center,
-      rgba(0, 0, 0, 0.26),
-      transparent 68%
-    );
+    /* ⚠️ **There are TWO shadows under a tape, and this is the second one**
+       (2026-09-19: "light mode 下磁带盒下方依旧有阴影，也就是选中磁带盒下方有一个椭圆形
+       阴影。你只去除了所有磁带盒的下方阴影，但实际上有两种阴影存在"). The first is the
+       per-tape cast pair — `--tape-drop-*` / `--wall-drop` on the faces. This
+       ellipse is the FLOOR the whole row stands on, centred under the selection,
+       and removing only the first pair left it sitting there looking exactly like
+       a tape shadow. On a pale page a `min(74vw, 900px)` black ellipse at 0.26
+       was also the heaviest thing in the frame — the same "闷" the shell pass was
+       fixing.
+       ⚠️ The dark theme KEEPS it: against black this ellipse is what stops the row
+       from floating, and there is nothing heavy about it there. */
+    background: none;
   }
 
   /* ══════════════════════════════════════════
@@ -833,10 +864,6 @@ const coverUrls = items
     --blank-ink: rgba(226, 220, 206, 0.8);
     --blank-ink-dim: rgba(206, 200, 186, 0.58);
 
-    /* The ribbon inside the window. Tokenised because the light theme's window
-       cavity is warm and dark, and an ivory ribbon at 0.5 alpha vanished on it. */
-    --path-ink: rgba(228, 220, 204, 0.5);
-
     /* Neighbours are dimmed with this, never with `opacity`: a see-through tape
        lets the tape behind it show through and the row reads as stacked ghosts
        (worst on the light theme, where the bleed is obvious). */
@@ -913,27 +940,31 @@ const coverUrls = items
      specular". The gloss itself lives in `.cas-label::before` (`--gloss-*`), and
      it is a corner sheen on the moulding — never a band across the printed
      J-card, which reads as a sticker lying on the artwork.
-     ⚠️ **LIGHTENED once more 2026-09-19** ("light mode 下磁带盒的外壳太暗了，导致侧面
-     标题看不清"). Two things were fighting the spine titles: the shell family sat a
-     full step darker than the page it stands on, and the neighbour veil took
-     another ~45% of the light off it. The tokens below are lifted roughly one step
-     (`--shell-spine-b` #c4b89c → #d5caae and so on), `--shell-ink*` is darkened,
-     and the veil is pulled back — see the measurement in the `--shell-dim-*` note. */
+     ⚠️ **LIGHTENED twice, 2026-09-19.** First pass ("外壳太暗了，导致侧面标题看不清"):
+     the shell family sat a full step darker than the page it stands on and the
+     neighbour veil took another ~45% of the light off it, so the spine titles —
+     dark ink on a mid-tone bed — measured 2.6:1. Second pass ("做的亮一些，现在太暗了，
+     给人很闷的感觉"): the body is now a BRIGHT warm neutral near the top of its range
+     and the veil is down to 0.18/0.28, which is what a cassette-futurism palette
+     does — the object is the lightest thing in the frame and the haze only orders
+     the row. ⚠️ `--shell-ink*` must stay dark (it is the printed spine type) and
+     `--gloss-a` goes UP with the body: on a bright moulding the specular is what
+     reads as plastic instead of paper. */
   :global(:root[data-theme="light"]) .cas {
-    --shell-top: #f8f1e2;
-    --shell-mid: #eae0ca;
-    --shell-bot: #cec1a6;
+    --shell-top: #ffffff;
+    --shell-mid: #fbf5ea;
+    --shell-bot: #e4dbc6;
 
-    --shell-spine-a: #b3a68b;
-    --shell-spine-b: #d5caae;
-    --shell-spine-c: #efe6cf;
-    --shell-spine-d: #c0b399;
+    --shell-spine-a: #cfc3a8;
+    --shell-spine-b: #eee5d2;
+    --shell-spine-c: #fdf9f0;
+    --shell-spine-d: #dbd0b6;
 
-    --shell-edge-a: #f4ecda;
-    --shell-edge-b: #c4b79c;
-    --shell-edge-under-a: #b5a88c;
-    --shell-edge-under-b: #e2d8be;
-    --shell-back: #d7cbb0;
+    --shell-edge-a: #fffdf6;
+    --shell-edge-b: #d8ccb2;
+    --shell-edge-under-a: #c9bda1;
+    --shell-edge-under-b: #f3ecdc;
+    --shell-back: #efe7d5;
 
     --shell-rim: rgba(255, 255, 255, 0.95);
     --shell-rim-inner: rgba(74, 58, 36, 0.3);
@@ -952,8 +983,12 @@ const coverUrls = items
     --shell-ink-dim: rgba(56, 44, 24, 0.75);
 
     /* Gloss: a warm-white sheen, present but restrained — the tape is glossy
-       plastic, not a mirror. */
-    --gloss-a: 0.4;
+       plastic, not a mirror. ⚠️ Raised 0.4 → 0.55 → 0.62 with the brighter body:
+       on a near-white moulding the sheen is the only thing that separates "glossy
+       plastic" from "paper", and at the earlier values it vanished into the new
+       highlight. This is also what the cassette-futurism palettes do — bone body,
+       ONE hard specular, cool shadow. */
+    --gloss-a: 0.62;
     --gloss-c: rgba(255, 247, 224, 1);
 
     --glass-lip: rgba(52, 40, 22, 0.46);
@@ -976,29 +1011,36 @@ const coverUrls = items
     --blank-ink: rgba(58, 44, 24, 0.82);
     --blank-ink-dim: rgba(76, 60, 34, 0.6);
 
-    --path-ink: rgba(255, 250, 238, 0.42);
-
     --reel-cavity: #46402f;
     --reel-occl: rgba(0, 0, 0, 0.36);
     --reel-far-light: 0.5;
 
-    /* ⚠️ The veil stays COOL — a warm veil on a beige shell just makes the
-       neighbours a darker version of the selection — but it is much LIGHTER than
-       the first pass (0.40/0.54 → 0.26/0.38, 2026-09-19: "light mode 下磁带盒的
-       外壳太暗了，导致侧面标题看不清"). The spine titles are dark ink on this
-       shell, so the veil is what decides their contrast: at 0.40 over the old
-       mid-tone spine the composite measured ~3.2:1 against `--shell-ink`, which
-       is the AA-large floor and reads as mush at a 0.72em title. With the
-       lightened spine bed plus this veil it measures ~6:1 (see the note on the
-       light spine tokens above). Depth still reads because the selection is also
-       pulled forward in Z and lit. */
-    --shell-dim-a: rgba(52, 62, 80, 0.26);
-    --shell-dim-b: rgba(32, 40, 54, 0.38);
+    /* ⚠️ THE LIGHT THEME'S VEIL IS THE PAGE'S OWN PAPER, not a dark tint
+       (2026-09-19: "light mode下则是一个贴合背景色的亮色渐变，模拟一种空气透视的效果，越远
+       细节越模糊"). It went 0.40/0.54 → 0.26/0.38 → 0.18/0.28 of a COOL BLACK, each
+       pass tuned for the spine titles' contrast (dark ink on this shell), and that
+       is the wrong knob for the job: a dark veil DARKENS the row, the opposite of
+       aerial perspective, where a distant object loses contrast toward the
+       background it stands in front of. A paper wash at the same alphas lightens
+       the shell instead, which raises the titles' contrast rather than eating it.
+       ⚠️ Depth no longer rests on the veil alone: `.cas-f::after`'s opacity is
+       scaled by `--cas-depth`, so the veil is LIGHT on the nearest neighbour and
+       full at the far end, and `--depth-blur` dissolves the print of the far ones. */
+    --shell-dim-a: rgba(240, 235, 224, 0.6);
+    --shell-dim-b: rgba(240, 235, 224, 0.82);
 
-    --tape-drop-far: 0 26px 52px rgba(34, 44, 62, 0.34);
-    --tape-drop-near: 0 5px 14px rgba(34, 44, 62, 0.3);
-    --wall-drop: 0 18px 36px rgba(34, 44, 62, 0.3);
-    --tape-drop-short: 0 10px 18px rgba(34, 44, 62, 0.3);
+    /* ⚠️ NO CAST SHADOW in the light theme (2026-09-19: "light mode 下，去掉磁带盒底部的
+       阴影"). A 52px black drop under a bright moulding is what made the row read as
+       heavy — the object sits on a pale page, and the shadow was the only dark
+       thing left in the frame once the shell was lifted.
+       ⚠️ They are `0 0 0 rgba(0,0,0,0)`, NOT `none`: every one of these is used in
+       a comma-joined `box-shadow` list, and `none` is only valid as the SOLE value
+       of the property — writing it there would drop the whole declaration and take
+       the shell's bevel insets with it. */
+    --tape-drop-far: 0 0 0 rgba(0, 0, 0, 0);
+    --tape-drop-near: 0 0 0 rgba(0, 0, 0, 0);
+    --wall-drop: 0 0 0 rgba(0, 0, 0, 0);
+    --tape-drop-short: 0 0 0 rgba(0, 0, 0, 0);
 
     --key-glow: rgba(255, 186, 116, 0.24);
     --key-edge: rgba(190, 118, 44, 0.4);
@@ -1014,6 +1056,16 @@ const coverUrls = items
     top: 50%;
 
     opacity: var(--cas-o, 1);
+
+    /* ⚠️ This makes the face its own stacking context, and that is load-bearing
+       for the veil below: `::after` needs a z-index above every element printed
+       inside the face, and without a stacking context here that z-index would be
+       compared against the OTHER FACES of the same tape (which live in `.cas`'s
+       context) — the wash would then be able to paint over a spine.
+       ⚠️ Safe for the 3D: `.cas` is the element with `transform-style:
+       preserve-3d`, and grouping properties only flatten the element that carries
+       it. The face is a flat leaf either way. */
+    isolation: isolate;
 
     backface-visibility: hidden;
     pointer-events: none;
@@ -1038,18 +1090,53 @@ const coverUrls = items
     opacity: var(--cas-o, 1);
   }
 
-  /* Behind the selection the tapes stay SOLID and are dimmed instead.
-     ⚠️ The dim is a translucent veil over an OPAQUE tape — that is what makes
-     the artwork recede while the object stays solid. Dimming the whole element
-     with `opacity` instead would let the neighbours behind it show through. */
+  /* Behind the selection the tapes stay SOLID and are veiled instead — and the
+     veil is DISTANCE-DRIVEN (2026-09-19: "dark mode下，给距离画面中心越远的磁带盒做整体
+     压暗的渐变，模拟距离画面越远越远，拉开空间距离").
+     ⚠️ There is no `--cas-beneath` gate any more. The veil used to be a flat 1 for
+     every non-selection, flipped in a single frame the moment a tape crossed the
+     centre — which is exactly why it needed a 0.5s transition to hide that step.
+     `--cas-depth` (0 at the selection, 1 at the far end of the painted band) is
+     written per tape by the render loop and drives the opacity continuously:
+     `× --dim-rate`, clamped at 1, so the falloff runs smoothly through the centre,
+     the nearest neighbour keeps a light veil and the far end reaches the full one.
+     Putting a gate back on top would reintroduce the step.
+     ⚠️ **`z-index: 8` is what makes it cover the WHOLE tape** (2026-09-19: "深色渐变
+     …并没有应用到磁带盒标题字和下面的强调色线，PRJ_NODE // 字和右侧日期字以及他俩底部的
+     边框"). The wash was at `z-index: auto`, i.e. UNDER everything printed on the
+     card: the title (`z-index: 4`), the colour rail (3), the header row (2), the
+     scrim (1) and the moulded top band with its bottom hairline (1). Measured
+     A/B on one far tape with `--dim-rate` 0 → 8, sampling that tape's own colour
+     rail: it now darkens with the rest of the shell instead of staying lit.
+     ⚠️ It must stay above every in-face z-index (7 is the highest inside a face
+     today — the blank tape's sheet); `isolation: isolate` on `.cas-f` keeps the
+     number scoped to the face. */
   .cas-f::after {
     content: "";
     position: absolute;
     inset: 0;
+    z-index: 8;
     pointer-events: none;
     background: linear-gradient(180deg, var(--shell-dim-a), var(--shell-dim-b));
-    opacity: var(--cas-beneath, 0);
-    transition: opacity 0.5s var(--ease-out);
+    opacity: min(1, var(--cas-depth, 0) * var(--dim-rate, 3.2));
+    /* Short on purpose: the depth term is already continuous, so a long transition
+       would only make the veil lag behind the row it is describing. */
+    transition: opacity 0.2s linear;
+  }
+
+  /* ── AERIAL PERSPECTIVE — the light theme dissolves a far tape's print ──
+     (2026-09-19: "light mode下…模拟一种空气透视的效果，越远细节越模糊的滤镜".)
+     ⚠️ SAFE ONLY BECAUSE THIS IS INSIDE THE FACE. A `filter` on `.cas` — or on any
+     other ancestor of a `.cas-f` — forces `transform-style: flat` and collapses the
+     whole box into a flat card. `.cas` is the preserve-3d box and the faces are its
+     children; everything below a face is a flat leaf with nothing left to flatten.
+     ⚠️ Blurring the spine spans matters as much as blurring the label: a distant
+     tape is turned ~58° toward edge-on, so its SPINE is most of what you see.
+     ⚠️ `.is-far` keeps `filter` off the tapes that do not need it — `blur(0px)` is
+     still a filter, which costs a rasterisation pass and switches off subpixel text
+     antialiasing, so the hero's title would lose its edge for nothing. */
+  :global(:root[data-theme="light"]) .cas.is-far .cas-f > * {
+    filter: blur(calc(var(--cas-depth, 0) * var(--depth-blur, 2.4px)));
   }
 
   /* ── Blank cassette: an UNWRITTEN tape ──
@@ -1156,12 +1243,6 @@ const coverUrls = items
     );
   }
 
-  /* The blank's ribbon is fainter than a printed tape's: the tape is wound
-     behind the window, not read through it. */
-  .cas-blank .cas-path-ribbon {
-    opacity: 0.7;
-  }
-
   /* The wells hold a full pack of tape, so the spokes are hidden — a blank has
      no reel position to read. */
   .cas-blank .cas-reel-spokes {
@@ -1233,10 +1314,16 @@ const coverUrls = items
     pointer-events: none;
   }
 
-  /* ── The cover fills the whole face; everything else reads on top of it ── */
+  /* ── The cover fills the face inside the BEZEL ──
+     ⚠️ `inset: var(--shell-frame)`, not `inset: 0` (2026-09-19: "磁带盒的边框做厚一点，
+     比如边框变厚，那其中的图片就缩小"). The face behind the label is the shell's own
+     gradient, so the inset *is* the moulding: raise the token and the frame gets
+     thicker while the printed cover shrinks — and the whole deck moves with it,
+     because the window, the title and the moulding are all positioned as
+     percentages of this box. 0 restores the old full-bleed card. */
   .cas-label {
     position: absolute;
-    inset: 0;
+    inset: var(--shell-frame, 0);
     overflow: hidden;
     background: var(--shell-mid);
   }
@@ -1369,6 +1456,12 @@ const coverUrls = items
 
     display: flex;
     align-items: center;
+    /* ⚠️ `line-height: 1.2` is what makes the two labels share a height. With
+       `normal`, the node measured 18.31px against the date's 15.35px at the same
+       font-size, so `align-items: center` centred two different boxes and the
+       date sat 4.5px high (2026-09-19: "日期…和 PRJ_NODE // 一样高度"). An
+       explicit line-height gives both children the same box. */
+    line-height: 1.2;
     justify-content: space-between;
     gap: 0.5em;
 
@@ -1384,24 +1477,68 @@ const coverUrls = items
     text-overflow: ellipsis;
   }
 
-  .cas-deck-idx {
+  /* The date, opposite the record node on the header row. Same size and colour
+     role as its neighbour, one step quieter. */
+  .cas-head-date {
     flex: 0 0 auto;
-    font-weight: 700;
-    color: var(--cas-accent-soft, var(--accent));
+    white-space: nowrap;
+    color: rgba(214, 206, 190, 0.72);
   }
+
+  /* ⚠️ `.cas-deck-idx` (the `05 / 06 / 07` at the top-right of the face) is
+     GONE (2026-09-19: "磁带盒右上角的 05 06 07 这样的数字去掉，他在其他地方已经
+     重复出现过了") — the record number is already on the panel, on the spine and
+     in the footer readout, and a second copy on the artwork was just noise.
+     Do not bring it back without removing one of the other three. */
 
   .cas-deck-team {
     color: rgba(233, 227, 214, 0.72);
   }
 
+  /* ── The moulded band across the top of the face ──
+     The second window a real shell carries above the hub window. It is drawn in
+     the same material language as `.cas-window` — a smoked cavity, a hard lip at
+     the near edge, a hairline of light on the far one — because the two are the
+     same part on the real object, and it frames the record line that already sat
+     at the top of the card. Height is a token (`--recess-h`) so it can be dialled
+     against the title block. */
+  .cas-recess {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: var(--recess-h, 1.9em);
+    z-index: 1;
+    pointer-events: none;
+
+    background: linear-gradient(
+      180deg,
+      var(--glass-cavity-a),
+      var(--glass-cavity-b)
+    );
+
+    box-shadow:
+      inset 0 0 0 1px var(--shell-rim),
+      inset 0 1px 2px var(--glass-lip),
+      inset 0 -1px 0 var(--glass-edge);
+  }
+
   /* The title swaps to the display face: JetBrains Mono 900 at this size is a
      wall of rectangles, and a wide condensed face is what makes a long project
      name legible on a 250px tape. */
+  /* ⚠️ `bottom: 13%`, and the constraint is the WINDOW, not taste
+     (2026-09-19: "磁带盒正面左下方的标题目前和背后的黑框重叠了，我希望他往下移动一点").
+     The label is ~254px tall and the title is bottom-anchored and grows UPWARD,
+     so a two-line title needs its bottom edge at most
+     `window bottom (27.6%) − two lines (~15.4%)` = ~12% to clear the cavity, and
+     ~10.5% leaves a visible gap. At the old 25% the block's top landed at 39%,
+     i.e. across the window's smoked frame — which is exactly what the user was
+     looking at. */
   .cas-title {
     position: absolute;
     left: 5%;
     right: 5%;
-    bottom: 25%;
+    bottom: 10.5%;
     z-index: 4;
 
     margin: 0;
@@ -1442,17 +1579,38 @@ const coverUrls = items
      where the shell turns in, and a hairline of light on the far edge only. */
   .cas-window {
     position: absolute;
-    left: 6%;
-    right: 6%;
+    /* ⚠️ Width by TOKEN, centred by the left offset (2026-09-19: "加一个可调参数，
+       能调圆形后方的长方形框的宽度"). `left/right: 6%` was exactly this 88% and
+       could not be tuned. Expressed as an offset rather than
+       `left: 0 + translateX(-50%)` on purpose: a 2D transform on this element
+       would be harmless (it is a leaf inside the face, not an ancestor of one)
+       but the offset form has nothing to fall out of step with. */
+    left: calc((100% - var(--window-w, 88%)) / 2);
+    width: var(--window-w, 88%);
     bottom: 27.6%;
     z-index: 3;
 
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5em;
+    gap: var(--well-gap, 0.5em);
 
-    padding: 0.42em 0.7em 0.5em;
+    /* ⚠️ `--well-inset` pulls BOTH wells toward the centre, and it is not the
+       same control as `--well-gap`: the wells are spaced by
+       `justify-content: space-between`, so shrinking the gap only closes the
+       middle — each well stays pinned to its own edge of the window. Extra inline
+       padding is what actually moves them inward, which is what a real cassette
+       needs: its two hub centres sit about ±21% of the tape width from the
+       middle, against ±35% with the inset at 0 (2026-09-19: "两个圆环距离中心太远
+       了，不符合现实的磁带盒的圆环的位置").
+       ⚠️ The padding is DERIVED, and that is what makes `--window-w` a
+       frame-only control: `(window − wells) / 2` equals the old
+       `0.7em + --well-inset` exactly while `--window-w` sits at its default, and
+       for every other value it holds the CONTENT box at the fixed `--wells-w`
+       span — so the wells and the plate between them do not move, only the smoked
+       edges do. `max(0px, …)` is the floor: below ~59% the frame is narrower than
+       the wells and the compensation runs out. */
+    padding: 0.42em max(0px, calc((var(--window-w, 88%) - var(--wells-w)) / 2)) 0.5em;
     border-radius: 3px;
 
     background: linear-gradient(
@@ -1491,7 +1649,7 @@ const coverUrls = items
     --reel-spoke-inset: 25%;
     --reel-spoke-alpha: 0.25;
     --reel-spoke-on: 7deg;
-    --reel-spoke-gap: 120deg;
+    --reel-spoke-gap: 60deg;
     --reel-cavity: #050505;
     --reel-occl: rgba(0, 0, 0, 0.44);
     --reel-near-shadow: 0.81;
@@ -1502,6 +1660,55 @@ const coverUrls = items
     --reel-hub-alpha: 0.97;
     --reel-hub-gloss: 0;
     --reel-hub-grain: 0;
+    /* The narrow printed frame BETWEEN the two wells (`.cas-plate`, the strip the
+       type code and the 100/50/0 scale sit on). `--plate-w` is a share of the
+       tape window, capped in practice by the gap the wells leave (100% = as wide
+       as that gap); `--plate-h` is in the plate's own em; `--plate-alpha` scales
+       the frost fill only — 0 (what ships) leaves the hairline ring and the print
+       with no milky fill at all.
+       ⚠️ Not to be confused with `--window-w` below: that one is the OUTER smoked
+       frame the wells sit in, and `--well-inset` is how far each well is pulled
+       off its own edge of it.
+       `--well-gap` is the space between a well and the centre (the window's own
+       flex gap), so the two wells can be pulled apart or together. */
+    --plate-w: 46%;
+    --plate-h: 4.7em;
+    --plate-alpha: 0;
+    --well-gap: 0.5em;
+    /* How far each well is pulled in from its own edge of the window. */
+    --well-inset: 2.8em;
+    /* The OBSERVATION WINDOW's own width, as a share of the printed J-card.
+       ⚠️ This resizes the SMOKED FRAME ONLY — it must not move anything inside it
+       (2026-09-19: "调整的时候，其他元素比如圆环，刻度表等位置都会变化，而我只需要调整变化").
+       The window's inline padding is therefore DERIVED from this value in
+       `.cas-window`, which keeps its CONTENT box — the span the two wells are
+       pinned to — at a fixed width. See `--wells-w`. */
+    --window-w: 69.5%;
+    /* ⚠️ The span the wells + plate are laid out in: a fixed width derived from the
+       ORIGINAL 88% window, NOT from `--window-w`. At `--window-w: 88%` the two are
+       identical (`(88% - --wells-w) / 2 = 0.7em + --well-inset`, the old padding, to
+       the pixel) — so this is a refactor, not a change. It is what stays put when
+       only the frame is resized. `--well-inset` is still part of it, i.e. still the
+       control that pulls both wells inward. */
+    --wells-w: calc(88% - 1.4em - 2 * var(--well-inset, 0em));
+    /* ── DEPTH — how the row recedes ──
+       `--cas-depth` (0 at the selection, 1 at the far end of the painted band) is
+       written per tape by the render loop as pure geometry; these two decide what
+       the THEMES do with it, so the same number is a dim on the dark theme and a
+       haze on the light one.
+       `--dim-near` is the neighbour veil's opacity at the near end: at 1 the veil
+       is flat (what it used to be), below it the row gains a continuous
+       near→far gradient — the nearest neighbour is the clearest, the far ones go
+       all the way to the full veil. `--depth-blur` is how far the LIGHT theme
+       dissolves a far tape's print (see `.cas-label`); it is unused on the dark
+       theme, where distance is carried by the dim alone. */
+    --dim-near: 0.55;
+    --depth-blur: 2.4px;
+    /* Bezel: the shell showing around the printed J-card. Raising it thickens the
+       frame and shrinks the artwork inside it. */
+    --shell-frame: 0.98em;
+    /* The moulded band across the top of the face. */
+    --recess-h: 1.9em;
   }
 
   /* ⚠️ MATTE, and recessed by LIGHTING rather than by a bright ring (2026-09-19:
@@ -1517,6 +1724,8 @@ const coverUrls = items
     position: relative;
     width: var(--reel-size, 3.1em);
     aspect-ratio: 1;
+    /* The wells keep their size; the plate between them is the tunable one, and
+       it is capped at the gap they leave. */
     flex: 0 0 auto;
     border-radius: 50%;
 
@@ -1561,12 +1770,17 @@ const coverUrls = items
     border-radius: 50%;
 
     /* Fainter than the first pass: the spokes are structure behind glass in a
-       dark well, so they are a hint, not a bright gear. */
+       dark well, so they are a hint, not a bright gear.
+       ⚠️ **The pitch is 60deg — SIX spokes** (2026-09-19: "spoke 目前内圈有 3 个线，
+       但外圈也需要 6 个线，也就是每 60 度一根线"). It shipped at 120deg, i.e. three
+       arms, and a real cassette's reel flange carries six. The same pitch drives
+       the outer ring below, so the two line sets stay in step whatever the
+       `spoke pitch` slider is set to. */
     background: repeating-conic-gradient(
       from 0deg,
       rgba(214, 206, 190, var(--reel-spoke-alpha, 0.25)) 0deg
         var(--reel-spoke-on, 7deg),
-      transparent var(--reel-spoke-on, 7deg) var(--reel-spoke-gap, 120deg)
+      transparent var(--reel-spoke-on, 7deg) var(--reel-spoke-gap, 60deg)
     );
 
     transform: rotate(var(--reel-spin, 0rad));
@@ -1634,11 +1848,33 @@ const coverUrls = items
       );
   }
 
+  /* The OUTER ring, near the well's edge. It carries the hairline it always had,
+     plus the SAME SIX marks as the inner spoke set (2026-09-19: "外圈也需要 6 个线"):
+     one repeating-conic-gradient at the shared `--reel-spoke-*` pitch, masked to a
+     band at the rim so the lines read as ticks on the ring and not as a second
+     gear. ⚠️ Driven by the same tokens as `.cas-reel-spokes`, never by its own
+     numbers — two line sets at different pitches is exactly the misalignment the
+     user would see.
+     ⚠️ Unprefixed `mask-image` only (see §10's note on prefix pairs), and the mask
+     is safe here: this element has no descendants to flatten. */
   .cas-reel-ring {
     position: absolute;
     inset: 2%;
     border-radius: 50%;
     border: 1px solid rgba(228, 220, 204, var(--reel-rim, 0.21));
+
+    background: repeating-conic-gradient(
+      from 0deg,
+      rgba(214, 206, 190, calc(var(--reel-spoke-alpha, 0.25) * 1.25)) 0deg
+        var(--reel-spoke-on, 7deg),
+      transparent var(--reel-spoke-on, 7deg) var(--reel-spoke-gap, 60deg)
+    );
+
+    mask-image: radial-gradient(
+      circle at 50% 50%,
+      transparent 0 70%,
+      #000 80% 100%
+    );
   }
 
   /* ── The plate between the hubs ──
@@ -1655,18 +1891,40 @@ const coverUrls = items
      a wide soft shadow instead of a hard one. */
   .cas-plate {
     position: relative;
-    flex: 1 1 auto;
+    /* ⚠️ Sized by the TOKENS, not by "whatever is left" (2026-09-19: "我希望调整磁带盒
+       那两个环后面的窄长方形框的长宽和透明度"). It used to be `flex: 1 1 auto`,
+       which is untunable. Now it is `flex: 0 1 auto` with a width of its own:
+       `--plate-w` is a share of the window (100% = "as wide as the gap allows"),
+       and because the wells are RIGID (`flex: 0 0 auto`) the plate is the only
+       item that can shrink, so the top of the range is capped by the space
+       between them — the frame can never crush a well or spill out of the window,
+       whatever `--reel-size` is set to.
+       ⚠️ Do not try to express that cap in the CSS: `calc(100% - 2 *
+       var(--reel-size))` looks right and is not — the `em` inside a `calc()`
+       resolves against the PLATE's font-size (0.46em of the tape), so the wells
+       would be subtracted at a fifth of their real size and the frame would
+       happily overrun them.
+       `--plate-h` is in the plate's own em; `--plate-alpha` scales the frost
+       fill's opacity without touching the ink, which is why it is not `opacity`
+       on the element — that would fade the printed mark too. */
+    flex: 0 1 auto;
     min-width: 0;
+    width: var(--plate-w, 100%);
+    height: var(--plate-h, 4.7em);
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    align-content: center;
+    justify-items: center;
     gap: 0.5em;
 
-    padding: 0.34em 0.7em;
+    padding: 0.3em 0.6em;
     border-radius: 2px;
 
-    background: var(--plate-frost);
+    background: color-mix(
+      in srgb,
+      var(--plate-frost) calc(var(--plate-alpha, 1) * 100%),
+      transparent
+    );
 
     box-shadow:
       inset 0 0 0 1px var(--plate-edge),
@@ -1690,10 +1948,110 @@ const coverUrls = items
 
     background: linear-gradient(
       180deg,
-      var(--plate-frost-hi) 0%,
+      color-mix(
+          in srgb,
+          var(--plate-frost-hi) calc(var(--plate-alpha, 1) * 100%),
+          transparent
+        )
+        0%,
       transparent 46%,
-      var(--plate-frost-lo) 100%
+      color-mix(
+          in srgb,
+          var(--plate-frost-lo) calc(var(--plate-alpha, 1) * 100%),
+          transparent
+        )
+        100%
     );
+  }
+
+  /* The type code row: the accent tick, then the mark. */
+  .cas-plate-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    min-width: 0;
+  }
+
+  /* ── The tape-length scale ──
+     A row of ticks under the type code with the three numbers a cassette's
+     window label carries: 100 at the left, 50 in the middle, 0 at the right.
+     ⚠️ The ticks are ONE element with four background layers, not eleven spans:
+     twenty-one spans per tape × thirty-six tapes is a lot of DOM for scenery.
+     The minor ticks repeat every 10% of the strip, so they always land on the
+     three major positions (0 / 50 / 100%) whatever the plate's width is — which
+     is the point, since the width is a tunable token. */
+  .cas-plate-scale {
+    display: grid;
+    justify-items: stretch;
+    gap: 0.22em;
+    width: 100%;
+    min-width: 0;
+    /* ⚠️ The end numbers are centred on their ticks, so each one overhangs the
+       strip by half a glyph. The padding is what keeps that overhang inside the
+       plate's `overflow: hidden` — without it "100" loses its first digit. */
+    padding-inline: 0.55em;
+  }
+
+  .cas-plate-ticks {
+    height: 0.55em;
+
+    background-image:
+      /* the three majors, drawn as hard 1px rules pinned to 0 / 50 / 100% */
+      linear-gradient(currentColor, currentColor),
+      linear-gradient(currentColor, currentColor),
+      linear-gradient(currentColor, currentColor),
+      /* the minors, every 10% of the strip */
+      repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 10%);
+    background-size:
+      1px 100%,
+      1px 62%,
+      1px 100%,
+      100% 34%;
+    background-position:
+      0 100%,
+      50% 100%,
+      100% 100%,
+      0 100%;
+    background-repeat: no-repeat;
+
+    color: var(--plate-ink);
+    opacity: 0.7;
+  }
+
+  /* ⚠️ The numbers are CENTRED ON their ticks (2026-09-19: "刻线正下方应该是对齐数字
+     文本的中间"). `justify-content: space-between` put their *edges* on the ticks
+     instead, so 100 sat half a glyph to the right of the left major and 0 half a
+     glyph to the left of the right one — measurably off, and worse the wider the
+     frame is tuned. Absolute positioning at 0 / 50 / 100% with a `-50%` pull is
+     the only arrangement that stays centred whatever the glyphs are. */
+  .cas-plate-nums {
+    position: relative;
+    height: 1em;
+    /* ⚠️ The plate's 0.22em tracking is for a word, not for three figures: left
+       on, "100" runs into the tick beside it and the row stops reading as a
+       scale. */
+    letter-spacing: 0;
+    line-height: 1;
+    font-size: 0.92em;
+    opacity: 0.8;
+  }
+
+  .cas-plate-nums span {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+  }
+
+  .cas-plate-nums span:nth-child(1) {
+    left: 0;
+  }
+
+  .cas-plate-nums span:nth-child(2) {
+    left: 50%;
+  }
+
+  .cas-plate-nums span:nth-child(3) {
+    left: 100%;
   }
 
   .cas-plate-mark {
@@ -1713,41 +2071,11 @@ const coverUrls = items
     box-shadow: 0 0 8px var(--cas-accent-soft, var(--accent));
   }
 
+  /* The blank tape's plate is empty — no type code, no scale. Its height comes
+     from the shared `--plate-h` token, so the two variants are the same
+     moulding. */
   .cas-plate-blank {
     min-height: 1.7em;
-  }
-
-  /* ── Tape path ──
-     The ribbon runs hub to hub behind the bottom of the window.
-     ⚠️ The two `0.42em` guide rollers that used to sit on this line are GONE
-     (2026-09-19: "两个大环的下面有一个小球，这个球去掉"). At this scale two lit
-     spheres under the reels read as beads stuck to the window, not as
-     hardware — and they sat on the ribbon rather than in the shell's own guide
-     channels, which is where a real deck's rollers are. Just the ribbon now. */
-  .cas-path {
-    position: absolute;
-    left: 0.9em;
-    right: 0.9em;
-    bottom: 0.12em;
-    height: 0.42em;
-    pointer-events: none;
-  }
-
-  .cas-path-ribbon {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 50%;
-    height: 1px;
-    margin-top: -0.5px;
-
-    background: linear-gradient(
-      90deg,
-      transparent,
-      var(--path-ink) 18%,
-      var(--path-ink) 82%,
-      transparent
-    );
   }
 
   /* ── Index + date on the foot band, above the colour rail ── */
@@ -1882,25 +2210,13 @@ const coverUrls = items
     transition: box-shadow 0.5s var(--ease-out);
   }
 
-  /* Metal cap where the spine meets the top / bottom wall. */
-  .cas-left::before,
-  .cas-right::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    height: 6%;
-    pointer-events: none;
-
-    background: linear-gradient(
-      180deg,
-      var(--metal-mid) 0%,
-      var(--metal-lo) 62%,
-      rgba(0, 0, 0, 0.5) 100%
-    );
-    box-shadow: inset 0 1px 0 var(--metal-hi);
-  }
+  /* ⚠️ The "metal cap" that used to sit across the top of each spine is GONE
+     (2026-09-19: "dark mode 下的书脊的上方有一个白色渐变，对应 light mode 下有个黑色
+     渐变，去掉他"): a `--metal-*` gradient into `rgba(0,0,0,.5)` read as a bright
+     white lip in the dark theme and a black one in the light theme — on the two
+     faces that carry the printed title, which is the last place a band of pure
+     contrast belongs. The spine's own moulding already has its metal cap in
+     `--shell-spine-a` (the dark seam end), so nothing is missing. */
 
   .cas-left {
     transform: rotateY(-90deg) translateZ(calc(var(--cas-w, 400px) / 2));
@@ -2422,31 +2738,28 @@ const coverUrls = items
     opacity: 0.15;
   }
 
-  .shelf-panel-tags span {
+  /* ⚠️ `:global(...)` is REQUIRED here, and this rule had been silently dead.
+     The tags are created by `updateUI` with `document.createElement("span")`, so
+     they never carry Astro's `data-astro-cid-…` attribute — and a scoped selector
+     is `.shelf-panel-tags[cid] span[cid]`, which matches nothing. The tags have
+     therefore been rendering with no rule of their own at all (inheriting the
+     panel's text colour, which is exactly why the user found them "不够明确"), and
+     the three-colour rotation that used to live here never showed either. */
+  :global(.shelf-panel-tags span) {
     padding: 4px 7px;
     font-family: var(--font-mono);
     font-size: 8px;
     letter-spacing: var(--tracking-label);
     text-transform: uppercase;
 
-    border: 1px solid var(--border);
-    background: rgba(255, 255, 255, 0.02);
-    color: var(--text-dim);
-  }
-
-  .shelf-panel-tags span:nth-child(3n + 1) {
-    border-color: var(--stripe-red);
-    color: var(--stripe-red-soft);
-  }
-
-  .shelf-panel-tags span:nth-child(3n + 2) {
-    border-color: var(--stripe-yellow);
-    color: var(--stripe-yellow-soft);
-  }
-
-  .shelf-panel-tags span:nth-child(3n) {
-    border-color: var(--stripe-teal);
-    color: var(--stripe-teal-soft);
+    /* ⚠️ ONE accent for every tag, with the `#` doing the separating
+       (2026-09-19: "里面的 tags 不够明确，可以做成比如 #Industrial Design #Sheet Metal
+       同时改成点缀色"). It used to rotate three stripe colours by `nth-child`, which
+       made the row read as a legend of three categories that do not exist — the
+       tags are all the same kind of thing, so they all take the accent. */
+    border: 1px solid color-mix(in srgb, var(--accent) 42%, transparent);
+    background: color-mix(in srgb, var(--accent) 9%, transparent);
+    color: var(--accent);
   }
 
   .shelf-panel-foot {
@@ -2469,14 +2782,22 @@ const coverUrls = items
      a filled slab carrying the tape's accent, mirroring the reference's
      `.solid-button`. ── */
   .shelf-open {
+    position: relative;
+    isolation: isolate;
+    /* The hover wipe is a scaled panel inside the button, so the button has to
+       clip it. `overflow: hidden` does NOT clip the element's own box-shadow,
+       which is why the glow below still reaches outside the slab. */
+    overflow: hidden;
+
     width: 100%;
     margin-top: 12px;
     padding: 12px 14px;
 
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    /* The label is the only child now that the drawn arrow is gone, so the
+       `space-between` + `gap` that used to hold it clear of that arrow went with
+       it. */
 
     font-family: var(--font-mono);
     font-size: 10px;
@@ -2490,7 +2811,18 @@ const coverUrls = items
     border-radius: 2px;
     cursor: pointer;
 
-    box-shadow: 0 10px 26px -12px var(--cas-accent, var(--accent));
+    /* ⚠️ A GLOW, not a cast shadow (2026-09-19: "这个按钮的发光效果有问题").
+       It was `0 10px 26px -12px <accent>`: the accent at FULL opacity, pushed 10px
+       down behind a −12px spread. That is not light leaving the button, it is a
+       saturated ledge of the button's own colour hanging off its bottom edge —
+       and the panel's `clip-path` then cuts it off square, which is the visible
+       "problem". A halo wants no offset, a small negative spread and an alpha;
+       and it has to fit inside the panel's 20/22px padding. `0 0 16px -4px`
+       reaches ~12px, so nothing can ever be clipped. */
+    box-shadow:
+      0 0 16px -4px
+        color-mix(in srgb, var(--cas-accent, var(--accent)) 60%, transparent),
+      0 6px 14px -12px rgba(0, 0, 0, 0.5);
 
     transition:
       box-shadow 0.25s var(--ease-out),
@@ -2501,8 +2833,55 @@ const coverUrls = items
     color: #fdfaf4;
   }
 
+  /* The hover gesture is the one the chips and the hero CTA use — an accent panel
+     travelling under the text — but this one advances LEFT → RIGHT (2026-09-19:
+     "这个按钮做成从左往右的色彩推进，而不是其他按钮的从下往上").
+     ⚠️ The chip's panel can sit at `z-index: -1` because the chip's own background
+     is translucent; this button is a solid accent slab, so a `-1` panel would be
+     painted UNDER that fill and never seen. It rides at `z-index: auto` (above the
+     background, below the `z-index: 1` label), and `scaleX` from a left-hand
+     origin is what makes it a wipe — a `translateX` on a full-size panel would
+     slide it out of the button instead of revealing it.
+     ⚠️ The wipe colour is `--cas-accent-soft`: THE SAME HUE, stepped away from the
+     theme's ink. It used to be `76% accent + black` and that mix goes muddy on a
+     saturated colour (2026-09-19: "hover 压暗有点丑，你去网上搜搜，改成一个合适的变色
+     颜色"). Darkening is also the minority answer — Material 3 brightens a filled
+     button with a state layer of the ON-colour (8% hover / 10% press,
+     https://m3.material.io/foundations/interaction/states/state-layers) and Ant
+     Design steps its primary one shade lighter; Carbon is the outlier that steps
+     darker. `--stripe-*-soft` is already this site's token for that step, and it
+     happens to be exactly right: it is LIGHTER in the dark theme
+     (#e04040 → #ff8888) and DARKER in the light theme (#c03030 → #aa3333),
+     because in both themes it moves away from that theme's ink — so the label
+     contrast goes UP either way (dark theme's red measured 4.69:1 → 8.6:1;
+     light theme's 5.44:1 → 6.24:1). Same token the plate's accent tick uses. */
+  .shelf-open::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--cas-accent-soft, var(--accent-glow));
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+    transition: transform 0.45s var(--ease-out);
+    pointer-events: none;
+  }
+
+  .shelf-open:hover::before,
+  .shelf-open:focus-visible::before {
+    transform: scaleX(1);
+  }
+
+  /* Above the wipe. */
+  .shelf-open-label {
+    position: relative;
+    z-index: 1;
+  }
+
   .shelf-open:hover {
-    box-shadow: 0 14px 32px -12px var(--cas-accent, var(--accent));
+    box-shadow:
+      0 0 22px -4px
+        color-mix(in srgb, var(--cas-accent, var(--accent)) 78%, transparent),
+      0 8px 18px -12px rgba(0, 0, 0, 0.55);
     transform: translateY(-1px);
   }
 
@@ -2513,43 +2892,6 @@ const coverUrls = items
   .shelf-open:focus-visible {
     outline: 2px solid var(--text-bright);
     outline-offset: 3px;
-  }
-
-  .shelf-open-arrow {
-    position: relative;
-    flex: 0 0 auto;
-    width: 15px;
-    height: 9px;
-    transition: transform 0.25s var(--spring-snappy);
-  }
-
-  .shelf-open-arrow::before,
-  .shelf-open-arrow::after {
-    content: "";
-    position: absolute;
-    background: currentColor;
-    border-radius: 2px;
-  }
-
-  .shelf-open-arrow::before {
-    left: 0;
-    top: 50%;
-    width: 100%;
-    height: 2px;
-    transform: translateY(-50%);
-  }
-
-  .shelf-open-arrow::after {
-    right: 0;
-    top: 50%;
-    width: 2px;
-    height: 9px;
-    transform: translateY(-50%) rotate(45deg);
-    transform-origin: 100% 50%;
-  }
-
-  .shelf-open:hover .shelf-open-arrow {
-    transform: translateX(4px);
   }
 
   /* ── ARROWS — chunky, Q-bounce, straight from the reference keyframes ── */
@@ -2731,7 +3073,12 @@ const coverUrls = items
     }
   }
 
-  /* ── Footer hint / replay ── */
+  /* ── Footer hint ──
+     ⚠️ The REPLAY INTRO button that used to sit opposite this hint is GONE
+     (2026-09-19: "右下角的重播开场功能和按钮去掉"). The curtain is a
+     first-visit moment (`sessionStorage["rrsuika-shelf-warm"]`) and re-arming it
+     from a button was the only way to see it twice — nothing else consumed the
+     `startIntro(true)` call, and the footer is now a single left-aligned line. */
   .shelf-foot {
     left: 34px;
     right: 34px;
@@ -2739,7 +3086,6 @@ const coverUrls = items
 
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 16px;
 
     font-family: var(--font-mono);
@@ -2761,30 +3107,6 @@ const coverUrls = items
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .shelf-replay {
-    flex: 0 0 auto;
-    padding: 5px 12px;
-
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text-dim);
-
-    font: inherit;
-    letter-spacing: inherit;
-    text-transform: inherit;
-    cursor: pointer;
-    pointer-events: auto;
-
-    transition:
-      color 0.25s var(--ease-out),
-      border-color 0.25s var(--ease-out);
-  }
-
-  .shelf-replay:hover {
-    color: var(--text-bright);
-    border-color: var(--border-strong);
   }
 
   .shelf-empty {
@@ -3374,6 +3696,9 @@ const coverUrls = items
       reelSpin: number;
       /** True while the element is parked with `visibility: hidden`. */
       hidden: boolean;
+      /** Last `--cas-depth` written (quantised), so the veil/blur only repaint
+       *  when the tape actually moves a step. -1 = nothing written yet. */
+      depth: number;
     }
 
     let mode: "3d" | "flat" = "3d";
@@ -4110,6 +4435,9 @@ const coverUrls = items
             el.setAttribute("aria-hidden", "true");
             el.style.removeProperty("--cas-o");
             el.style.removeProperty("--reel-spin");
+            el.style.removeProperty("--cas-depth");
+            el.classList.remove("is-far");
+            tape.depth = -1;
           }
           continue;
         }
@@ -4127,13 +4455,20 @@ const coverUrls = items
         const isCentre = introDone && Math.abs(pos) < 0.5;
         el.classList.toggle("is-center", isCentre);
 
-        // Only the selection is lit. Everything else stays fully opaque and is
-        // dimmed and cooled instead — the reference shelves solid dark objects,
-        // and a translucent neighbour just mixes with the starfield behind it.
-        const beneath = isCentre ? "0" : "1";
-        if (el.dataset.beneath !== beneath) {
-          el.dataset.beneath = beneath;
-          el.style.setProperty("--cas-beneath", beneath);
+        // ── DEPTH — how far this tape sits from the selection ──
+        // 0 at the centre, 1 at the far end of the painted band. The veil (and, on
+        // the light theme, the print blur) read it, so the row gets ONE continuous
+        // near→far falloff instead of a flat "selected or not" dim.
+        // ⚠️ Quantised to 1/120 and written only when it moves a step: this value
+        // changes every frame while the row travels, and every write is a paint on
+        // ten tapes. 120 steps across the band is finer than the eye can place, and
+        // a settled shelf still writes nothing at all.
+        const depth = span > 0 ? Math.min(1, Math.abs(pos) / span) : 0;
+        const dq = Math.round(depth * 120) / 120;
+        if (dq !== tape.depth) {
+          tape.depth = dq;
+          el.style.setProperty("--cas-depth", dq.toFixed(3));
+          el.classList.toggle("is-far", dq > 0.02);
         }
 
         if (mode === "flat") {
@@ -4143,7 +4478,12 @@ const coverUrls = items
             "--cas-o",
             (clamp(1 - Math.max(0, abs - 0.5) * 2.4) * tape.vis).toFixed(3),
           );
-          el.style.setProperty("--cas-beneath", "0");
+          // Flat mode is a card switcher, not a shelf: no veil and no aerial blur,
+          // which is what the old `--cas-beneath: 0` here did. Clear the 3D pass's
+          // leftovers so a mode switch cannot strand either one.
+          el.style.removeProperty("--cas-depth");
+          el.classList.remove("is-far");
+          tape.depth = -1;
           el.style.zIndex = String(Math.round(100 - abs * 10));
           continue;
         }
@@ -4290,6 +4630,12 @@ const coverUrls = items
       const panel = document.getElementById("shelf-panel");
       const accent = el.style.getPropertyValue("--cas-accent");
       if (accent) panel?.style.setProperty("--cas-accent", accent);
+      // ⚠️ The SOFT tint has to travel with it: the panel's INSPECT button wipes
+      // to `--cas-accent-soft` on hover, and the panel is not inside the tape, so
+      // it would otherwise fall back to `--accent-glow` (the theme amber) and the
+      // hover colour would stop matching the record's own stripe.
+      const accentSoft = el.style.getPropertyValue("--cas-accent-soft");
+      if (accentSoft) panel?.style.setProperty("--cas-accent-soft", accentSoft);
 
       // The status colour belongs to the record, not to the copy: it flips
       // instantly, while the text waits for the blur swap.
@@ -4325,7 +4671,10 @@ const coverUrls = items
             tagsEl.replaceChildren(
               ...tags.slice(0, 6).map((tag) => {
                 const span = document.createElement("span");
-                span.textContent = tag;
+                // ⚠️ The `#` is added HERE, not in the content: the tags are plain
+                // data (`Industrial Design`) and are reused as filter values by
+                // exact string match, so the decoration must not reach them.
+                span.textContent = `#${tag}`;
                 return span;
               }),
             );
@@ -4411,7 +4760,7 @@ const coverUrls = items
       if (launching || lock || !introDone) return;
       if (
         (event.target as HTMLElement).closest(
-          ".shelf-nav, .shelf-open, .shelf-replay",
+          ".shelf-nav, .shelf-open",
         )
       ) {
         return;
@@ -4628,15 +4977,6 @@ const coverUrls = items
       .getElementById("shelf-next")
       ?.addEventListener("click", () => navigate(1));
 
-    document.getElementById("shelf-replay")?.addEventListener("click", () => {
-      if (launching) return;
-      progress = 0;
-      spring.active = false;
-      snap.active = false;
-      lock = false;
-      startIntro(true);
-    });
-
     root.addEventListener("keydown", (event) => {
       if (event.key === "ArrowLeft") {
         event.preventDefault();
@@ -4705,8 +5045,12 @@ const coverUrls = items
       const panel = document.getElementById("shelf-panel");
       if (panel) {
         panel.style.removeProperty("--cas-accent");
-        const accent = centreEl()?.style.getPropertyValue("--cas-accent");
+        panel.style.removeProperty("--cas-accent-soft");
+        const centre = centreEl();
+        const accent = centre?.style.getPropertyValue("--cas-accent");
         if (accent) panel.style.setProperty("--cas-accent", accent);
+        const accentSoft = centre?.style.getPropertyValue("--cas-accent-soft");
+        if (accentSoft) panel.style.setProperty("--cas-accent-soft", accentSoft);
       }
 
       if (next === mode) return;
@@ -4799,6 +5143,7 @@ const coverUrls = items
       empty,
       reelSpin: 0,
       hidden: false,
+      depth: -1,
     });
 
     blankTapes = blankEls.map((el) => makeTape(el, true));

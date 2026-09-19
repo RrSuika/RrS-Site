@@ -1,5 +1,5 @@
 ---
-title: "AI-ondersteunde persoonlijke website: van één pagina naar een sterrenveld"
+title: "AI-ondersteunde persoonlijke website: van één pagina naar een complexe database"
 date: 2026-05-19
 dateLabel: "19 mei"
 description: "Leren hoe je met AI een persoonlijke website bouwt en live zet. Een verslag van de iteraties, de lessen en wat AI kan doen versus wat mensen moeten doen."

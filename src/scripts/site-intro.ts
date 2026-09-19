@@ -68,10 +68,16 @@ const OPTIONAL_MS = 2200;
  * full height for `SWEEP_HOLD_MS`, and it is what drops the plate: everything
  * under the panel goes away while the panel is still opaque, so the dissolve
  * lands on the live page instead of on the cover.
+ *
+ * ⚠️ `SWEEP_FADE_MS` is the LAST thing the visitor sees, and it is deliberately
+ * the slowest beat (2026-09-19: "橙色画面结束后…这个消失过渡动画时间做长一点，让过渡柔和
+ * 一些"). At 720ms the panel read as being pulled away rather than as scattering;
+ * 1250ms with a wider blur gives the arrival something to land through. Nothing
+ * waits on this — the reveal handler has already fired by the time it starts.
  */
 const SWEEP_GROW_MS = 620;
 const SWEEP_HOLD_MS = 280;
-const SWEEP_FADE_MS = 720;
+const SWEEP_FADE_MS = 1250;
 /** The status line's dip-and-swap. Mirrors the CSS transition. */
 const SWITCH_MS = 150;
 

@@ -835,28 +835,30 @@ main {
    and `display: none` is not a value opacity can animate from. So the fade is a
    keyframe ANIMATION, triggered by a class that `theme-transition.ts` adds on the
    frame the swap lands and removes when it finishes.
-   ⚠️ **Opacity only.** No `transform`: this canvas has `position: fixed`
-   descendants, and a transform on it would turn it into their containing block
-   and shift the whole background stack. `filter` is safe (it only creates a
-   stacking context and the canvas is already `z-index: 0`), and a slight dim at
-   the start is what makes frame one read as "resolving" rather than "drawn".
+   ⚠️ **Opacity only.** No `transform` and no `filter`: this canvas has
+   `position: fixed` descendants, and either property turns the canvas into their
+   containing block and shifts the whole background stack.
    ⚠️ `forwards` (not `both`) and an explicit `to { opacity }`: the resting opacity
    stays the stylesheet's job, so the light theme's `display: none` still wins and
-   the animation cannot pin a stale value. */
+   the animation cannot pin a stale value.
+   ⚠️ The trigger is `arriveBackground()` in `theme-transition.ts`, and the reason
+   this note is long is that it was **wired to the wrong theme for a month**: see
+   the note on `visibleTheme` there. */
 #starfield-canvas.sf-arrive,
 #lens-canvas.sf-arrive {
-  animation: sfArrive 1.05s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  animation: sfArrive 1.6s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
 
+/* ⚠️ `from` ONLY — no explicit `to`. The two canvases do not share a resting
+   opacity (`#starfield-canvas` 0.85, `#lens-canvas` 0.9), and an explicit
+   `to { opacity: 0.85 }` under `forwards` therefore pinned the LENS field 0.05
+   below its own value and released it when the class came off — a small visible
+   bump at the end of every arrival on the homepage, which is the page the lens
+   renders on. With only a `from`, the 100% keyframe is the element's own computed
+   value, so each canvas lands exactly where the stylesheet puts it. */
 @keyframes sfArrive {
   from {
     opacity: 0;
-    filter: brightness(0.55);
-  }
-
-  to {
-    opacity: 0.85;
-    filter: none;
   }
 }
 
@@ -1393,19 +1395,15 @@ body::after {
   color: var(--text-dim);
 }
 
-/* Tag chip filter area */
-:root[data-theme="light"] .tag-chip {
-  color: var(--text-dim);
-  border-color: var(--border-strong);
-}
-
-:root[data-theme="light"] .tag-chip:hover {
-  color: #333;
-}
-
-:root[data-theme="light"] .tag-chip.active {
-  color: var(--on-accent);
-}
+/* Tag chip filter area — the rules live in §12 below. (An earlier pass kept a
+   light-theme trio here: `:root[data-theme="light"] .tag-chip { … }`, its `:hover`
+   and its `.active`. They are gone, and the shape of the bug is worth keeping:
+   `:root[data-theme="light"] .tag-chip` is **0-3-0**, which BEATS `.tag-chip.active`
+   (0-2-0) — so in the light theme the active chip lost its accent fill and kept
+   `--on-accent` white ink. Measured white-on-`rgba(255,255,255,.55)`: **contrast
+   1.0**, i.e. the current filter was invisible, which is precisely the "点击则按钮
+   固定成橙色" the user asked for. Light-theme overrides on the chip must now be
+   written `:not(.active)`. */
 
 /* ═══════════════════════════════════════════
    §12  SHARED LISTING UTILITIES — tag filter
@@ -1421,7 +1419,19 @@ body::after {
   border-bottom: 1px solid var(--border);
 }
 
+/* ⚠️ The chip's interaction is the homepage CTA's (`.button` in Hero.astro): a
+   panel of the accent colour SLIDES UP from below the pill rather than the
+   colours cross-fading, so hovering reads as the same gesture as the hero
+   button (2026-09-19: "做成鼠标移动上去时进行动画，点击则按钮固定成橙色。参考首页的 ▶
+   ACCESS PROJECT DATABASE 按钮交互动效"). The fill lives in `::before` at
+   `translateY(101%)` — one more percent than 100 so the pill's own border radius
+   cannot leave a hairline of accent at the bottom edge — and `z-index: -1` keeps
+   it under the text, which is why the chip needs `isolation: isolate` (a
+   `z-index: -1` child otherwise escapes behind the page background). */
 .tag-chip {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1437,14 +1447,35 @@ body::after {
   transition:
     background 0.25s var(--ease-out),
     border-color 0.25s var(--ease-out),
-    color 0.2s var(--ease-out),
+    color 0.25s var(--ease-out),
     transform 0.2s var(--spring-snappy);
 }
 
+/* ⚠️ FLAT, not a gradient (2026-09-19: "我不希望他的带有白色渐变的立体拟物风格，平面
+   就行了"). The fill used to be `145deg: --accent-glow → --accent → --accent-deep`,
+   i.e. a pale amber corner falling away to a deep one — a specular sheen across a
+   pill, which reads as a glossy 3D button. The pill is now one solid accent with
+   the slide-up gesture left intact, so the interaction is unchanged and the
+   material is flat. Do not put a gradient back here. */
+.tag-chip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--accent);
+  transform: translateY(101%);
+  transition: transform 0.4s var(--ease-out);
+  pointer-events: none;
+}
+
 .tag-chip:hover {
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #ddd;
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--accent-glow);
+  color: var(--on-accent);
+  transform: translateY(-1px);
+}
+
+.tag-chip:hover::before {
+  transform: translateY(0);
 }
 
 .tag-chip:active {
@@ -1452,11 +1483,32 @@ body::after {
   transition: transform 0.08s var(--spring-snappy);
 }
 
+/* Clicked: the fill stays put, so the current filter is the only solid pill in
+   the row. */
 .tag-chip.active {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--on-accent);
   font-weight: 700;
+}
+
+.tag-chip.active::before {
+  transform: translateY(0);
+}
+
+.tag-chip.active:hover {
+  border-color: var(--accent-glow);
+}
+
+/* ⚠️ The resting chip is themed too — `#999` on cream paper is 2.6:1, which is
+   the same "the filter row is nearly invisible in the light theme" the rest of
+   this pass is about. ⚠️ `:not(.active)` is load-bearing: without it this rule
+   (0-3-0) outranks `.tag-chip.active` (0-2-0) and erases the accent fill of the
+   current filter, leaving white ink on a near-white pill. */
+:root[data-theme="light"] .tag-chip:not(.active) {
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--text-dim);
 }
 
 .tag-count {
@@ -1788,6 +1840,12 @@ html.is-intro {
    ⚠️ `transform` and `opacity` are transitioned on separate clocks on purpose —
    the panel keeps RISING while it starts to fade, which is what makes the last
    frames read as a dissolve instead of a retract.
+   ⚠️ **The dissolve is now the SLOWEST beat of the exit** (2026-09-19: "橙色画面结束后，
+   消失并且显示实际界面的这个消失过渡动画时间做长一点，让过渡柔和一些"). It was 0.72s with
+   `blur(7px)`, which read as the panel being pulled off; 1.25s with `blur(12px)`
+   scatters it instead. ⚠️ It must stay in step with `SWEEP_FADE_MS` in
+   `src/scripts/site-intro.ts` — that constant is what removes the node afterwards,
+   so a shorter CSS fade would leave a transparent cover over the page.
    ⚠️ **The panel is a FLAT, single-colour block** — the reference's lighter lip
    across its top edge was removed on the user's call (2026-09-19: "我希望顶部没有
    白色渐变，是一个纯橙色块的"). The rising edge does not need a highlight: it is a
@@ -1801,11 +1859,11 @@ html.is-intro {
   transform: scaleY(0);
   transform-origin: bottom center;
   pointer-events: none;
-  will-change: transform, opacity;
+  will-change: transform, opacity, filter;
   transition:
     transform 0.62s var(--intro-ease-snap),
-    opacity 0.72s var(--intro-ease-out),
-    filter 0.72s var(--intro-ease-out);
+    opacity 1.25s var(--intro-ease-out),
+    filter 1.25s var(--intro-ease-out);
 }
 
 .site-intro.is-sweeping .site-intro__sweep {
@@ -1814,7 +1872,7 @@ html.is-intro {
 
 .site-intro.is-revealing .site-intro__sweep {
   opacity: 0;
-  filter: blur(7px);
+  filter: blur(12px);
 }
 
 /* ⚠️ The sheet, the stage and the rail are dropped while the panel is at full
