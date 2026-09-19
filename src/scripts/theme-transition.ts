@@ -44,10 +44,34 @@ const STORAGE_KEY = "rrsuika-theme";
 
 /** One circle's growth. The first is the reference's beat; a ripple that lands
  *  on top of a running one is quicker, so a volley settles sooner and fewer
- *  full-page layers are alive at the same time. */
-const REVEAL_MS = 620;
-const RIPPLE_MS = 460;
-const EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+ *  full-page layers are alive at the same time.
+ *
+ *  ⚠️ **The DURATION is not what the eye reads — the CURVE is**, and this pair
+ *  used to be badly mismatched. `cubic-bezier(0.22, 1, 0.36, 1)` is an
+ *  ease-out-quint: **40 % of the radius lands in the first 10 % of the time**,
+ *  90 % of it in the first 37 %. So of a 620 ms tween the sweep was over in about
+ *  230 ms and the last 47 % of the clock pushed the edge out by 3 % of a radius
+ *  nobody can see. The user reported exactly that shape: "覆盖的速度太快了，肉眼
+ *  看就像好几帧里面快速的进行了一次覆盖，不够丝滑".
+ *
+ *  ⚠️ **Judge it in AREA, not radius** — the circle's radius grows linearly with
+ *  the easing but the paint it lays down grows with r², so under the old curve
+ *  the first third of the animation had already covered ~75 % of the screen:
+ *
+ *    fraction of duration     10%     25%     50%     75%    100%
+ *    old radius               .401    .674    .961    .994   1.000
+ *    old area                 .161    .454    .923    .988   1.000
+ *
+ *  Now `ease` (written out rather than spelled `ease`, so the numbers below can
+ *  be checked against it): 25/50/75/90 % of the radius land at 18/29/45/62 % of
+ *  the clock, and 900 ms gives that spread room to be read. ⚠️ Keep a ripple
+ *  quicker than the circle that started the burst — that is the volley argument
+ *  above — so the old 620/460 ratio is preserved as 900/660. ⚠️ **GUARD_MS must
+ *  stay above the longest of the two**, or the guard lands a burst whose first
+ *  circle is still growing. */
+const REVEAL_MS = 900;
+const RIPPLE_MS = 660;
+const EASING = "cubic-bezier(0.25, 0.1, 0.25, 1)";
 /** Safety net: a burst always closes, even if an animation never settles. */
 const GUARD_MS = 1600;
 
