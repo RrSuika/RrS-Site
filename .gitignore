@@ -29,6 +29,5 @@ pnpm-debug.log*
 # claude dev tooling (skill discovery links live here)
 .claude/
 
-# skill packages (local-only: kept out of the repo to limit its size)
-Skill/emilkowalski-skills/
-Skill/taste-skill/
+# skill packages (local-only: kept out of the repo so it does not grow)
+Skill/

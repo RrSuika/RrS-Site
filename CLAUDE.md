@@ -75,12 +75,13 @@ Manage it with `astro dev stop`, `astro dev status`, `astro dev logs`. Build wit
 ## Repository hygiene
 
 - `输入/` is the AI's input drop-box (user drops materials for the AI to read and turn into site assets). It is gitignored and **never** committed or uploaded.
+- `Skill/` holds the local skill packages (lieflat-charts, 去AI味, third-party packs). The **whole directory is gitignored** (2026-09-20) so the repo and its clones carry no skill files — the files stay on disk, so the `.claude/skills/` junctions keep working. Older commits still contain them; do not try to shrink that without asking.
 - ⚠️ **Delete files by exact path only** (`Remove-Item -LiteralPath '…'`) — never clean a shared directory (`%TEMP%`, user folders) with a wildcard. Windows paths are case-insensitive, so `rrs-*` also matches the user's own `RRS-*.log`. Details + the 2026-09-19 incident: `docs/pitfalls.md` §9.
 - Dead files removed in the 2026-08 cleanup: legacy `src/content/config.ts`, unused components/utilities, the old `#neural-canvas` and 2D star script (both preserved-but-disabled behind `data-neural` / `data-star-version`).
 
 ## AI Skills (2026-09-01)
 
-Sources live in `Skill/`; `.claude/skills/` holds discovery links (gitignored, not deployed).
+Sources live in `Skill/` — **local-only, not in the repo** (whole directory gitignored since 2026-09-20, so a fresh clone has no skill files). `.claude/skills/` holds discovery links (also gitignored, not deployed).
 
 - **lieflat-charts** (`Skill/lieflat-charts/`) — template-driven data-visualisation / HTML-report skill. Load it before building charts or reports; the site's own design system wins where they conflict.
 - **去AI味 / lieflat-less-ai-tone** (`Skill/去AI味 skill.md`) — whitelist-based de-AI-ification of prose. Registered copy at `.claude/skills/lieflat-less-ai-tone/SKILL.md`. Use together with `docs/writing-style.md`.

@@ -83,6 +83,7 @@ MyPortfolio/
 │   │   └── global.css         # ★ 设计系统唯一事实来源（14 个 section，1070+ 行）
 │   └── utils/                 # 4 个工具模块（见下表）
 ├── 输入/                      # ★ 用户给 AI 的"投递箱"：素材放这里，AI 读取后转写为站内内容（§12 规则 13）。已移出版本控制，永不提交/上传
+├── Skill/                     # ★ skill 包源码（lieflat-charts、去AI味、第三方包）。2026-09-20 起整个目录 gitignore、已移出版本控制（§12 规则 24）；文件仍在本地磁盘
 ├── node_modules/ .astro/ dist/  # 依赖/构建产物（gitignored，勿读勿改）
 ```
 
@@ -459,3 +460,5 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 13. **`输入/` 投递箱工作流**：用户会把新素材（项目图片、文档、skill 包等）放进 `输入/`。AI 应主动读取其中内容并转化为站内产物（写入 `src/content/entries/` 或合适位置），完成后与用户确认是否清理原文件。该目录**永不提交/上传 GitHub**（已移出版本控制）。
 
 **规则 14–23（en/zh/nl 文风约定、去 AI 味、禁止虚构细节、本土化优先、中文翻案腔零容忍、条目正文不用破折号）→ `docs/writing-style.md`**（编号保留：规则 14 = 该文件第一条）。**改写任何文案之前必读**。
+
+24. **`Skill/` 目录移出版本控制（2026-09-20 用户指示）**：skill 包源码只留本地磁盘，整个 `Skill/` 已写入 `.gitignore`，GitHub 远端 HEAD 不再包含任何 skill 文件（仓库不会因新增 skill 包而变大）。⚠️ 这**不减小** `.git` 体积（272 MB 主要来自 `src/content/entries/` 的历史大图，旧 blob 永久保留）。发现路径 `.claude/skills/`（junction + 注册副本）同样不进仓库。新增 skill 包直接放进 `Skill/` 即可，不会被提交。
