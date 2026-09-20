@@ -179,6 +179,34 @@ function burstInFlight(): boolean {
 }
 
 /**
+ * Is the transition still occupying the screen? Used to REJECT a new click.
+ *
+ * ⚠️ **A click during a running burst must be ignored, not honoured.** Each click
+ * clones a full-page copy in the *incoming* theme and stacks it on top, so N clicks
+ * inside one `REVEAL_MS` window leave N live copies alternating theme. Reproduced
+ * 2026-09-20 by clicking every 700 ms (5 clicks, 1500 ms reveal): 3 copies at once,
+ * and the per-frame trace of what was actually on screen read
+ * `light, dark, light, light, dark, dark, light, light, light` — the "连着在 light /
+ * dark 界面闪好几次" report. It needs `n >= 2` to show, which is why it only appeared
+ * after several normal clicks: any gap longer than `REVEAL_MS + COPY_FADE_MS`
+ * leaves a single copy and looks perfect.
+ *
+ * Coalescing (accumulating the toggles into `pending` instead) was considered and
+ * rejected by the user: a double click would then flip twice, and the knob's own
+ * 0.5 s animation has nothing to replay against — the second click would show no
+ * feedback at all. Locking the control for the length of the transition is both
+ * simpler and honest about the fact that the transition IS the feedback.
+ *
+ * ⚠️ The tail must count as "running" too. `pending` is already null once the theme
+ * has been applied, but the copies still cover the viewport for `COPY_FADE_MS`; a
+ * click in that window would clone a copy at the instant the old one is being
+ * geometrically dropped, and `dropLayers()` would yank it away again.
+ */
+function burstLocked(): boolean {
+  return burstInFlight() || landingTail;
+}
+
+/**
  * The theme the visitor is actually LOOKING AT.
  *
  * ⚠️ **Not `rootTheme()`, and that distinction is a real bug that shipped.** For
@@ -844,6 +872,10 @@ function armGuard(): void {
 /* ── the gesture ────────────────────────────────────────────────────────── */
 
 export function toggleThemeWithReveal(origin?: { x: number; y: number }): void {
+  // ⚠️ Before the landing-tail teardown below, and deliberately so: a click while
+  // the transition is on screen is DROPPED, never queued. See `burstLocked`.
+  if (burstLocked()) return;
+
   const leaving = intentTheme();
   const next: Theme = leaving === "light" ? "dark" : "light";
 
@@ -859,15 +891,10 @@ export function toggleThemeWithReveal(origin?: { x: number; y: number }): void {
     return;
   }
 
-  // ⚠️ A click inside the PREVIOUS burst's landing tail starts a fresh burst:
-  // the theme is already applied and on screen, so the old copies are just a cover
-  // that has not faded yet, and inheriting its timers is what ate the click. Tear
-  // the tail down first, then treat this as `first`.
-  if (landingTail) {
-    window.clearTimeout(coverTimer);
-    window.clearTimeout(dropTimer);
-    dropLayers();
-  }
+  // (The landing-tail teardown that used to live here is gone: `burstLocked()`
+  //  returns true for the whole tail, so a click can no longer reach this point
+  //  while `landingTail` is set. One invariant — "not clickable while on screen" —
+  //  instead of two half-overlapping ones.)
 
   const point = usableOrigin(origin) ?? buttonOrigin();
   const x = point.x;
