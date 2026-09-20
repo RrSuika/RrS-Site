@@ -153,11 +153,27 @@ const type = project.data.type.toUpperCase();
       inset 0 1px 0 rgba(255, 255, 255, 0.06),
       inset 0 -1px 0 rgba(0, 0, 0, 0.18);
 
+    /* ⚠️ The LIFT runs on its own clock and its own curve, deliberately slower
+       and more symmetrical than the colour/shadow change beside it.
+       Measured complaint (2026-09-20): 「卡片向上的移速太快了」 on the three featured
+       cards. Both offenders were here:
+         · the lift is only `--hover-lift-card` (4px) over 0.5s with `--ease-out`,
+           and a strong ease-out spends 84 % of the distance in the first 150 ms —
+           the card ARRIVES instantly and then creeps, which reads as a snap;
+         · the cover scaled to 1.05 on `--spring-gentle`, which overshoots ~1.3 %
+           (`cubic-bezier(.34, 1.3, .64, 1)` peaks above 1) and reads as a pop.
+       `--ease-in-out` has no such front-load, so the 4px is spent across the whole
+       duration and the rise reads as deliberate rather than as a twitch.
+       ⚠️ The colour/shadow properties keep `--ease-out` at 0.5s: a state change
+       should confirm immediately, and only the movement was too quick. */
+    --lift-dur: 0.72s;
+    --lift-ease: var(--ease-in-out);
+
     transition:
-      transform 0.5s var(--ease-out),
-      background-color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-      border-color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-      box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      transform var(--lift-dur) var(--lift-ease),
+      background-color 0.5s var(--ease-out),
+      border-color 0.5s var(--ease-out),
+      box-shadow 0.5s var(--ease-out);
   }
 
   /* Safari ≤ 17 only understands the -webkit- form, but the build's CSS
@@ -442,7 +458,9 @@ const type = project.data.type.toUpperCase();
 
     object-fit: cover;
 
-    transition: transform 0.5s var(--spring-gentle);
+    /* Matched to the card's own lift so the two move as one object; the spring's
+       overshoot is dropped for the same reason (see the note on `.card`). */
+    transition: transform var(--lift-dur) var(--lift-ease);
   }
 
   .card:hover .cover {
