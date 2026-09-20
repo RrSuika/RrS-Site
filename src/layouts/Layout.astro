@@ -437,12 +437,45 @@ const websiteSchema = {
           // Keep the black-hole video running continuously: some browsers pause
           // background media when the tab is hidden or loses focus, so nudge it
           // back every couple of seconds while we are still on desktop.
+          //
+          // ⚠️ **The `readyState >= 2` guard this used to carry was a trap.** It
+          // skipped the resume whenever the video was paused while still building
+          // its buffer — which is exactly the state a fresh page open can leave it
+          // in — so it never retried and the hole stayed frozen for the rest of the
+          // visit. `play()` on a not-yet-ready video is harmless (it resolves once
+          // enough data arrives), so the only real precondition is the reduced-motion
+          // hold, which must not be resumed at all.
           window.setInterval(() => {
             if (!desktop.matches) return;
-            if (video.paused && !video.ended && video.readyState >= 2) {
+            if (reducedMotion.matches) return;   // the still frame is deliberate
+            if (video.paused && !video.ended) {
               video.play().catch(() => {});
             }
           }, 2000);
+
+          // ⚠️ **Last-resort repaint for a stalled compositor.** A video can report
+          // `paused === false` with `currentTime` advancing and still show a frozen
+          // frame — the media pipeline is fine and the composited layer underneath
+          // it is not. Reported once as "黑洞卡住不动了", and it could not be
+          // reproduced in a software-rendered browser, which is the signature of a
+          // GPU/compositor state rather than a scripting bug. Re-asserting the
+          // element's own compositing hint is free and forces the layer to be
+          // rebuilt; it is a no-op when nothing is wrong. Deliberately NOT a
+          // play/pause cycle: that would restart the loop from frame 0 and be
+          // visible.
+          const kick = () => {
+            if (document.hidden) return;
+            if (!desktop.matches || reducedMotion.matches) return;
+            const hint = video.style.willChange;
+            video.style.willChange = "auto";
+            void video.offsetHeight;             // flush
+            video.style.willChange = hint || "transform";
+          };
+
+          window.setInterval(kick, 4000);
+          document.addEventListener("visibilitychange", () => {
+            if (!document.hidden) kick();
+          });
 
 
           // Tab visibility no longer pauses the video (it must keep playing).
