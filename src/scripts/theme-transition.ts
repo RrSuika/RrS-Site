@@ -744,6 +744,31 @@ function clonePage(theme: Theme): HTMLDivElement | null {
     }
   });
 
+  // ⚠⚠ **The ambient background layers are DROPPED from the copy, and that is the
+  // fix for the frozen black hole.**
+  //
+  // The copy is what the growing circle reveals, so anything left in it is seen as
+  // a still. `#blackhole-layer` was left in, and because the clone inherits the
+  // live layer's `bh-reveal` class the copy's own copy of the layer *animated
+  // itself in* (~0.78 opacity by 400 ms) with its `<video>` replaced by a
+  // `videoStill()` poster — a 1440×900 JPEG of one frame of the hole. That still
+  // IS the "出现一下的黑洞静止状态", and it also sat on top of the lens,
+  // which is why the lens appeared to arrive late.
+  //
+  // Measured on the light→dark click (the direction that always showed it):
+  //   t+400 ms   copyTheme=dark  bh{disp:block, op:0.784, anim:bhReveal}
+  //              vid{hasSrc:false, posterLen:179123}
+  //
+  // The two canvases never showed this because light mode sets `display: none` on
+  // them at clone time — they were already absent, so the circle revealed content
+  // over a plain background in every previous version. Dropping all three makes the
+  // black hole behave the way the field always has: the circle reveals the CONTENT,
+  // and the ambient background fades in on the live page underneath as the reveal
+  // finishes. Nothing in the copy is a frozen animation any more.
+  for (const sel of ["#blackhole-layer", "#starfield-canvas", "#lens-canvas"]) {
+    copy.querySelector(sel)?.remove();
+  }
+
   // Videos clone as live players: they would re-download, re-decode and drift
   // out of sync. Show the current frame as a poster instead.
   const srcVideo = src.querySelectorAll("video");
