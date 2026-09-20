@@ -7,6 +7,7 @@
 | `cassette-shelf.md` | 改 `src/components/CassetteShelf.astro`、`src/scripts/shelf-tuner.ts`、或 `/projects` `/lab` 六页的任何视觉/交互/拖动之前——**必读** |
 | `hero-title.md` | 改首页 hero 标题的字距/字位之前（`home/Hero.astro` 的 20 条逐字偏移规则 + `src/scripts/hero-tuner.ts` 这个**默认关闭**的调音面板/量测网格） |
 | `site-intro.md` | 改站点开场（`Layout.astro` 的 SITE INTRO GUARD、`src/scripts/site-intro.ts`、global.css §16）之前 |
+| `scroll-reveal.md` | 改内容入场动效（`src/scripts/scroll-reveal.ts`、global.css §17），或给新页面/新列表加滚动入场之前 |
 | `theme-switch.md` | 改主题切换（`src/scripts/theme-transition.ts`、§15）或星空入场（`arriveBackground`）之前 |
 | `backgrounds.md` | 改星空 / 引力透镜 / 黑洞视频层（§10、`GravitationalLens.astro`、Layout 星空脚本）之前 |
 | `decisions.md` | 想知道「为什么现在是这样」、或准备推翻某个既有设计之前——按编号查，不用通读 |

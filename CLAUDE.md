@@ -15,6 +15,7 @@ Personal portfolio (Astro 7, static, no integrations), deployed to Cloudflare Pa
 >
 > - `docs/cassette-shelf.md` — `/projects` + `/lab` shelf (`CassetteShelf.astro`, the temporary `shelf-tuner.ts`). **Mandatory before touching either**; it holds the `preserve-3d` hygiene rule, the single position formula, the drag sign conventions, the ring budget and the arrow geometry.
 > - `docs/site-intro.md` — the preloader (`Layout.astro` SITE INTRO GUARD, `site-intro.ts`, global.css §16).
+> - `docs/scroll-reveal.md` — 内容入场动效（`src/scripts/scroll-reveal.ts`、global.css §17）。**三条硬约束：钩子由 JS 添加、只动 `translate` 不碰 `transform`、不要加"N 毫秒后全部放行"的兜底。**
 > - `docs/theme-switch.md` — the copy-wave theme reveal (`theme-transition.ts`, §15) and the starfield arrival.
 > - `docs/backgrounds.md` — starfield, gravitational lens, black-hole video layer (§10, `GravitationalLens.astro`).
 > - `docs/decisions.md` — "why is it like this" (decisions 1–23 with the measured numbers). Check here before redoing an existing implementation.
