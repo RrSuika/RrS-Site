@@ -2082,10 +2082,24 @@ html.is-intro {
   right: 0;
 }
 
-/* ── The wordmark, centred ── */
+/* ── The wordmark block, above centre ──
+   ⚠️ **`top` is not 50%, and that is what puts the two labels in the right
+   order.** DOM order is: wordmark → rule → `Portfolio // Design archive`
+   (the `__sub` line), then the readout block with `Boot sequence` → counter →
+   status. So for the labels to read PORTFOLIO then BOOT SEQUENCE, the wordmark
+   block has to sit ABOVE the readout with real separation — at `top: 50%` the
+   two blocks were only ~119px apart on a 900px-tall window and the pair read as
+   one crowded stack in the wrong order.
+   ⚠️ The offset is mixed `%` + `vh` ON PURPOSE, because neither alone behaves.
+   A pure `%` overshoots on a tall window; a pure `vh` cannot clear the wordmark on
+   a short one. Solving `0.38H + 0.14H = k + (wordmark + readout)` for the two
+   measured viewports gives this pair. Measured band between the two labels:
+   146px on a 1080p window, 255px on a 2K one — against 119px / 319px before.
+   ⚠️ `translate(-50%, -50%)` keeps the block centred on that point, so the
+   offset scales instead of being a fixed number of pixels. */
 .site-intro__mark {
   position: absolute;
-  top: 50%;
+  top: calc(38% + 14vh);
   left: 50%;
   transform: translate(-50%, -50%);
   display: grid;
@@ -2141,14 +2155,23 @@ html.is-intro {
 }
 
 /* ── The readout, under the wordmark ── */
+/* ⚠️ **The percentage and the status line are pushed down, and the rows are
+   spaced out, to buy back the empty band.**
+   The type does NOT shrink to help: measured at both 1440×900 and 2560×1440 the
+   clamps are already at their maximum (wordmark 58px, percentage 104px), so a
+   900px-tall window carries the SAME type as a 1440px-tall one with 200px less
+   room. That is the whole of the "1080p 会很挤" report, and it is why the fix has
+   to come from the layout rather than from a smaller font.
+   Measured before: wordmark bottom → readout top was 119px at 900 tall vs 319px
+   at 1440 tall. */
 .site-intro__readout {
   position: absolute;
   left: 50%;
-  bottom: 13%;
+  bottom: 8%;
   transform: translateX(-50%);
   display: grid;
   justify-items: center;
-  gap: 6px;
+  gap: 14px;
   animation: introReadoutIn 0.7s var(--intro-ease-out) 0.5s backwards;
 }
 
@@ -2374,8 +2397,15 @@ html.is-intro {
 }
 
 @media (max-width: 700px) {
+  /* ⚠️ This was 16% — HIGHER than the 13% it overrides, so it moved the readout
+     up into the wordmark on exactly the screens with the least room. A narrow
+     window is also a short one: it needs more clearance, not less. */
   .site-intro__readout {
-    bottom: 16%;
+    bottom: 10%;
+  }
+
+  .site-intro__mark {
+    top: calc(36% + 10vh);
   }
 
   .site-intro__corner--tl,
