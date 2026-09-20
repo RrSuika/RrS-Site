@@ -308,6 +308,7 @@ De visuals zijn niet uit het niets ontstaan. Deze bronnen gaven belangrijke refe
 - **Zwart gat-implementatie**: [Shadertoy — lstSRS](https://www.shadertoy.com/view/lstSRS)
 - **Zwaartekrachtlens-referentie**: [BH+disk](https://guitrj.github.io/BH+disk/)
 - **Cassetteplank-referentie**: het rek met cassettebandjes waar je in de Agent Story-hoofdstukken van Zenless Zone Zero een verhaal kiest ([officiële site](https://zenless.hoyoverse.com/en-us/)). Het eindresultaat wijkt inmiddels ver van het origineel af; de beweging van de bandjes komt daarvandaan.
+- **Intro-referentie**: de opening op de site van Arknights: Endfield ([officiële site](https://endfield.gryphline.com/en-us/)). De kleuren, de layout en het rustige tempo van de readout komen daarvandaan; alle elementen en teksten zijn opnieuw geschreven.
 
 > Opmerking: dit zijn referenties voor inspiratie, beeld en implementatie-ideeën. Verschillende Shadertoy-werken kunnen verschillende licenties hebben; controleer altijd de notities van de originele maker.
 

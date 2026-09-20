@@ -308,6 +308,7 @@ The visuals did not appear from nowhere. These sources gave me important referen
 - **Black hole implementation reference**: [Shadertoy — lstSRS](https://www.shadertoy.com/view/lstSRS)
 - **Gravitational lensing reference**: [BH+disk](https://guitrj.github.io/BH+disk/)
 - **Cassette shelf reference**: the tape shelf you pick a story from in Zenless Zone Zero’s Agent Story chapters ([official site](https://zenless.hoyoverse.com/en-us/)). The finished visuals have moved a long way from the original; the way the tapes move is what I took from it.
+- **Intro sequence reference**: the opening animation on the Arknights: Endfield site ([official site](https://endfield.gryphline.com/en-us/)). The palette, the layout and the readout-style entrance pacing come from there; every element and all of the copy were rewritten.
 
 > Note: these are references for inspiration, visuals and implementation ideas. Different Shadertoy works may use different licences; always check the original author’s notes.
 

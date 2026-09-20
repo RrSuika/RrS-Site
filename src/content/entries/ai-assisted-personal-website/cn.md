@@ -308,6 +308,7 @@ translationKey: ai-assisted-personal-website
 - **黑洞实现参考**：[Shadertoy — lstSRS](https://www.shadertoy.com/view/lstSRS)
 - **引力透镜参考**：[BH+disk](https://guitrj.github.io/BH+disk/)
 - **磁带盒动效参考**：《绝区零》「代理人秘闻」的选带界面（[官方网站](https://zzz.mihoyo.com/)）。现在成品的视觉已经和原作差得很远，磁带盒的动作结构仍然来自这里。
+- **开场动画参考**：《明日方舟：终末地》官网的开场动画（[官方网站](https://endfield.hypergryph.com/)）。配色、版式和读数式的进场节奏取自这里，元素和文案全部重写过。
 
 > 说明：以上为灵感、视觉与实现思路的参考来源。不同 Shadertoy 作品的授权方式可能不同，务必以原作者说明为准。
 
