@@ -1,0 +1,79 @@
+---
+/**
+ * The site intro / preloader markup.
+ *
+ * ⚠️ Extracted from `Layout.astro` so the tuning preview page
+ * (`src/pages/intro-preview.astro`) renders the SAME markup instead of a copy
+ * that would drift. Everything here is presentational: the decision to show it
+ * (`html.is-intro`) is made by the inline guard in `Layout.astro`'s `<head>`, and
+ * `src/scripts/site-intro.ts` drives the counter and the exit.
+ *
+ * ⚠️ The ids (`site-intro-pct`, `site-intro-status`, `site-intro-rail`) are
+ * referenced by `site-intro.ts`. Do not rename them here without updating that.
+ */
+---
+
+<div class="site-intro" id="site-intro" role="status" aria-live="polite">
+  <span class="site-intro__plate" aria-hidden="true">
+    <span class="site-intro__grid" />
+  </span>
+
+  <div class="site-intro__stage" aria-hidden="true">
+    <div class="site-intro__mark">
+      <span class="site-intro__brand">RrSuika Studio</span>
+      <span class="site-intro__rule" />
+    </div>
+
+    <div class="site-intro__readout">
+      {/* ⚠️ `Portfolio // Design archive` lives HERE, not in the wordmark block,
+          and the two rows are a pair: this is the header line and
+          `Boot sequence` is the sub-header under it. It used to sit up in
+          `.site-intro__mark`, which put it ~130px above `Boot sequence` and made
+          the plate read as two unrelated stacks — reported as
+          「BOOT SEQUENCE 在上，PORTFOLIO 在下」 even though the y-order was already
+          correct. Grouping them is what actually fixes the reading order. */}
+      <div class="site-intro__readout-top site-intro__readout-top--title">
+        <span class="site-intro__hair" />
+        <span>Portfolio // Design archive</span>
+        <span class="site-intro__hair" />
+      </div>
+
+      <div class="site-intro__readout-top">
+        <span class="site-intro__hair" />
+        <span>Boot sequence</span>
+        <span class="site-intro__hair" />
+      </div>
+
+      <div class="site-intro__count">
+        <span class="site-intro__bracket">[</span>
+        <span id="site-intro-pct">000</span>
+        <span class="site-intro__bracket">]</span>
+      </div>
+
+      <div class="site-intro__status-row">
+        <span class="site-intro__cursor">▶</span>
+        <span id="site-intro-status">INITIALISING…</span>
+      </div>
+    </div>
+
+    <p class="site-intro__corner site-intro__corner--tl">RRS.SYS // WEB</p>
+    <p class="site-intro__corner site-intro__corner--tr">Signal lock</p>
+    <p class="site-intro__corner site-intro__corner--bl">Archive // 2026</p>
+  </div>
+
+  {/* One striped rail along the bottom edge, filled by TWO live bars — one
+      growing rightward from the left end, one leftward from the right end — so
+      the count closes on the middle from both sides. ⚠️ Both live layers are
+      FULL WIDTH and clipped to their own half-window: two half-width elements
+      would put the 8/3px stripe phase out of step at the join, because the centre
+      lands mid-period on every viewport that is not a multiple of 11px. */}
+  <div class="site-intro__rail" id="site-intro-rail" aria-hidden="true">
+    <span class="site-intro__rail-dim" />
+    <span class="site-intro__rail-on site-intro__rail-on--l" />
+    <span class="site-intro__rail-on site-intro__rail-on--r" />
+  </div>
+
+  {/* The exit: the signal colour grows from the bottom edge, holds, then
+      dissolves (fade + blur) into the live page underneath. */}
+  <div class="site-intro__sweep" aria-hidden="true" />
+</div>

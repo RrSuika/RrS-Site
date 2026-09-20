@@ -1,0 +1,51 @@
+---
+/**
+ * TEMPORARY — intro tuning preview.
+ *
+ * ⚠️ This page is NOT part of the site. It exists so the site intro can be tuned
+ * while standing still: the real intro only appears on a first load or a reload
+ * and then sweeps itself away within a couple of seconds, which makes dragging a
+ * slider impossible.
+ *
+ * ⚠️ It deliberately does NOT use `<Layout>`:
+ *   · it must not get the inline SITE INTRO GUARD, which would tag the document
+ *     `is-intro` and run the whole timed sequence (counter, sweep, dissolve);
+ *   · `.site-intro` is only hidden via `html.is-intro-skip`, so with NEITHER class
+ *     present the cover simply renders and stays — which is exactly what tuning
+ *     needs.
+ *
+ * Noindexed, and only reachable by typing the URL. Delete this page together with
+ * `src/scripts/intro-tuner.ts` once the values are baked.
+ */
+import "../styles/global.css";
+import SiteIntro from "../components/SiteIntro.astro";
+---
+
+<!doctype html>
+<html lang="zh" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>INTRO TUNE — 开场动画调参</title>
+  </head>
+
+  <body>
+    <SiteIntro />
+
+    <script>
+      // Pin the readout to its END state: the counter script never runs here, so
+      // show what the plate looks like at 100% rather than at 000.
+      const pct = document.getElementById("site-intro-pct");
+      if (pct) pct.textContent = "100";
+      const status = document.getElementById("site-intro-status");
+      if (status) status.textContent = "CALIBRATING LAYERS";
+
+      // Fill the rail, so the orange bar is visible while its position is tuned.
+      const rail = document.getElementById("site-intro-rail");
+      rail?.style.setProperty("--reveal", "100%");
+
+      import("../scripts/intro-tuner");
+    </script>
+  </body>
+</html>

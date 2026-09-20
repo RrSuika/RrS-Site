@@ -2,6 +2,7 @@
 import "../styles/global.css";
 
 import Navbar from "../components/Navbar.astro";
+import SiteIntro from "../components/SiteIntro.astro";
 import Footer from "../components/Footer.astro";
 import ScrollMeter from "../components/ScrollMeter.astro";
 import GravitationalLens from "../components/GravitationalLens.astro";
@@ -293,57 +294,10 @@ const websiteSchema = {
          into the page.
     ========================================== -->
 
-    <div class="site-intro" id="site-intro" role="status" aria-live="polite">
-      <span class="site-intro__plate" aria-hidden="true">
-        <span class="site-intro__grid" />
-      </span>
-
-      <div class="site-intro__stage" aria-hidden="true">
-        <div class="site-intro__mark">
-          <span class="site-intro__brand">RrSuika Studio</span>
-          <span class="site-intro__rule" />
-          <span class="site-intro__sub">Portfolio // Design archive</span>
-        </div>
-
-        <div class="site-intro__readout">
-          <div class="site-intro__readout-top">
-            <span class="site-intro__hair" />
-            <span>Boot sequence</span>
-            <span class="site-intro__hair" />
-          </div>
-          <div class="site-intro__count">
-            <span class="site-intro__bracket">[</span>
-            <span id="site-intro-pct">000</span>
-            <span class="site-intro__bracket">]</span>
-          </div>
-          <div class="site-intro__status-row">
-            <span class="site-intro__cursor">▶</span>
-            <span id="site-intro-status">INITIALISING…</span>
-          </div>
-        </div>
-
-        <p class="site-intro__corner site-intro__corner--tl">RRS.SYS // WEB</p>
-        <p class="site-intro__corner site-intro__corner--tr">Signal lock</p>
-        <p class="site-intro__corner site-intro__corner--bl">Archive // 2026</p>
-      </div>
-
-      {/* One striped rail along the bottom edge, filled by TWO live bars — one
-          growing rightward from the left end, one leftward from the right end —
-          so the count closes on the middle from both sides. ⚠️ Both live layers
-          are FULL WIDTH and clipped to their own half-window: two half-width
-          elements would put the 8/3px stripe phase out of step at the join,
-          because the centre lands mid-period on every viewport that is not a
-          multiple of 11px. */}
-      <div class="site-intro__rail" id="site-intro-rail" aria-hidden="true">
-        <span class="site-intro__rail-dim" />
-        <span class="site-intro__rail-on site-intro__rail-on--l" />
-        <span class="site-intro__rail-on site-intro__rail-on--r" />
-      </div>
-
-      {/* The exit: the signal colour grows from the bottom edge, holds, then
-          dissolves (fade + blur) into the live page underneath. */}
-      <div class="site-intro__sweep" aria-hidden="true" />
-    </div>
+    {/* ⚠️ The markup now lives in `src/components/SiteIntro.astro` so the tuning
+        preview page renders the SAME DOM instead of a copy that drifts.
+        Visibility is still decided here, by the inline guard in <head>. */}
+    <SiteIntro />
 
     <noscript>
       <style is:global>

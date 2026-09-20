@@ -149,6 +149,27 @@
   /* Mechanical / analog feel */
   --ease-warmup: cubic-bezier(0.45, 0, 0.55, 1);
 
+  /* ── SITE INTRO geometry ──
+     ⚠️ These live at the ROOT on purpose: they are the knobs the intro tuner
+     (`src/scripts/intro-tuner.ts`) writes on <html>, and a default declared on
+     `.site-intro` itself would shadow the inherited override completely.
+     The mark's `top` is split into a `%` and a `vh` part because neither alone
+     behaves: a pure `%` overshoots on a tall window, a pure `vh` cannot clear
+     the wordmark on a short one. */
+  --intro-mark-top-pct: 34;
+  --intro-mark-top-vh: 12;
+  --intro-readout-bottom: 5;
+  --intro-gap: 26;
+  --intro-font-mark: 58;
+  --intro-font-pct: 104;
+  --intro-font-meta: 10;
+  /* The two ORANGE lines, each with its own offset. `--intro-rule-nudge` shifts
+     the signal rule under the wordmark (it is a grid item, so this is a
+     `translate`; the slot gap alone could not move it independently), and
+     `--intro-rail-bottom` lifts the bottom rail off the viewport edge. */
+  --intro-rule-nudge: 0;
+  --intro-rail-bottom: 0;
+
   /* HOVER LIFT — one vocabulary for "this surface rises under the pointer".
      Measured 2026-09-20 before this existed: the same gesture was written at
      1px (shelf OPEN), 2px (hero CTA, nav links), 6px (project card) and 8px
@@ -2024,7 +2045,7 @@ html.is-intro {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: calc(var(--intro-rail-bottom) * 1px);
   height: 8px;
   z-index: 5;
   overflow: hidden;
@@ -2099,7 +2120,7 @@ html.is-intro {
    offset scales instead of being a fixed number of pixels. */
 .site-intro__mark {
   position: absolute;
-  top: calc(38% + 14vh);
+  top: calc(var(--intro-mark-top-pct) * 1% + var(--intro-mark-top-vh) * 1vh);
   left: 50%;
   transform: translate(-50%, -50%);
   display: grid;
@@ -2120,7 +2141,7 @@ html.is-intro {
 }
 
 .site-intro__brand {
-  font-size: clamp(30px, 4.4vw, 58px);
+  font-size: clamp(30px, 4.4vw, calc(var(--intro-font-mark) * 1px));
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0.2em;
@@ -2142,6 +2163,10 @@ html.is-intro {
     transparent
   );
   opacity: 0.8;
+  /* ⚠️ `translate`, not a margin: the rule is a grid item in `.site-intro__mark`,
+     and the mark block is centred with `translate(-50%, -50%)` — a margin here
+     would change the block's height and shift the wordmark with it. */
+  translate: 0 calc(var(--intro-rule-nudge) * 1px);
   animation: introRuleIn 0.6s var(--intro-ease-out) 0.62s backwards;
 }
 
@@ -2167,11 +2192,11 @@ html.is-intro {
 .site-intro__readout {
   position: absolute;
   left: 50%;
-  bottom: 8%;
+  bottom: calc(var(--intro-readout-bottom) * 1%);
   transform: translateX(-50%);
   display: grid;
   justify-items: center;
-  gap: 14px;
+  gap: calc(var(--intro-gap) * 1px);
   animation: introReadoutIn 0.7s var(--intro-ease-out) 0.5s backwards;
 }
 
@@ -2179,10 +2204,19 @@ html.is-intro {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 10px;
+  font-size: calc(var(--intro-font-meta) * 1px);
   letter-spacing: 0.32em;
   text-transform: uppercase;
   color: var(--intro-dim);
+}
+
+/* ⚠️ The header line keeps the wide tracking the old `.site-intro__sub` had — it
+   is the standfirst, and at 0.32em it read as a second sub-header rather than as
+   the title above `Boot sequence`. */
+.site-intro__readout-top--title {
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  animation-delay: 0.62s;
 }
 
 .site-intro__hair {
@@ -2208,7 +2242,7 @@ html.is-intro {
 }
 
 #site-intro-pct {
-  font-size: clamp(62px, 8.8vw, 104px);
+  font-size: clamp(62px, 8.8vw, calc(var(--intro-font-pct) * 1px));
   font-weight: 700;
   letter-spacing: 0.02em;
   /* ⚠️ No glow on the number (2026-09-19: "去掉进度条百分比的荧光发光特效").
@@ -2401,11 +2435,11 @@ html.is-intro {
      up into the wordmark on exactly the screens with the least room. A narrow
      window is also a short one: it needs more clearance, not less. */
   .site-intro__readout {
-    bottom: 10%;
+    bottom: calc((var(--intro-readout-bottom) + 4) * 1%);
   }
 
   .site-intro__mark {
-    top: calc(36% + 10vh);
+    top: calc((var(--intro-mark-top-pct) + 2) * 1% + (var(--intro-mark-top-vh) - 2) * 1vh);
   }
 
   .site-intro__corner--tl,
