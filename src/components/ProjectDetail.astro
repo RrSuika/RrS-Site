@@ -1484,7 +1484,7 @@ const gallery = project.data.gallery ?? [];
     z-index: 1;
     transition: transform 0.45s var(--spring-bounce);
   }
-  .showcase .show-item:hover { transform: translateY(-8px) scale(1.04); z-index: 5; }
+  .showcase .show-item:hover { transform: translateY(var(--hover-lift-card)) scale(1.04); z-index: 5; }
   .showcase img {
     width: 100% !important;
     height: auto !important;
@@ -1558,7 +1558,35 @@ const gallery = project.data.gallery ?? [];
     height: 340px;
     overflow-y: auto;
   }
-  .tab-panel.active { display: block; }
+  /* ⚠️ The entrance is a keyframe ANIMATION, not a transition, and it has to be:
+     the panel alternates `display: none` <-> `block`, and a `display` change is
+     not animatable, so there is no "previous state" for a transition to run from.
+     An animation restarts every time the element goes from `display: none` to
+     visible, which is exactly the switch being covered here.
+
+     ⚠️ It starts at 0.985 / 8px, NOT `scale(0)`: nothing in the real world appears
+     from nothing, and a panel that grows out of a point reads as a bug rather than
+     as an entrance. Keep it under the 300 ms UI budget so a hover-driven tab
+     change (`.tab-item` has a `mouseenter` handler) does not feel laggy. */
+  .tab-panel.active {
+    display: block;
+    animation: tabPanelIn 0.22s var(--ease-out) both;
+  }
+  @keyframes tabPanelIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tab-panel.active {
+      animation: none;
+    }
+  }
   .tab-panel h4 {
     margin: 0 0 14px;
     font-family: var(--font-mono);

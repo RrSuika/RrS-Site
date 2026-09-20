@@ -154,7 +154,7 @@ const type = project.data.type.toUpperCase();
       inset 0 -1px 0 rgba(0, 0, 0, 0.18);
 
     transition:
-      transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.5s var(--ease-out),
       background-color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
       border-color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
       box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1);
@@ -213,7 +213,7 @@ const type = project.data.type.toUpperCase();
   }
 
   .card:hover {
-    transform: translateY(-6px);
+    transform: translateY(var(--hover-lift-card));
     border-color: var(--accent);
     background-color: rgba(20, 22, 35, 0.58);
     box-shadow:

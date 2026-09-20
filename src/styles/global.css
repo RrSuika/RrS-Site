@@ -148,6 +148,16 @@
 
   /* Mechanical / analog feel */
   --ease-warmup: cubic-bezier(0.45, 0, 0.55, 1);
+
+  /* HOVER LIFT — one vocabulary for "this surface rises under the pointer".
+     Measured 2026-09-20 before this existed: the same gesture was written at
+     1px (shelf OPEN), 2px (hero CTA, nav links), 6px (project card) and 8px
+     (explore card, showcase figure). Four heights for one idea reads as
+     "some cards lunge and some barely move", which is exactly the kind of
+     inconsistency that makes a page feel assembled rather than designed.
+     Applied to the CARD scale only; inline/button-scale controls keep 2px. */
+  --hover-lift-card: -4px;
+  --hover-lift-link: -2px;
 }
 
 /* ═══════════════════════════════════════════
