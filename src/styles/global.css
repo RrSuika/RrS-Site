@@ -733,6 +733,16 @@ main {
 
   background: #000;
 
+  /* ⚠️ **opacity: 0 is load-bearing, not cosmetic.** This layer paints an opaque
+     BLACK background of its own (the video sits on top of it), so with no base
+     opacity it rendered as a full-screen black sheet the instant `display: none`
+     lifted — before any inline style or class could react, because a `display`
+     flip and an inline `opacity: 0` written in the same task still let the element
+     paint once at its resting value. Reported twice as "会出现一下的黑洞静止状态，
+     然后黑洞消失". Resting at 0 makes that impossible by construction: the
+     layer is simply not visible until a reveal animation runs. */
+  opacity: 0;
+
   /* Hidden until JS enables it on desktop. */
   display: none;
 }
@@ -745,24 +755,48 @@ main {
   }
 }
 
-/* Fade-in so the video never pops in mid-decode.
-   JS adds .bh-fade straight away, then .is-ready once the first frame is
-   decoded (with a timeout fallback).
+/* The hole's arrival.
+   ⚠️ **A keyframe animation, NOT a transition, and deliberately the same shape
+   as `sfArrive` above.** A transition cannot be relied on to start when the layer
+   comes back out of `display: none` (the element has no "previous" rendered value
+   to interpolate from, and the ordering against the display flip is what produced
+   the black flash). An animation restarts whenever the class is added and runs
+   from its `from` keyframe, so the layer is guaranteed to be at 0 on the frame it
+   first paints.
 
-   ⚠️ **1.5 s, and this governs TWO moments, not one.** It is the page-load
-   reveal AND the theme-switch re-entry (theme-transition.ts re-arms `is-ready`).
-   Requested 2026-09-20: 「给黑洞的浅入动画时间做长一点，一两秒都可以，目前太快了」 —
-   it was 0.5 s, which on the dark theme's black field read as a pop rather than
-   as something emerging. Do not put the two moments on separate clocks: they are
-   the same gesture (the hole coming out of the dark) and must feel identical. */
-#blackhole-layer.bh-fade {
-  opacity: 0;
+   ⚠️ **An explicit `to { opacity: 1 }` is REQUIRED here — unlike `sfArrive`, which
+   is `from`-only.** With only a `from`, the 100 % keyframe is the element's own
+   computed value; that works for the canvases because they REST at 0.85/0.9, but
+   this layer now rests at **0**, so a `from`-only keyframe animates 0 → 0 and the
+   `forwards` fill pins it invisible for ever. Measured: the animation ran
+   (`bhReveal` present on every frame) and `opacity` stayed exactly 0.
+   `1` is correct rather than `var(--blackhole-opacity)` because that token belongs
+   to `#blackhole-video` (the hole inside the layer), not to the layer itself.
 
-  transition: opacity 1.5s var(--ease-out);
+   ⚠️ **1.5 s, and it governs TWO moments, not one**: the page-load reveal and
+   the theme-switch re-entry. They are the same gesture (the hole coming out of the
+   dark) and must feel identical — do not give them separate clocks.
+   Requested: 「给黑洞的浅入动画时间做长一点，一两秒都可以，目前太快了」 (it was 0.5 s). */
+#blackhole-layer.bh-reveal {
+  animation: bhReveal 1.5s var(--ease-out) forwards;
 }
 
-#blackhole-layer.bh-fade.is-ready {
-  opacity: 1;
+@keyframes bhReveal {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No fade to run: the layer is simply there once it is displayed. */
+  #blackhole-layer.bh-reveal {
+    animation: none;
+    opacity: 1;
+  }
 }
 
 #blackhole-video {

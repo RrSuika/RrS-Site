@@ -416,7 +416,7 @@ const websiteSchema = {
       <!-- Black-hole layer: desktop gate + autoplay + fade-in.
            · desktop only (≥ 769px) — phones get no layer and no download
            · reveal the layer only once the first frame is decoded, so the
-             video never pops in mid-load (CSS: #blackhole-layer.bh-fade)
+             video never pops in mid-load (CSS: #blackhole-layer.bh-reveal)
            · still frame instead of motion when the visitor asks for
              reduced motion
            · retry once on the first gesture if a browser (Safari low-power
@@ -442,12 +442,12 @@ const websiteSchema = {
 
           if (!source) return;
 
-          layer.classList.add("bh-on", "bh-fade");
+          layer.classList.add("bh-on");
 
           let revealTimer = 0;
           const reveal = () => {
             window.clearTimeout(revealTimer);
-            layer.classList.add("is-ready");
+            layer.classList.add("bh-reveal");
             video.removeEventListener("loadeddata", reveal);
             video.removeEventListener("canplay", reveal);
             video.removeEventListener("error", reveal);

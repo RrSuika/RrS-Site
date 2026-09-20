@@ -321,35 +321,22 @@ function arriveBackground(): void {
   // ── the black hole, SEQUENCED after the field ──
   // Requested: "直接：黑屏，然后透镜出现，然后黑洞再出现" and "他俩是丝滑渐入".
   //
-  // ⚠️⚠️ **The layer must be cut to 0 INSTANTLY, with its transition disabled.**
-  // `#blackhole-layer` rests at `opacity: 1` (its `.is-ready` value), so merely
-  // dropping `is-ready` to re-arm the fade leaves it at FULL opacity for the first
-  // ~133 ms and then fades it *out* over the 0.5 s `.bh-fade` transition. Measured
-  // per frame on a light→dark landing, that is exactly the reported sequence:
+  // ⚠️⚠️ **Do not try to hide this layer with inline styles or by removing a
+  // resting class — both were tried and BOTH still flashed.** `#blackhole-layer`
+  // paints its own opaque black background, so the frame `display: none` lifts it
+  // renders as a full-screen black sheet (reported as "出现一下的黑洞静止状态，
+  // 然后黑洞消失"), and an inline `opacity: 0` written in the same task does
+  // not stop that paint. The layer now RESTS at `opacity: 0` in CSS and is only
+  // ever shown by an animation whose first keyframe is 0 (see `.bh-reveal` in
+  // global.css §10), which is the same shape as `sfArrive` and is provably safe.
   //
-  //   t=1566  copies=0  bhOp=1.00  bhReady=0   ← 静止的黑洞
-  //   t=1699  copies=0  bhOp=0.20  bhReady=0   ← 它在「淡出」
-  //   t=1941  copies=0  bhOp=0.00              ← 黑洞没了
-  //   t=2403  copies=0  bhOp=0.40  bhReady=1   ← 黑洞才回来
-  //
-  // `transition: none` + `opacity: 0` inline makes it vanish on the landing frame
-  // instead, and holding the inline 0 means it also stays gone while it waits for
-  // its turn — so the eye reads: field arrives, then the hole fades in. The inline
-  // declarations are cleared on the frame `is-ready` goes on, which is what arms the
-  // 0.5 s transition for the fade-in.
+  // So the whole job here is: arm the arrival, and make sure the class is off
+  // beforehand so the animation restarts.
   const bh = document.getElementById("blackhole-layer");
   if (bh) {
-    bh.style.transition = "none";
-    bh.style.opacity = "0";
-    bh.classList.remove("is-ready");
+    bh.classList.remove("bh-reveal");
     window.setTimeout(() => {
-      // ⚠️ Drop the inline overrides BEFORE adding the class, then force a recalc:
-      // with `transition: none` still inline and a 0 opacity, adding `is-ready`
-      // would jump straight to 1 with nothing to interpolate from.
-      bh.style.transition = "";
-      bh.style.opacity = "";
-      void bh.offsetHeight;
-      bh.classList.add("is-ready");
+      bh.classList.add("bh-reveal");
       // ⚠️ Playback must not wait on the fade: `display: none` can leave a `loop` +
       // `muted` video paused, and a hole that fades in as a still image and only then
       // starts moving is exactly the "开始播放" complaint. The promise is ignored on
