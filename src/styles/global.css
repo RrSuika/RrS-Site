@@ -2364,3 +2364,72 @@ html.is-intro {
     animation: none;
   }
 }
+
+/* ═══════════════════════════════════════════
+§17  SCROLL REVEAL (content entering the viewport)
+═══════════════════════════════════════════
+ ⚠️ Three things here are load-bearing, and each of them is a bug that was
+ designed out rather than discovered later:
+
+ 1. **The hidden state is gated on `html.js-reveal`, which only the script adds.**
+    The attribute `[data-reveal]` is also added by the script. So with JS off (or
+    before the module runs) NOTHING is hidden — the page renders normally. A CSS
+    rule that hides `[data-reveal]` unconditionally would white-screen the page
+    for a no-JS visitor and flash it for everyone else.
+
+ 2. **It animates the independent `translate` / `opacity` properties, NOT
+    `transform`.** The cards use `transform: translateY(-Npx)` for their hover
+    lift; a reveal that also wrote `transform` would either kill the lift or be
+    killed by it, depending on which rule won. `translate` composes with
+    `transform` instead of replacing it, so the two never fight — same reason the
+    shelf's shake keyframes above can use `translate` safely.
+
+ 3. **Specificity is deliberately `html.js-reveal [data-reveal]` (0,2,1).**
+    `global.css` is imported BEFORE every component's styles (see Layout.astro),
+    so an equal-specificity rule here would lose the cascade to a component rule
+    on source order alone. The extra `html` type beats a scoped rule's
+    `[data-astro-cid-…]` (0,1,0) without needing `!important`.
+
+ ⚠️ Only mark elements that do NOT already use the `translate` property for their
+ own layout — currently the shelf's shake keyframes and the navbar's mobile menu
+ link. Marking those would make this rule and theirs overwrite each other. */
+
+:root {
+  --reveal-shift: 16px;
+  --reveal-dur: 620ms;
+  --reveal-step: 50ms;
+}
+
+html.js-reveal [data-reveal] {
+  opacity: 0;
+  translate: 0 var(--reveal-shift);
+  transition:
+    opacity var(--reveal-dur) var(--ease-out),
+    translate var(--reveal-dur) var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+/* The revealed state keeps `[data-reveal]` (so the transition still has a
+   starting point to interpolate from) and is fully overridden by the rule above:
+   `html.js-reveal [data-reveal].is-revealed` is 0,3,1, one class above it. The
+   ATTRIBUTE is what the script removes, 700 ms later, which is what hands the
+   element back to every other rule — hover lifts, theme colours, the shelf's
+   JS-driven transforms. */
+/* ⚠️ `translate: 0 0`, written as TWO values, and that is not cosmetic.
+   lightningcss minifies `0 0` to a single `0`, and a one-value `translate` cannot
+   interpolate against the two-value `0 var(--reveal-shift)` above — measured on
+   the production build, the element snapped straight to its final position with
+   no movement at all. `calc(0px)` keeps two components through minification. */
+html.js-reveal [data-reveal].is-revealed {
+  opacity: 1;
+  translate: 0px 0px;
+  transition-delay: 0ms;
+}
+
+/* Reduced motion keeps a legible entrance (opacity) and drops the movement. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --reveal-shift: 0px;
+    --reveal-dur: 220ms;
+  }
+}

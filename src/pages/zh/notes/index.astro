@@ -51,7 +51,7 @@ const topTags = filterTags
       )
     }
 
-    <div class="notes-list" id="notes-list">
+    <div class="notes-list" id="notes-list" data-reveal-group=".note-row" data-reveal-step="40">
       {notes.map((entry) => (
         <a
           href={`${getLocalizedPath("/note", language)}${entry.id.split("/")[0]}/`}
@@ -90,6 +90,11 @@ const topTags = filterTags
         const tags: string[] = JSON.parse(row.dataset.tags || "[]");
         if (!tag || tags.includes(tag)) {
           row.style.display = "";
+          // A row can be filtered IN before its entrance ever fired (it was
+          // scrolled past while `display: none`). It would still carry the
+          // hidden reveal state, so hand it back to the normal styles.
+          row.classList.add("is-revealed");
+          row.removeAttribute("data-reveal");
         } else {
           row.style.display = "none";
         }
