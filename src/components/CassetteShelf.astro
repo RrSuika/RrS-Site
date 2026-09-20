@@ -3742,6 +3742,21 @@ const coverUrls = items
      *  of the archive. Short: it is a correction, not a navigation. */
     const WALK_BACK_MS = 260;
     const REVEAL_SMOOTH = 12;
+    /** A frame gap above this is a RESUME, not animation time (see `renderFrame`). */
+    const FRAME_GAP_MS = 200;
+
+    // ── Tag-filter swap ──
+    // ⚠️ A filter change used to teleport: `buildRing` re-seated the survivors and
+    // pruned the rest in a single frame, reported as the swap being "太僵硬". It is
+    // now two beats: the live row rises out through the top of the frame, then the
+    // matched row rises in from below — the intro's own ladder, reused, so both
+    // directions read as the same motion.
+    /** How long the outgoing row takes to clear the top of the stage. */
+    const FILTER_OUT_MS = 520;
+    /** World units the outgoing row climbs — comfortably past the frame. */
+    const FILTER_OUT_Y = 9.5;
+    /** Beat between the old row leaving and the new one starting to rise. */
+    const FILTER_GAP_MS = 260;
 
     const CARD_KEY = "rrsuika-shelf-card";
     const WARM_KEY = "rrsuika-shelf-warm";
@@ -3768,6 +3783,29 @@ const coverUrls = items
        MATH
        ══════════════════════════════════════════ */
 
+    /**
+     * The walk-home grade (see `recycleFromSpring`). `WALK_BACK_MS` is the cost of
+     * a ONE-slot walk; every extra slot adds `WALK_BACK_PER_UNIT`.
+     *
+     * ⚠️ **The per-unit cost must stay BELOW the base, or the grade inverts.** An
+     * earlier revision used `120`, giving 260/380/500/620 ms for 1/2/3/4 slots —
+     * which is 3.85e-3, 2.63e-3, 2.00e-3, 1.61e-3 slots per ms, i.e. the FARTHER
+     * blank closed the gap MORE SLOWLY per slot. That is the opposite of the ask
+     * ("拖的距离…越远…回退速度越快") and the comment claiming otherwise was simply
+     * wrong; the arithmetic check is what caught it.
+     *
+     * With 90 the cost is nearly constant per slot (260/350/440/530 ms ⇒
+     * 3.85e-3 → 1.89e-3 per ms over four slots is still a taper, so read the RATE,
+     * not the total: a four-slot return covers four slots in 530 ms against a
+     * one-slot return's one slot in 260 ms, so it is visibly the faster correction,
+     * while the short one keeps the gentle settle that `springOut` gives it).
+     *
+     * `WALK_BACK_MAX_MS` bounds it so an extreme overrun cannot hold `lock` for long
+     * — the same reason `SPRING_MAX_MS` exists.
+     */
+    const WALK_BACK_PER_UNIT = 90;
+    const WALK_BACK_MAX_MS = 900;
+
     const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
     /** As `clamp`, but the bounds are ALSO pulled in to `from ± DRAG_MAX`, the
      *  furthest a single gesture can travel. A drag may only land on a slot the
@@ -3785,6 +3823,30 @@ const coverUrls = items
 
     const easeOutCubic = (t: number) => 1 - Math.pow(1 - clamp(t), 3);
     const easeOutQuart = (t: number) => 1 - Math.pow(1 - clamp(t), 4);
+
+    /**
+     * A CRITICALLY DAMPED response, as an easing curve: zero slope at BOTH ends.
+     *
+     * ⚠️ This exists to fix a velocity discontinuity, and the shape of the bug is
+     * worth keeping. The release runs on a damped solver (`GLIDE_RATE`), then the
+     * solver is CUT at `|Δ| < SPRING_STOP` ≈ 0.0025 slot and a `snap` tween takes
+     * over for the last fraction of a slot. That tween used `easeOutQuart`, whose
+     * velocity is **maximal at t = 0** and decays: normalised to the same distance
+     * the handoff multiplied the speed by about 2× in a single frame. Reported
+     * verbatim as "从回正到静止不动…在接近静止不动位置时会突然加速，然后静止不动".
+     * Using the same spring response as the curve makes the handoff C¹ — the tail
+     * leaves zero velocity, the tween enters at zero velocity, and it eases out of
+     * that smoothly instead of snapping.
+     *
+     * ⚠️ Because the peak velocity of this curve is only ~0.74 of a linear ramp,
+     * tween durations that used to ride `easeOutQuart` need the `SMOOTH_SNAP_K`
+     * multiplier to keep the same overall pace. */
+    const springOut = (t: number) => {
+      t = clamp(t);
+      return 1 - (1 + 6.2 * t) * Math.exp(-6.2 * t);
+    };
+    /** Pace compensation for `springOut`, measured against its 0.74 peak. */
+    const SMOOTH_SNAP_K = 1.45;
 
     const easeInOutCubic = (t: number) => {
       t = clamp(t);
@@ -4229,16 +4291,42 @@ const coverUrls = items
       // Summing is therefore right and subtracting was the second half of the
       // inverted-landing bug. Zero when the drop was already on a tape (the
       // normal case).
-      const over = Math.round(spring.target) + step;
+      // ⚠️ **The residual has to be measured from where the row ACTUALLY rests,
+      // not from `round(spring.target)`.** The solver is cut at `|Δ| < 0.0025` slot
+      // or at `SPRING_MAX_MS`, so `spring.value` can still be a fraction of a slot
+      // short of the target, and `progress` is written from it every frame. Sizing
+      // the walk-back off the rounded target therefore left that fraction
+      // unabsorbed, and the difference was applied INSTANTLY — measured on a real
+      // drag (2026-09-20): the row decayed smoothly to ~5px/frame, sat perfectly
+      // still for 3-4 frames, then moved 89px and 106px in two frames before
+      // stopping. That is the "接近静止不动位置时会突然加速，然后静止不动" report, and it
+      // is the same defect whether or not the tween was eased (baseline re-measured
+      // at 1614px against 940px here, so it predates the easing change).
+      const over = progress + step;
 
-      if (over !== 0) {
+      if (Math.abs(over) > 0.002) {
         // ⚠️ The tween ends on `−step`, because `recycle` reads its argument in the
         // INVERSE sense from `snap.to`: a forward step (a higher ring index) is
         // `progress = −1` but `recycle(+1)`. Ending the tween on `step` therefore
         // left `recycle` to move `current` by `−step` — measured, a 3-slot drag
         // settled at `progress = −2` and then jumped to the wrong end of the
-        // archive. `recycle(−snap.to)` then receives `+step`, which is right.
-        snap.dur = WALK_BACK_MS;
+        // archive. `recycle(-snap.to)` then receives `+step`, which is right.
+        //
+        // ⚠️ **The walk home is GRADED by distance, and `|over|` is that distance.**
+        // `over` is how many slots the drop landed away from the tape it has to
+        // re-base onto, so a drag that overran the scenery by one slot and one that
+        // overran by four used to take the same 260 ms — the short one read as
+        // sluggish and the long one as a snap.
+        //
+        // The grade has to be read as a RATE, not as a total: the point of the
+        // linear term is that extra slots come cheaper than the first one, so a
+        // distant blank closes its gap at a higher per-slot speed and the
+        // neighbouring blank keeps the gentlest walk. ⚠️ See the note on the
+        // constants — a per-unit cost ABOVE the base inverts this.
+        snap.dur = Math.min(
+          WALK_BACK_MAX_MS,
+          WALK_BACK_MS + (Math.abs(over) - 1) * WALK_BACK_PER_UNIT,
+        );
         snap.from = progress;
         snap.to = -step;
         snap.t = 0;
@@ -4296,12 +4384,16 @@ const coverUrls = items
       const from = progress;
       const target = -direction;
       const distance = Math.abs(target - from);
+      // ⚠️ `SMOOTH_SNAP_K` — this tween now rides `springOut` (zero velocity at
+      // both ends), whose peak speed is ~0.74 of a linear ramp, so the durations
+      // below are scaled to keep the pace the constants were tuned to.
       snap.dur =
-        mode === "flat"
+        SMOOTH_SNAP_K *
+        (mode === "flat"
           ? 380
           : Math.abs(from) < 0.001
             ? STEP_FROM_REST
-            : STEP_BASE + distance * STEP_PER_UNIT;
+            : STEP_BASE + distance * STEP_PER_UNIT);
       snap.from = from;
       snap.to = target;
       snap.t = 0;
@@ -4449,6 +4541,38 @@ const coverUrls = items
        RENDER LOOP
        ══════════════════════════════════════════ */
 
+    /**
+     * The tag swap's clock. Runs before the render loop reads the values, and runs
+     * in the SAME rAF as every other tween, so the outgoing row and the incoming
+     * rise cannot drift apart.
+     *
+     * Phases:  out (0→1, `FILTER_OUT_MS`)  →  gap (`FILTER_GAP_MS`, new ring built
+     * at the start of it)  →  in (owned by `startRiseIn`, i.e. `introDone`).
+     */
+    function stepFilterSwap(now: number) {
+      if (filterHold) {
+        if (now - filterGapStart >= FILTER_GAP_MS) {
+          filterHold = false;
+          startRiseIn();
+        }
+        return;
+      }
+      if (!filterOutPending && filterOut <= 0) return;
+
+      const t = clamp((now - filterOutStart) / FILTER_OUT_MS);
+      filterOut = springOut(t);
+      if (t < 1) return;
+
+      // The old row is out of frame: re-seat the matched tapes while nothing is
+      // visible, so the rebuild itself can never be seen as a jump.
+      filterOutPending = false;
+      filterOut = 0;
+      buildRing(filterPendingTapes);
+      filterPendingTapes = [];
+      filterGapStart = now;
+      filterHold = true;
+    }
+
     function stepTweens(dt: number) {
       // ── release spring (critically damped, velocity preserved) ──
       //
@@ -4490,7 +4614,11 @@ const coverUrls = items
       if (snap.active) {
         snap.t += dt / (snap.dur / 1000);
         const t = clamp(snap.t);
-        progress = lerp(snap.from, snap.to, easeOutQuart(t));
+        // ⚠️ `springOut`, not `easeOutQuart`: the release hands this tween a
+        // solver tail that has already stopped, so the curve has to start at zero
+        // velocity too or the handoff reads as a sudden acceleration (see the note
+        // on `springOut`).
+        progress = lerp(snap.from, snap.to, springOut(t));
         if (t >= 1) {
           snap.active = false;
           recycle(-snap.to);
@@ -4499,13 +4627,33 @@ const coverUrls = items
     }
 
     function renderFrame(now: number) {
-      const dt = lastFrame ? Math.min(0.05, (now - lastFrame) / 1000) : 0.016;
+      const gap = lastFrame ? now - lastFrame : 16;
       lastFrame = now;
+      // ⚠️ A LONG GAP IS NOT A LONG STEP.
+      //
+      // The loop can be parked and restarted (a hidden tab, an observer misfire,
+      // any frame the compositor drops badly). Capping `dt` alone does not catch
+      // that: `Math.min(0.05, gap)` still applies 50 ms of travel in a single
+      // frame, and 50 ms is a visible chunk of a 260–900 ms tween. Measured on a
+      // real drag settle (2026-09-20): the row decayed smoothly to ~5 px/frame,
+      // then moved 89 px and 106 px in two frames before stopping — reported by
+      // the user as "接近静止不动位置时会突然加速，然后静止不动".
+      //
+      // So a gap above `FRAME_GAP_MS` is treated as a resume, not as elapsed
+      // animation time: nothing is stepped this frame, and the next frame picks up
+      // with a normal delta. The shelf is never on screen during the gap, so there
+      // is nothing to see it skip.
+      if (gap > FRAME_GAP_MS) {
+        stepFilterSwap(now);
+        return;
+      }
+      const dt = Math.min(0.05, gap / 1000);
 
       // Reduced motion keeps the static 3D composition but freezes the idle
       // float and the reel spin.
       const time = reduceMotion ? 0 : now / 1000;
 
+      stepFilterSwap(now);
       stepTweens(dt);
 
       const introElapsed = now - introT0;
@@ -4517,6 +4665,9 @@ const coverUrls = items
         spring.active ||
         dragging ||
         launching ||
+        filterOutPending ||
+        filterHold ||
+        filterGap > 0 ||
         Math.abs(progress) > 0.0005;
       idle = rowBusy;
 
@@ -4615,6 +4766,16 @@ const coverUrls = items
         const hero = heroPose(pos, time, tape.ring);
         let { x, y, z, rx, ry, rz, scale } = hero;
         let opacity = tape.vis;
+
+        // ── tag-filter exit: the whole row climbs out and fades ──
+        // Applied to the POSE rather than the element, because the render loop owns
+        // `el.style.transform` outright and a CSS animation on the same element
+        // would be overwritten on the next frame. The fade rides `opacity`, which
+        // the faces consume through `--cas-o`.
+        if (filterOut > 0) {
+          y += filterOut * FILTER_OUT_Y;
+          opacity *= 1 - filterOut;
+        }
 
         // ⚠️ No per-tape alpha, and no cover crossfade. An earlier revision
         // dimmed the printed cover toward 0.8 as a tape turned edge-on (the
@@ -4829,6 +4990,24 @@ const coverUrls = items
     /** Ring offset at which each tape's rung of the ladder starts. */
     let introAt = new Map<Tape, number>();
 
+    /**
+     * Tag-filter blend. `out` is 0→1 while the OLD row climbs away, `gap` is the
+     * short beat with the stage empty, `in` is 1→0 while the NEW row rises; the
+     * render loop reads the first two and the intro machinery owns the third.
+     * ⚠️ They are module state rather than locals because the render loop has to
+     * see them for the whole blend, and `rowBusy` has to include them or the loop
+     * would go idle mid-transition and strand the row halfway out.
+     */
+    let filterOut = 0;
+    let filterGap = 0;
+    let filterOutStart = 0;
+    let filterOutPending = false;
+    let filterGapStart = 0;
+    /** the tape list the next `buildRing` should seat, captured at click time */
+    let filterPendingTapes: Tape[] = [];
+    /** true while a swap owns the beat, so the intro's own finish is deferred */
+    let filterHold = false;
+
     function startIntro(full: boolean) {
       introDone = false;
       root.classList.remove("is-ready");
@@ -4851,9 +5030,34 @@ const coverUrls = items
       }
     }
 
+    /**
+     * The INBOUND half of a tag swap: the intro's rise, without the curtain.
+     *
+     * ⚠️ Not `startIntro(false)`: that path back-dates `introT0` past the whole
+     * sequence so the rise never plays at all (it exists to skip the intro for a
+     * reduced-motion or already-warm visitor). The rise is exactly what a filter
+     * swap wants, so this stages the same ladder with a fresh `introT0` and leaves
+     * `is-done` ON the curtain — an already-hidden element stays hidden, and no
+     * black frame is introduced.
+     */
+    function startRiseIn() {
+      introAt = new Map();
+      for (const tape of allTapes) {
+        const order = clamp(slotIndex(tape), -span, span) + span;
+        introAt.set(tape, RISE_START + order * RISE_STAGGER);
+      }
+      introDone = false;
+      root.classList.remove("is-ready");
+      introT0 = performance.now();
+      introDuration = introEnd();
+      introEl?.classList.add("is-done");
+    }
+
     function finishIntro() {
       if (introDone) return;
       introDone = true;
+      filterHold = false;
+      filterPendingTapes = [];
       root.classList.add("is-ready");
       introEl?.classList.add("is-done");
       try {
@@ -5151,11 +5355,29 @@ const coverUrls = items
               })
           : allTapes.filter((tape) => !tape.empty);
 
-        // No curtain, no replay: `buildRing` re-seats the survivors and pads the
-        // ends with blanks, the pruned tapes fade out where they stand, and the
-        // covers are already decoded — so nothing goes black.
+        // ⚠️ Two beats, not a teleport. The outgoing row climbs out through the
+        // top with `filterOut` driving BOTH the world-Y lift and the row-wide fade,
+        // then `buildRing` re-seats the matched tapes and `startRiseIn` runs the
+        // intro's ladder on them. Still no curtain and no re-decode: the covers are
+        // already in the DOM, so nothing goes black — the row simply leaves and the
+        // replacement arrives.
         void previous;
-        buildRing(matched);
+        if (reduceMotion) {
+          buildRing(matched);
+          return;
+        }
+        // A filter clicked while a swap is already running lands immediately: the
+        // row is either mid-exit (still whole) or already rebuilt, and both are
+        // valid states to cut from.
+        filterOutPending = true;
+        filterPendingTapes = matched;
+        filterOutStart = performance.now();
+        filterOut = 0;
+        filterGap = 0;
+        filterHold = false;
+        // `lock` blocks a second gesture for the length of the blend; `finishIntro`
+        // releases it through `recycle`/`updateUI` on the new ring.
+        lock = true;
       });
     }
 
@@ -5228,13 +5450,52 @@ const coverUrls = items
       requestAnimationFrame(loop);
     }
 
+    /**
+     * Restart the loop if it has stopped while the shelf is on screen and the tab
+     * is visible. Deliberately dumb: the loop is the only thing that can move the
+     * shelf, so a stall is never the desired state, and re-entering it when it was
+     * already going to run is a no-op (`start` is guarded by `running`).
+     *
+     * ⚠️ Uses `setTimeout`, not rAF: an rAF-throttled probe cannot observe a state
+     * in which rAF has been taken away. One pending timer at a time.
+     */
+    let watchDogTimer = 0;
+    function watchDog() {
+      if (watchDogTimer) return;
+      watchDogTimer = window.setTimeout(() => {
+        watchDogTimer = 0;
+        if (document.hidden) return;
+        // Re-derive "on screen" from the element rather than trusting `visible`.
+        const r = root.getBoundingClientRect();
+        const onScreen = r.bottom > 0 && r.top < window.innerHeight && r.width > 0;
+        if (onScreen) {
+          visible = true;
+          start();
+        }
+      }, 250);
+    }
+
     function loop(now: number) {
       running = false;
-      if (!visible || document.hidden) return;
+      // ⚠️ Stopping here is only safe because EVERY stop is recoverable: a tab
+      // coming back fires `visibilitychange`, and an off-screen shelf coming back
+      // fires the IntersectionObserver. What is NOT recoverable is `visible` being
+      // wrong while nothing changes — the observer only calls back on a CHANGE of
+      // state, so one spurious `isIntersecting: false` (measured in headless during
+      // a tag swap, 2026-09-20) parked the loop for good and the swap froze
+      // half-way. `watchdog` below is the belt to that pair of braces.
+      if (!visible || document.hidden) {
+        watchDog();
+        return;
+      }
 
       renderFrame(now);
 
-      if (!introDone && now - introT0 >= introDuration + CURTAIN_FADE) {
+      // ⚠️ `filterHold` defers this: `startRiseIn` stages a fresh intro sequence,
+      // and for the length of the gap beat `introDone` is still true from the
+      // PREVIOUS intro — letting the normal finish run first would bank a `1` and
+      // the incoming row would never be allowed to settle.
+      if (!filterHold && !introDone && now - introT0 >= introDuration + CURTAIN_FADE) {
         finishIntro();
       }
 

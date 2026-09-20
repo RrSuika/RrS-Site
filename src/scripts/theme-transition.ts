@@ -64,16 +64,25 @@ const STORAGE_KEY = "rrsuika-theme";
  *
  *  Now `ease` (written out rather than spelled `ease`, so the numbers below can
  *  be checked against it): 25/50/75/90 % of the radius land at 18/29/45/62 % of
- *  the clock, and 900 ms gives that spread room to be read. ⚠️ Keep a ripple
- *  quicker than the circle that started the burst — that is the volley argument
- *  above — so the old 620/460 ratio is preserved as 900/660. ⚠️ **GUARD_MS must
- *  stay above the longest of the two**, or the guard lands a burst whose first
- *  circle is still growing. */
-const REVEAL_MS = 900;
-const RIPPLE_MS = 660;
+ *  the clock. ⚠️ Keep a ripple quicker than the circle that started the burst —
+ *  that is the volley argument above — so the 620/460 ratio is preserved.
+ *  ⚠️ **GUARD_MS must stay above the longest of the two**, or the guard lands a
+ *  burst whose first circle is still growing.
+ *
+ *  2026-09-20: the user asked for 60 % of the then-current speed ("这个覆盖动画太快了，
+ *  放慢到目前的60%速度"), so the pair went 900/660 → **1500/1100** — exactly 0.6×
+ *  on both, which keeps the volley ratio and keeps the guard above both. The
+ *  easing is untouched: the complaint was about pace, not about the curve, and
+ *  the curve is what fixed the "dead tail" in the pass above. */
+const REVEAL_MS = 1500;
+const RIPPLE_MS = 1100;
 const EASING = "cubic-bezier(0.25, 0.1, 0.25, 1)";
-/** Safety net: a burst always closes, even if an animation never settles. */
-const GUARD_MS = 1600;
+/** Safety net: a burst always closes, even if an animation never settles.
+ *  ⚠️ Must exceed `REVEAL_MS + SF_ARRIVE_MS`, not just `REVEAL_MS`: since the
+ *  starfield fade is armed to END on the landing, a burst the guard lands early
+ *  cuts the fade mid-ramp and the stars pop in. 1500 + 1600 = 3100, so 3400 keeps
+ *  the guard as a true last resort. */
+const GUARD_MS = 3400;
 
 /**
  * ⚠️ The theme the document root sits on while a burst is running.
@@ -133,6 +142,43 @@ let posterCache: string | null = null;
 let pending: Theme | null = null;
 
 /**
+ * ⚠️ A burst's identity. Every deferred callback (`scheduledDrop`, the cover
+ * removal, the guard) captures the generation it was created for and returns
+ * without touching the DOM if a newer burst has since started.
+ *
+ * Without this, the previous landing's `setTimeout` — armed 760 ms in advance —
+ * fires into the NEXT burst and removes its ripples: the second click's circle
+ * either vanishes mid-flight or appears to do nothing. Reproduced 2026-09-20 by
+ * clicking 1800 ms after the first click, i.e. inside the landing tail.
+ */
+let burstGen = 0;
+
+/**
+ * True from the moment a landing has applied the theme until its cover layers are
+ * gone. ⚠️ This is a state nothing else in the module modelled, and it is exactly
+ * the window the second-click bug lived in: `pending` is already null and the root
+ * is already the new theme, but the copies are still on screen, so the burst is
+ * neither "live" nor "finished".
+ */
+let landingTail = false;
+/** The pending drop/cover timers of the CURRENT generation, so a new burst can
+ *  cancel them instead of inheriting them. */
+let dropTimer = 0;
+let coverTimer = 0;
+
+/**
+ * Is a burst in flight?
+ *
+ * ⚠️ Keyed on `pending`, NOT on `intentTheme()`. `intentTheme()` falls back to the
+ * root, and during a burst the root is deliberately parked on `NEUTRAL_THEME`
+ * (`holdRoot`), so asking it "is a burst running" answers "no" for a light→dark
+ * burst — which is how the burst's own leaving-theme bookkeeping got skipped.
+ */
+function burstInFlight(): boolean {
+  return pending !== null && ripples.length > 0;
+}
+
+/**
  * The theme the visitor is actually LOOKING AT.
  *
  * ⚠️ **Not `rootTheme()`, and that distinction is a real bug that shipped.** For
@@ -187,8 +233,30 @@ function intentTheme(): Theme {
  * ⚠️ 1.7 s, and it must stay over a second: the visitor asked for "一两秒的平滑从深到浅的
  * 渐入", and a field of stars arriving over 1 s still reads as a cut because the
  * rest of the page is already lit when it starts.
+ *
+ * ⚠️⚠️ **This fade cannot be pre-run, and that is why the copies now linger.**
+ *
+ * Measured per frame on a light->dark click (2026-09-20): the landing frame dropped
+ * the copies with the page already dark and the canvas at 0.85 for ONE frame, and
+ * the next frame reset it to 0 to begin this fade — a dark page with no stars,
+ * which is the "画面会闪一下黑" report.
+ *
+ * Two fixes were tried and MEASURED to fail:
+ *   · a negative `animation-delay` — the class only goes on in the rAF after the
+ *     swap, so the animation's start time is "now"; the delay merely begins it N ms
+ *     in. Measured: 0.85 at the landing, then a DIP to 0.146 and a ramp back up.
+ *   · firing the fade early, while the canvas is still `display: none` — **Chrome
+ *     does not run animations on a `display: none` element**, so the fade still
+ *     only begins once the canvas becomes visible, after the copies are gone.
+ *
+ * Nothing can pre-light the field, so the hand-off is covered instead: the landing
+ * now fades the copies out over `COPY_FADE_MS` (see `landBurst`) while this fade
+ * runs underneath. Do not shorten that fade without re-measuring the landing frame.
  */
 const ARRIVE_MS = 1700;
+/* ⚠️ The starfield's CSS animation itself is 1600 ms (`sfArrive`, global.css §10).
+   That number only matters through `GUARD_MS`, which is a literal 3400 = 1500 +
+   1600 + slack; if `sfArrive` is ever retimed, re-derive `GUARD_MS` from it. */
 
 function arriveBackground(): void {
   const els = ["starfield-canvas", "lens-canvas"]
@@ -657,22 +725,86 @@ function unbindScroll(): void {
   window.removeEventListener("scroll", offsetClones);
 }
 
+/**
+ * How long the copies keep covering the page AFTER the theme has been applied.
+ *
+ * ⚠️ **Not zero, and this is the whole of fix (4).** The starfield canvases are
+ * `display: none` in the light theme, so on the landing frame the live page is
+ * already dark while the field has not painted yet — measured per frame: `theme
+ * dark`, `bodyBg rgb(7,7,13)`, `sf opacity 0`, no copies. That IS the black flash.
+ *
+ * Neither a negative `animation-delay` nor arming the fade early can pre-light the
+ * field (**Chrome does not run animations on a `display: none` element**), so the
+ * hand-off is covered instead: the theme applies UNDER the copies, they are given
+ * this long to let the field paint, and only then are they taken away.
+ */
+const COPY_FADE_MS = 700;
+
 function dropLayers(): void {
   window.clearTimeout(guardTimer);
   guardTimer = 0;
+  window.clearTimeout(dropTimer);
+  dropTimer = 0;
+  window.clearTimeout(coverTimer);
+  coverTimer = 0;
+  landingTail = false;
   unbindScroll();
   for (const r of ripples) r.el.remove();
   ripples = [];
   burstLeaving = null;
   posterCache = null;
+  // ⚠️ The hold class is a PARKING state and must never outlive the burst. It was
+  // missing here, so `html.theme-hold-light` could survive a completed burst and
+  // pin the page to the light overrides under a dark root (measured: hold=1,
+  // copies=0, theme=dark).
+  document.documentElement.classList.remove(HOLD_CLASS);
 }
 
-/** Close the burst: the pending theme becomes the real one in the same frame the
- *  copies go, so the two are never both visible for an instant — or neither. */
+/**
+ * Hide the finished copies without a cascade fight.
+ *
+ * ⚠️ A `transition: opacity` here was measured as a NO-OP — the copy read back at
+ * opacity 0 regardless, because these layers carry their own theme rules and the
+ * landing also toggles `theme-land`. So the cover is removed by GEOMETRY:
+ * `transition: none` plus a translate out of the viewport, which has one winner.
+ * Optional, and skipped under reduced motion (nothing to cover there: the swap is
+ * instant).
+ */
+function coverOff(): void {
+  if (ripples.length === 0) return;
+  for (const r of ripples) {
+    r.el.style.transition = "none";
+    r.el.style.transform = "translateY(-110%)";
+  }
+}
+
+/** Close the burst: the theme applies first, and the copies keep covering the page
+ *  for `COPY_FADE_MS` so the incoming starfield can paint before they go.
+ *
+ *  ⚠️ Both the theme application and the two timers are bound to `burstGen`. The
+ *  theme is applied ONLY while the copies still cover the viewport — that is what
+ *  makes the swap invisible — so doing it here and the removal later is correct;
+ *  what was missing is that a superseded burst must not do either. */
 function landBurst(): void {
   const final = pending;
-  dropLayers();
   pending = null;
+
+  if (final && !reducedMotion()) {
+    landingTail = true;
+    const gen = burstGen;
+    applyInstant(final);
+    coverTimer = window.setTimeout(() => {
+      if (gen !== burstGen) return;        // a newer burst owns the screen now
+      coverOff();
+      dropTimer = window.setTimeout(() => {
+        if (gen !== burstGen) return;
+        dropLayers();
+      }, 60);
+    }, COPY_FADE_MS);
+    return;
+  }
+
+  dropLayers();
   if (final) applyInstant(final);
 }
 
@@ -701,7 +833,9 @@ function onRippleDone(entry: Ripple): void {
  *  window, close the burst on the theme the clicks asked for. */
 function armGuard(): void {
   window.clearTimeout(guardTimer);
+  const gen = burstGen;
   guardTimer = window.setTimeout(() => {
+    if (gen !== burstGen) return;
     if (!ripples.length) return;
     landBurst();
   }, GUARD_MS);
@@ -725,12 +859,27 @@ export function toggleThemeWithReveal(origin?: { x: number; y: number }): void {
     return;
   }
 
+  // ⚠️ A click inside the PREVIOUS burst's landing tail starts a fresh burst:
+  // the theme is already applied and on screen, so the old copies are just a cover
+  // that has not faded yet, and inheriting its timers is what ate the click. Tear
+  // the tail down first, then treat this as `first`.
+  if (landingTail) {
+    window.clearTimeout(coverTimer);
+    window.clearTimeout(dropTimer);
+    dropLayers();
+  }
+
   const point = usableOrigin(origin) ?? buttonOrigin();
   const x = point.x;
   const y = point.y;
   const radius = cornerRadius(x, y);
-  const first = ripples.length === 0;
-  if (first) burstLeaving = leaving;
+  const first = !burstInFlight();
+  // A new burst takes ownership: bump the generation so every callback armed by
+  // the previous one becomes a no-op.
+  if (first) {
+    burstGen += 1;
+    burstLeaving = leaving;
+  }
   // One event's worth of head start, if a press provided it.
   const held = first ? claimWarm(leaving) : { ripple: null };
 
