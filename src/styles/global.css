@@ -745,13 +745,20 @@ main {
   }
 }
 
-/* Fast fade-in so the video never pops in mid-decode.
+/* Fade-in so the video never pops in mid-decode.
    JS adds .bh-fade straight away, then .is-ready once the first frame is
-   decoded (with a timeout fallback). Tune the duration here. */
+   decoded (with a timeout fallback).
+
+   ⚠️ **1.5 s, and this governs TWO moments, not one.** It is the page-load
+   reveal AND the theme-switch re-entry (theme-transition.ts re-arms `is-ready`).
+   Requested 2026-09-20: 「给黑洞的浅入动画时间做长一点，一两秒都可以，目前太快了」 —
+   it was 0.5 s, which on the dark theme's black field read as a pop rather than
+   as something emerging. Do not put the two moments on separate clocks: they are
+   the same gesture (the hole coming out of the dark) and must feel identical. */
 #blackhole-layer.bh-fade {
   opacity: 0;
 
-  transition: opacity 0.5s var(--ease-out);
+  transition: opacity 1.5s var(--ease-out);
 }
 
 #blackhole-layer.bh-fade.is-ready {

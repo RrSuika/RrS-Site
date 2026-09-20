@@ -165,8 +165,16 @@ const type = project.data.type.toUpperCase();
        `--ease-in-out` has no such front-load, so the 4px is spent across the whole
        duration and the rise reads as deliberate rather than as a twitch.
        ⚠️ The colour/shadow properties keep `--ease-out` at 0.5s: a state change
-       should confirm immediately, and only the movement was too quick. */
-    --lift-dur: 0.72s;
+       should confirm immediately, and only the movement was too quick.
+
+       ⚠️ **The LIFT is deliberately slower than the cover's zoom** (`--cover-dur`),
+       and the two must stay separate tokens. Requested 2026-09-20: "让抬升比封面
+       放大更慢……抬升速度太快，而封面放大太慢，就会视觉上感觉不平衡".
+       They were a single token, which is exactly why the mismatch could not be
+       tuned away: 4px of travel read as far quicker than a 5 % zoom, so they need
+       different clocks rather than one shared value. */
+    --lift-dur: 1s;
+    --cover-dur: 0.72s;
     --lift-ease: var(--ease-in-out);
 
     transition:
@@ -458,9 +466,9 @@ const type = project.data.type.toUpperCase();
 
     object-fit: cover;
 
-    /* Matched to the card's own lift so the two move as one object; the spring's
-       overshoot is dropped for the same reason (see the note on `.card`). */
-    transition: transform var(--lift-dur) var(--lift-ease);
+    /* ⚠️ `--cover-dur`, NOT `--lift-dur`: the zoom is meant to lag behind the lift,
+       not match it (see the note on `.card`). The spring's overshoot stays dropped. */
+    transition: transform var(--cover-dur) var(--lift-ease);
   }
 
   .card:hover .cover {

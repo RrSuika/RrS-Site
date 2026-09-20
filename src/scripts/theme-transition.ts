@@ -319,14 +319,36 @@ function arriveBackground(): void {
   }, ARRIVE_MS);
 
   // ── the black hole, SEQUENCED after the field ──
-  // Requested: "先透镜，然后黑洞，并且他俩是丝滑渐入". Dropping `is-ready` starts the
-  // layer's own 0.5 s fade toward 0 (`.bh-fade`), so the hole leaves the composition
-  // while the field arrives, then fades back in later and finishes after it. Both are
-  // smooth; neither pops.
+  // Requested: "直接：黑屏，然后透镜出现，然后黑洞再出现" and "他俩是丝滑渐入".
+  //
+  // ⚠️⚠️ **The layer must be cut to 0 INSTANTLY, with its transition disabled.**
+  // `#blackhole-layer` rests at `opacity: 1` (its `.is-ready` value), so merely
+  // dropping `is-ready` to re-arm the fade leaves it at FULL opacity for the first
+  // ~133 ms and then fades it *out* over the 0.5 s `.bh-fade` transition. Measured
+  // per frame on a light→dark landing, that is exactly the reported sequence:
+  //
+  //   t=1566  copies=0  bhOp=1.00  bhReady=0   ← 静止的黑洞
+  //   t=1699  copies=0  bhOp=0.20  bhReady=0   ← 它在「淡出」
+  //   t=1941  copies=0  bhOp=0.00              ← 黑洞没了
+  //   t=2403  copies=0  bhOp=0.40  bhReady=1   ← 黑洞才回来
+  //
+  // `transition: none` + `opacity: 0` inline makes it vanish on the landing frame
+  // instead, and holding the inline 0 means it also stays gone while it waits for
+  // its turn — so the eye reads: field arrives, then the hole fades in. The inline
+  // declarations are cleared on the frame `is-ready` goes on, which is what arms the
+  // 0.5 s transition for the fade-in.
   const bh = document.getElementById("blackhole-layer");
   if (bh) {
+    bh.style.transition = "none";
+    bh.style.opacity = "0";
     bh.classList.remove("is-ready");
     window.setTimeout(() => {
+      // ⚠️ Drop the inline overrides BEFORE adding the class, then force a recalc:
+      // with `transition: none` still inline and a 0 opacity, adding `is-ready`
+      // would jump straight to 1 with nothing to interpolate from.
+      bh.style.transition = "";
+      bh.style.opacity = "";
+      void bh.offsetHeight;
       bh.classList.add("is-ready");
       // ⚠️ Playback must not wait on the fade: `display: none` can leave a `loop` +
       // `muted` video paused, and a hole that fades in as a still image and only then

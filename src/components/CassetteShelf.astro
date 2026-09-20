@@ -4582,8 +4582,12 @@ const coverUrls = items
       // unconditionally would immediately re-apply the offset that was just
       // consumed — the row would sit permanently one spring-length off its slot
       // with the spring deactivated, and nothing would ever move it again.
-      const wasActive = spring.active;
-      if (wasActive) {
+      // ⚠️ A finger/pointer that is driving the row outranks the solver. Without
+      // this, a glide the visitor took over could still reach its settle and call
+      // `recycleFromSpring()` mid-gesture, which zeroes `progress` and re-bases the
+      // ring UNDER the drag — the row would jump by a slot while being dragged.
+      const wasActive = spring.active && !dragging;
+      if (spring.active && !dragging) {
         const rate = reduceMotion ? 60 : spring.rate;
         const delta = spring.value - spring.target;
         const impulse = spring.velocity + rate * delta;
@@ -4611,7 +4615,7 @@ const coverUrls = items
       if (wasActive) progress = spring.value;
 
       // ── the step: ONE eased tween drives the whole row ──
-      if (snap.active) {
+      if (snap.active && !dragging) {
         snap.t += dt / (snap.dur / 1000);
         const t = clamp(snap.t);
         // ⚠️ `springOut`, not `easeOutQuart`: the release hands this tween a
@@ -5093,7 +5097,13 @@ const coverUrls = items
     page.addEventListener("contextmenu", (event) => event.preventDefault());
 
     stage.addEventListener("pointerdown", (event) => {
-      if (launching || lock || !introDone) return;
+      // ⚠️ `lock` is deliberately NOT checked here. It is the step lock that
+      // `settleDrag` raises for the length of the settle, and refusing the press
+      // during it is what made the row feel frozen right after a release: the
+      // visitor could not grab the row again until the glide had finished. The
+      // takeover below already cancels the in-flight motion and re-anchors the
+      // gesture, which is exactly what a press during a glide should do.
+      if (launching || !introDone) return;
       if (
         (event.target as HTMLElement).closest(
           ".shelf-nav, .shelf-open",
@@ -5127,7 +5137,11 @@ const coverUrls = items
       const rect = stage.getBoundingClientRect();
       hoverX = (event.clientX - rect.left) / rect.width - 0.5;
 
-      if (!pointerDown || launching || lock) return;
+      // ⚠️ Also no `lock` check — see the note on `pointerdown`. Dragging the row
+      // while it is still gliding is the natural gesture, and `pointerdown` has
+      // already stopped the solver; gating here only made the row ignore the
+      // pointer for the length of the settle.
+      if (!pointerDown || launching) return;
 
       // The pointer's TOTAL travel, not its offset from the last frame: the row
       // is a continuous function of it, so a slow drag of three slots' worth of
