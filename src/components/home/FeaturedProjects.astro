@@ -138,6 +138,15 @@ const t = getTranslations(language);
 
   .project-wrapper {
     position: relative;
+
+    /* ⚠️ Not decoration — this is what makes the three cards END ON THE SAME
+       LINE. A grid item stretches to its row by default, so the wrappers were all
+       654px, but `.card` is `display: block` inside them and only ever grew to its
+       own content: measured bottoms were 1840 / 1862 / 1828. Making the wrapper a
+       flex column and the card `flex: 1` stretches the card to the row height, so
+       all three bottoms land together. */
+    display: flex;
+    flex-direction: column;
   }
 
   .number {

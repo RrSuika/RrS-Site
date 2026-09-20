@@ -156,12 +156,14 @@
      The mark's `top` is split into a `%` and a `vh` part because neither alone
      behaves: a pure `%` overshoots on a tall window, a pure `vh` cannot clear
      the wordmark on a short one. */
+  /* BAKED from the tuner (2026-09-20). These are the values the user dialled in on
+     /intro-preview/ — edit them here, not in the panel, now that they are shipped. */
   --intro-mark-top-pct: 34;
   --intro-mark-top-vh: 12;
-  --intro-readout-bottom: 5;
-  --intro-gap: 26;
+  --intro-readout-bottom: 6;
+  --intro-gap: 20;
   --intro-font-mark: 58;
-  --intro-font-pct: 104;
+  --intro-font-pct: 84;
   --intro-font-meta: 10;
   /* The two ORANGE lines, each with its own offset. `--intro-rule-nudge` shifts
      the signal rule under the wordmark (it is a grid item, so this is a
@@ -2427,6 +2429,22 @@ html.is-intro {
 @keyframes introFade {
   from {
     opacity: 0;
+  }
+}
+
+/* ⚠️ **On a 1080p-height screen the intro's decorative rules are dropped.**
+   Requested 2026-09-20: "然后 1080p 下的分隔条全部去掉". The plate carries FOUR of
+   these `.site-intro__hair` separators (one either side of `Portfolio // Design
+   archive` and of `Boot sequence`), and at 900px tall they are the thing that
+   makes the readout look like a ruled table rather than a readout.
+   ⚠️ The breakpoint is HEIGHT, not width: the crowding this answers is vertical,
+   and a 1920×1080 window is exactly as short as a 1440×900 one. The wordmark's own
+   `.site-intro__rule` is deliberately KEPT — it is the one rule the user tunes
+   (`--intro-rule-nudge`) and it is the wordmark's underline, not a separator
+   between labels. */
+@media (max-height: 1000px) {
+  .site-intro__hair {
+    display: none;
   }
 }
 

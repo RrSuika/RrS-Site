@@ -119,7 +119,11 @@ const type = project.data.type.toUpperCase();
 
 <style>
   .card {
-    display: block;
+    /* ⚠️ `flex: 1` so the card fills the row it sits in (see `.project-wrapper`
+       in FeaturedProjects). The column layout lets `.content` absorb the slack. */
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 
     position: relative;
 
@@ -477,6 +481,13 @@ const type = project.data.type.toUpperCase();
 
   .content {
     padding: 25px;
+
+    /* The slack in a stretched card collects HERE, and `margin-top: auto` on the
+       tag row below pushes it to the bottom of the block, so a short card gets
+       air between its description and its tags instead of a void under the card. */
+    flex: 1;
+    display: flex;
+    flex-direction: column;
   }
 
   h2 {
@@ -507,6 +518,11 @@ const type = project.data.type.toUpperCase();
     gap: 8px;
 
     flex-wrap: wrap;
+
+    /* ⚠️ Pushes the tags (and everything after them) to the BOTTOM of the card.
+       Without it the stretched card keeps a ragged bottom edge inside a border
+       that is now full height, which is worse than the misalignment it fixes. */
+    margin-top: auto;
 
     margin-bottom: 30px;
   }
