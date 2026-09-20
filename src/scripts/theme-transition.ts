@@ -85,6 +85,35 @@ const EASING = "cubic-bezier(0.25, 0.1, 0.25, 1)";
 const GUARD_MS = 3400;
 
 /**
+ * The starfield / lens arrival window, and the source of truth for it.
+ *
+ * ⚠️ Declared HERE, with the other timing constants, because `COPY_FADE_MS`
+ * below is `= ARRIVE_MS`. A module-level initialiser is evaluated in source
+ * order, so referencing a `const` declared further down is a temporal-dead-zone
+ * `ReferenceError` at load — which would take the whole theme switch down.
+ *
+ * ⚠️ The CSS animation itself is 1600 ms (`sfArrive`, global.css §10); this is
+ * 1700 to leave the 100 ms `arriveBackground` needs, since it arms the class on
+ * the frame AFTER the landing. `GUARD_MS` above is a literal 3400 = 1500 + 1600
+ * + slack, so if `sfArrive` is ever retimed, re-derive both from it.
+ */
+const ARRIVE_MS = 1700;
+
+/**
+ * How long after the landing the black hole starts its own fade-in.
+ *
+ * ⚠️ The two arrivals are deliberately SEQUENCED, not simultaneous. Requested
+ * 2026-09-20: "先让星空从暗到亮过渡出现，然后是黑洞同样的从暗到亮过渡出现，并且播放".
+ * The hole is the subject of the composition, so it should arrive *onto* an
+ * already-present field rather than materialise together with it. Starting it at
+ * 45 % of the arrival (≈ 765 ms) means the starfield has visibly resolved
+ * before the hole begins, and the hole's own 500 ms fade still finishes well
+ * inside the `ARRIVE_MS` copy window — so the visitor never watches either one
+ * fade in on an uncovered page.
+ */
+const BH_FADE_DELAY_MS = 765;
+
+/**
  * ⚠️ The theme the document root sits on while a burst is running.
  *
  * While <html> is `light`, every `:root[data-theme="light"] …` rule in the
@@ -281,11 +310,6 @@ function intentTheme(): Theme {
  * now fades the copies out over `COPY_FADE_MS` (see `landBurst`) while this fade
  * runs underneath. Do not shorten that fade without re-measuring the landing frame.
  */
-const ARRIVE_MS = 1700;
-/* ⚠️ The starfield's CSS animation itself is 1600 ms (`sfArrive`, global.css §10).
-   That number only matters through `GUARD_MS`, which is a literal 3400 = 1500 +
-   1600 + slack; if `sfArrive` is ever retimed, re-derive `GUARD_MS` from it. */
-
 function arriveBackground(): void {
   const els = ["starfield-canvas", "lens-canvas"]
     .map((id) => document.getElementById(id))
@@ -294,6 +318,27 @@ function arriveBackground(): void {
 
   requestAnimationFrame(() => {
     for (const el of els) el.classList.add("sf-arrive");
+
+    // ── the black hole, SEQUENCED after the field ──
+    // ⚠️ The layer is `display: none` in the light theme, so on the landing frame it
+    // comes back at `opacity: 1` (its `.is-ready` value) for one un-animated frame
+    // before this class is re-applied. Both canvases are still covered by the theme
+    // copies at that instant, so it is not visible — but do NOT shorten the copy
+    // window below `ARRIVE_MS` or it will be.
+    const bh = document.getElementById("blackhole-layer");
+    if (bh) {
+      bh.classList.remove("is-ready"); // re-arm the 0.5 s fade (`.bh-fade` rule)
+      window.setTimeout(() => {
+        bh.classList.add("is-ready");
+        // ⚠️ `display: none` can leave the video paused even though it is `loop` +
+        // `muted`, and playback must not wait on the fade, or the hole reads as a
+        // still image that starts moving late. Ignore the promise: a blocked
+        // autoplay is a no-op, and the decode path already handles the rest.
+        const video = document.getElementById("blackhole-video") as HTMLVideoElement | null;
+        if (video && video.paused) void video.play().catch(() => undefined);
+      }, BH_FADE_DELAY_MS);
+    }
+
     window.setTimeout(() => {
       for (const el of els) el.classList.remove("sf-arrive");
     }, ARRIVE_MS);
@@ -765,8 +810,25 @@ function unbindScroll(): void {
  * field (**Chrome does not run animations on a `display: none` element**), so the
  * hand-off is covered instead: the theme applies UNDER the copies, they are given
  * this long to let the field paint, and only then are they taken away.
+ *
+ * ⚠⚠ **It must equal the ARRIVAL, not be shorter.** It used to be a flat 700 ms
+ * against a 1600 ms `sfArrive`, so the copies were yanked away when the field had
+ * only reached ~77 % — and the arrival then kept climbing for another 900 ms ON
+ * SCREEN. Reported 2026-09-20 as: "圆环覆盖画面后……又闪一下" and, for the black
+ * hole, "卡住一下子，然后画面突然出现星空，然后黑洞才开始播放".
+ *
+ * Measured per frame on a light→dark landing (1720×1000), lens opacity:
+ *   t=6214 `display` flips to block — op 0.90 for one un-animated frame
+ *   t=6240 `.sf-arrive` applies      — op resets to 0.00 and starts climbing
+ *   t=6987 copies removed           — op only 0.77, still 0.13 short
+ *   t=7637 op reaches 0.90          — 650 ms AFTER the page was already uncovered
+ *
+ * So one value governs both the black flash and the visible creep: keep the
+ * copies until the arrival has actually finished. `ARRIVE_MS` is 1700 and the CSS
+ * animation is 1600, which leaves the 100 ms of slack `arriveBackground` needs
+ * (it arms on the frame AFTER the landing).
  */
-const COPY_FADE_MS = 700;
+const COPY_FADE_MS = ARRIVE_MS;
 
 function dropLayers(): void {
   window.clearTimeout(guardTimer);
