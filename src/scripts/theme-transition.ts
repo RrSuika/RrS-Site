@@ -87,15 +87,10 @@ const GUARD_MS = 3400;
 /**
  * The starfield / lens arrival window, and the source of truth for it.
  *
- * ⚠️ Declared HERE, with the other timing constants, because `COPY_FADE_MS`
- * below is `= ARRIVE_MS`. A module-level initialiser is evaluated in source
- * order, so referencing a `const` declared further down is a temporal-dead-zone
- * `ReferenceError` at load — which would take the whole theme switch down.
- *
- * ⚠️ The CSS animation itself is 1600 ms (`sfArrive`, global.css §10); this is
- * 1700 to leave the 100 ms `arriveBackground` needs, since it arms the class on
- * the frame AFTER the landing. `GUARD_MS` above is a literal 3400 = 1500 + 1600
- * + slack, so if `sfArrive` is ever retimed, re-derive both from it.
+ * The CSS animation itself is 1600 ms (`sfArrive`, global.css §10); this is 1700 so
+ * the class is stripped 100 ms AFTER the fade has finished, never mid-ramp.
+ * `GUARD_MS` above is a literal 3400 = 1500 + 1600 + slack, so if `sfArrive` is
+ * ever retimed, re-derive both from it.
  */
 const ARRIVE_MS = 1700;
 
@@ -182,18 +177,9 @@ let pending: Theme | null = null;
  */
 let burstGen = 0;
 
-/**
- * True from the moment a landing has applied the theme until its cover layers are
- * gone. ⚠️ This is a state nothing else in the module modelled, and it is exactly
- * the window the second-click bug lived in: `pending` is already null and the root
- * is already the new theme, but the copies are still on screen, so the burst is
- * neither "live" nor "finished".
- */
-let landingTail = false;
-/** The pending drop/cover timers of the CURRENT generation, so a new burst can
- *  cancel them instead of inheriting them. */
-let dropTimer = 0;
-let coverTimer = 0;
+/** The arrival class-removal timer, so a second arrival cannot have its class
+ *  stripped by the first one's stale timeout. */
+let arrivalTimer = 0;
 
 /**
  * Is a burst in flight?
@@ -217,8 +203,8 @@ function burstInFlight(): boolean {
  * and the per-frame trace of what was actually on screen read
  * `light, dark, light, light, dark, dark, light, light, light` — the "连着在 light /
  * dark 界面闪好几次" report. It needs `n >= 2` to show, which is why it only appeared
- * after several normal clicks: any gap longer than `REVEAL_MS + COPY_FADE_MS`
- * leaves a single copy and looks perfect.
+ * after several normal clicks: a gap longer than `REVEAL_MS` leaves a single copy
+ * and looks perfect.
  *
  * Coalescing (accumulating the toggles into `pending` instead) was considered and
  * rejected by the user: a double click would then flip twice, and the knob's own
@@ -226,13 +212,13 @@ function burstInFlight(): boolean {
  * feedback at all. Locking the control for the length of the transition is both
  * simpler and honest about the fact that the transition IS the feedback.
  *
- * ⚠️ The tail must count as "running" too. `pending` is already null once the theme
- * has been applied, but the copies still cover the viewport for `COPY_FADE_MS`; a
- * click in that window would clone a copy at the instant the old one is being
- * geometrically dropped, and `dropLayers()` would yank it away again.
+ * ⚠️ There is no longer a "tail" to account for: the copies come off in the same
+ * frame the theme lands (see `landBurst`), so `burstInFlight()` alone is the whole
+ * condition. Keep it that way — a hold after the landing is what produced the
+ * "等好几秒才闪" report.
  */
 function burstLocked(): boolean {
-  return burstInFlight() || landingTail;
+  return burstInFlight();
 }
 
 /**
@@ -307,8 +293,8 @@ function intentTheme(): Theme {
  *     only begins once the canvas becomes visible, after the copies are gone.
  *
  * Nothing can pre-light the field, so the hand-off is covered instead: the landing
- * now fades the copies out over `COPY_FADE_MS` (see `landBurst`) while this fade
- * runs underneath. Do not shorten that fade without re-measuring the landing frame.
+ * now the copies are already gone when this fade starts, which is the point: the
+ * arrival is meant to be watched, not hidden behind a cover.
  */
 function arriveBackground(): void {
   const els = ["starfield-canvas", "lens-canvas"]
@@ -316,33 +302,40 @@ function arriveBackground(): void {
     .filter((el): el is HTMLElement => el !== null);
   if (els.length === 0) return;
 
-  requestAnimationFrame(() => {
-    for (const el of els) el.classList.add("sf-arrive");
+  // ⚠️ SYNCHRONOUS, no `requestAnimationFrame`. This is called from `applyInstant`,
+  // i.e. in the very frame that lifted the canvases out of `display: none`. Deferring
+  // the class by one frame leaves one painted frame at the canvas's RESTING opacity
+  // (0.85 / 0.9), which is the "flash, and only then does the field start playing"
+  // that was reported twice. Arming it here means the field is already at `opacity: 0`
+  // on the first frame it can be seen, so the fade is the only thing the eye catches.
+  for (const el of els) el.classList.add("sf-arrive");
 
-    // ── the black hole, SEQUENCED after the field ──
-    // ⚠️ The layer is `display: none` in the light theme, so on the landing frame it
-    // comes back at `opacity: 1` (its `.is-ready` value) for one un-animated frame
-    // before this class is re-applied. Both canvases are still covered by the theme
-    // copies at that instant, so it is not visible — but do NOT shorten the copy
-    // window below `ARRIVE_MS` or it will be.
-    const bh = document.getElementById("blackhole-layer");
-    if (bh) {
-      bh.classList.remove("is-ready"); // re-arm the 0.5 s fade (`.bh-fade` rule)
-      window.setTimeout(() => {
-        bh.classList.add("is-ready");
-        // ⚠️ `display: none` can leave the video paused even though it is `loop` +
-        // `muted`, and playback must not wait on the fade, or the hole reads as a
-        // still image that starts moving late. Ignore the promise: a blocked
-        // autoplay is a no-op, and the decode path already handles the rest.
-        const video = document.getElementById("blackhole-video") as HTMLVideoElement | null;
-        if (video && video.paused) void video.play().catch(() => undefined);
-      }, BH_FADE_DELAY_MS);
-    }
+  // ⚠️ A stale timer from a previous arrival must not strip this one's class
+  // early — a light→dark→light→dark burst can arm two arrivals inside one window.
+  window.clearTimeout(arrivalTimer);
+  arrivalTimer = window.setTimeout(() => {
+    arrivalTimer = 0;
+    for (const el of els) el.classList.remove("sf-arrive");
+  }, ARRIVE_MS);
 
+  // ── the black hole, SEQUENCED after the field ──
+  // Requested: "先透镜，然后黑洞，并且他俩是丝滑渐入". Dropping `is-ready` starts the
+  // layer's own 0.5 s fade toward 0 (`.bh-fade`), so the hole leaves the composition
+  // while the field arrives, then fades back in later and finishes after it. Both are
+  // smooth; neither pops.
+  const bh = document.getElementById("blackhole-layer");
+  if (bh) {
+    bh.classList.remove("is-ready");
     window.setTimeout(() => {
-      for (const el of els) el.classList.remove("sf-arrive");
-    }, ARRIVE_MS);
-  });
+      bh.classList.add("is-ready");
+      // ⚠️ Playback must not wait on the fade: `display: none` can leave a `loop` +
+      // `muted` video paused, and a hole that fades in as a still image and only then
+      // starts moving is exactly the "开始播放" complaint. The promise is ignored on
+      // purpose — a blocked autoplay is a no-op and the decode path handles it.
+      const video = document.getElementById("blackhole-video") as HTMLVideoElement | null;
+      if (video && video.paused) void video.play().catch(() => undefined);
+    }, BH_FADE_DELAY_MS);
+  }
 }
 
 function setRoot(next: Theme): void {
@@ -798,46 +791,10 @@ function unbindScroll(): void {
   window.removeEventListener("scroll", offsetClones);
 }
 
-/**
- * How long the copies keep covering the page AFTER the theme has been applied.
- *
- * ⚠️ **Not zero, and this is the whole of fix (4).** The starfield canvases are
- * `display: none` in the light theme, so on the landing frame the live page is
- * already dark while the field has not painted yet — measured per frame: `theme
- * dark`, `bodyBg rgb(7,7,13)`, `sf opacity 0`, no copies. That IS the black flash.
- *
- * Neither a negative `animation-delay` nor arming the fade early can pre-light the
- * field (**Chrome does not run animations on a `display: none` element**), so the
- * hand-off is covered instead: the theme applies UNDER the copies, they are given
- * this long to let the field paint, and only then are they taken away.
- *
- * ⚠⚠ **It must equal the ARRIVAL, not be shorter.** It used to be a flat 700 ms
- * against a 1600 ms `sfArrive`, so the copies were yanked away when the field had
- * only reached ~77 % — and the arrival then kept climbing for another 900 ms ON
- * SCREEN. Reported 2026-09-20 as: "圆环覆盖画面后……又闪一下" and, for the black
- * hole, "卡住一下子，然后画面突然出现星空，然后黑洞才开始播放".
- *
- * Measured per frame on a light→dark landing (1720×1000), lens opacity:
- *   t=6214 `display` flips to block — op 0.90 for one un-animated frame
- *   t=6240 `.sf-arrive` applies      — op resets to 0.00 and starts climbing
- *   t=6987 copies removed           — op only 0.77, still 0.13 short
- *   t=7637 op reaches 0.90          — 650 ms AFTER the page was already uncovered
- *
- * So one value governs both the black flash and the visible creep: keep the
- * copies until the arrival has actually finished. `ARRIVE_MS` is 1700 and the CSS
- * animation is 1600, which leaves the 100 ms of slack `arriveBackground` needs
- * (it arms on the frame AFTER the landing).
- */
-const COPY_FADE_MS = ARRIVE_MS;
 
 function dropLayers(): void {
   window.clearTimeout(guardTimer);
   guardTimer = 0;
-  window.clearTimeout(dropTimer);
-  dropTimer = 0;
-  window.clearTimeout(coverTimer);
-  coverTimer = 0;
-  landingTail = false;
   unbindScroll();
   for (const r of ripples) r.el.remove();
   ripples = [];
@@ -850,50 +807,21 @@ function dropLayers(): void {
   document.documentElement.classList.remove(HOLD_CLASS);
 }
 
-/**
- * Hide the finished copies without a cascade fight.
+/** Close the burst: the copies come off and the theme lands in the SAME frame.
  *
- * ⚠️ A `transition: opacity` here was measured as a NO-OP — the copy read back at
- * opacity 0 regardless, because these layers carry their own theme rules and the
- * landing also toggles `theme-land`. So the cover is removed by GEOMETRY:
- * `transition: none` plus a translate out of the viewport, which has one winner.
- * Optional, and skipped under reduced motion (nothing to cover there: the swap is
- * instant).
- */
-function coverOff(): void {
-  if (ripples.length === 0) return;
-  for (const r of ripples) {
-    r.el.style.transition = "none";
-    r.el.style.transform = "translateY(-110%)";
-  }
-}
-
-/** Close the burst: the theme applies first, and the copies keep covering the page
- *  for `COPY_FADE_MS` so the incoming starfield can paint before they go.
- *
- *  ⚠️ Both the theme application and the two timers are bound to `burstGen`. The
- *  theme is applied ONLY while the copies still cover the viewport — that is what
- *  makes the swap invisible — so doing it here and the removal later is correct;
- *  what was missing is that a superseded burst must not do either. */
+ *  ⚠️ The theme is applied only once the copies already cover the viewport, so the
+ *  swap itself is invisible — the last circle is opaque over the whole screen. That
+ *  is what makes removing them and swapping together safe, and it is why the
+ *  arrival can start on the very frame the page becomes visible. */
 function landBurst(): void {
   const final = pending;
   pending = null;
-
-  if (final && !reducedMotion()) {
-    landingTail = true;
-    const gen = burstGen;
-    applyInstant(final);
-    coverTimer = window.setTimeout(() => {
-      if (gen !== burstGen) return;        // a newer burst owns the screen now
-      coverOff();
-      dropTimer = window.setTimeout(() => {
-        if (gen !== burstGen) return;
-        dropLayers();
-      }, 60);
-    }, COPY_FADE_MS);
-    return;
-  }
-
+  // ⚠️ Copies go FIRST, in the SAME frame as the swap — do not reintroduce a hold
+  // between the two. A version that kept the copies up for `ARRIVE_MS` (1700 ms)
+  // so the field could finish fading in UNDER them shipped briefly and was
+  // reported as "圆环覆盖完画面后，要等好几秒才闪，闪完后才开始播放动效":
+  // the copies sat still for 1.7 s and the swap, when it came, was a cut. The
+  // arrival is meant to be WATCHED, so the page must be uncovered when it starts.
   dropLayers();
   if (final) applyInstant(final);
 }
@@ -934,8 +862,8 @@ function armGuard(): void {
 /* ── the gesture ────────────────────────────────────────────────────────── */
 
 export function toggleThemeWithReveal(origin?: { x: number; y: number }): void {
-  // ⚠️ Before the landing-tail teardown below, and deliberately so: a click while
-  // the transition is on screen is DROPPED, never queued. See `burstLocked`.
+  // ⚠️ First thing in the function, deliberately: a click while the transition is
+  // on screen is DROPPED, never queued. See `burstLocked`.
   if (burstLocked()) return;
 
   const leaving = intentTheme();

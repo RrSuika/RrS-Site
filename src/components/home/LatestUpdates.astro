@@ -16,7 +16,7 @@ const t = getTranslations(language);
       {t.latest.header}
     </div>
 
-    <div class="logs" data-reveal-group=".log" data-reveal-step="40">
+    <div class="logs">
       {
         entries.map((entry, index) => {
           const date = entry.data.dateLabel ?? entry.data.date.toLocaleDateString(

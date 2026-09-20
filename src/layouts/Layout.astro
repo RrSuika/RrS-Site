@@ -1561,7 +1561,6 @@ const websiteSchema = {
     <script>
       import { toggleThemeWithReveal } from "../scripts/theme-transition";
       import { initSiteIntro } from "../scripts/site-intro";
-      import { initReveal } from "../scripts/scroll-reveal";
 
       (() => {
         (window as typeof window & { __toggleTheme?: (event?: MouseEvent) => void }).__toggleTheme =
@@ -1578,9 +1577,6 @@ const websiteSchema = {
       // The intro owns the first paint; it resolves `window.__rrsIntroGate` when
       // it opens, which the shelf waits on before starting its own entrance.
       initSiteIntro();
-      // Adds `html.js-reveal` plus the group hooks. Until this runs nothing is
-      // hidden, which is what keeps a no-JS visitor seeing a normal page.
-      initReveal();
     </script>
     <!-- ── Mobile notice dismiss: click × (session-scoped) ── -->
     <script>
