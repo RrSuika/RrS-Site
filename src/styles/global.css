@@ -156,14 +156,18 @@
      The mark's `top` is split into a `%` and a `vh` part because neither alone
      behaves: a pure `%` overshoots on a tall window, a pure `vh` cannot clear
      the wordmark on a short one. */
-  /* BAKED from the tuner (2026-09-20). These are the values the user dialled in on
-     /intro-preview/ — edit them here, not in the panel, now that they are shipped. */
+  /* ⚠️ **These are the DEFAULT (large-screen / 2K) values, and they must stay the
+     pre-tuning numbers.** The tuner session of 2026-09-20 was dialled in on a
+     1080p screen; baking its numbers in globally resized the 2K plate as well and
+     the user reported "2K 下不好看了，我希望 2K 是之前的效果". The short-screen
+     overrides live in the `@media (max-height: 1000px)` block further down — put
+     any future 1080p tuning THERE, never here. */
   --intro-mark-top-pct: 34;
   --intro-mark-top-vh: 12;
   --intro-readout-bottom: 6;
   --intro-gap: 20;
   --intro-font-mark: 58;
-  --intro-font-pct: 84;
+  --intro-font-pct: 104;
   --intro-font-meta: 10;
   /* The two ORANGE lines, each with its own offset. `--intro-rule-nudge` shifts
      the signal rule under the wordmark (it is a grid item, so this is a
@@ -2445,6 +2449,15 @@ html.is-intro {
 @media (max-height: 1000px) {
   .site-intro__hair {
     display: none;
+  }
+
+  /* The 2026-09-20 tuner values, scoped to the screen they were dialled in on.
+     The percentage is smaller here because 104px of type is what made a 900px
+     plate feel crowded; at 2K the same 104px has room and reads better. */
+  :root {
+    --intro-readout-bottom: 6;
+    --intro-gap: 20;
+    --intro-font-pct: 84;
   }
 }
 
