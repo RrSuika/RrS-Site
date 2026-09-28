@@ -214,6 +214,26 @@ const coverUrls = items
         </div>
       )
     }
+
+    {/* ── THE QUICK PICKER ──
+        A plain list of the records on this shelf, for the visitor who does not
+        want to drag a row of tapes to find one. It is a SECOND way into the same
+        data, not a replacement: the shelf, the drag, the arrows and the tag
+        filter all behave exactly as before.
+
+        ⚠️ It lives in the HEADER, not inside `.shelf-stage`. The header is
+        outside the 3D context and carries no `transform`/`opacity`, so a button
+        here cannot flatten the track — and the staged `pointerdown` (which drops
+        any press that is not on the row) never sees this subtree, so opening the
+        picker can never start a drag. ⚠️ The opening tag stays on ONE line:
+        written across several lines, Astro's compiler mis-parses it and reports
+        the error against whatever closes later. */}
+    <button class="shelf-index" id="shelf-index" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="shelf-picker" aria-label={t.shelf.picker.open} data-label-open={t.shelf.picker.open} data-label-close={t.shelf.picker.close}>
+      <span class="shelf-index-label">{t.shelf.picker.open}</span>
+      <svg viewBox="0 0 10 10" aria-hidden="true" focusable="false">
+        <path d="M1 3.2 L5 7 L9 3.2" />
+      </svg>
+    </button>
   </div>
 
   <section
@@ -530,6 +550,35 @@ const coverUrls = items
       <div class="shelf-veil" id="shelf-veil" aria-hidden="true"></div>
     </div>
   </section>
+
+  {/* ── THE PICKER DIALOG ──
+      Sibling of the shelf and a child of the page shell, so it is never an
+      ancestor of a `preserve-3d` element. The list is built by the script from
+      the real tapes' own `data-` attributes — one source for the title, the tags
+      and the date, so the list and the record panel can never disagree. */}
+  <div class="shelf-picker" id="shelf-picker" hidden>
+    <div class="shelf-picker-scrim" id="shelf-picker-scrim" aria-hidden="true"></div>
+
+    <div class="shelf-picker-panel" role="dialog" aria-modal="true" aria-labelledby="shelf-picker-heading" data-select-label={t.shelf.picker.select} data-no-match={t.shelf.picker.noMatch}>
+      <div class="shelf-picker-head" id="shelf-picker-heading">
+        <span class="shelf-picker-kicker">
+          {t.shelf.picker.title}
+          <b class="shelf-picker-count" id="shelf-picker-count"></b>
+        </span>
+        <button class="shelf-picker-close" id="shelf-picker-close" type="button" aria-label={t.shelf.picker.close}>
+          <svg viewBox="0 0 10 10" aria-hidden="true" focusable="false">
+            <path d="M1.5 1.5 L8.5 8.5 M8.5 1.5 L1.5 8.5" />
+          </svg>
+        </button>
+      </div>
+
+      <input class="shelf-picker-search" id="shelf-picker-search" type="search" autocomplete="off" spellcheck="false" placeholder={t.shelf.picker.search} aria-label={t.shelf.picker.searchLabel} />
+
+      <div class="shelf-picker-list" id="shelf-picker-list" role="list"></div>
+
+      <p class="shelf-picker-hint">{t.shelf.picker.hint}</p>
+    </div>
+  </div>
 </div>
 
 {/* First page view of a session: warm every cover so the first tag-filter
@@ -747,7 +796,24 @@ const coverUrls = items
   }
 
   /* Top / bottom scrims: they lift the micro-type off the starfield and give
-     the HUD rails somewhere to sit. */
+     the HUD rails somewhere to sit.
+
+     ⚠️ **THE FALLOFF IS THE WHOLE RULE — there is no band edge.** Both gradients
+     used to step, and the step was visible as a hard line: the dark theme went
+     0.72 → **0.28 at 9%** (a 0.44 jump in one stop) and the light theme the same
+     in paper, which read as a grey band across the top of the page ending in
+     mid-air (2026-09-19: "有一个黑边，这个黑边和 projects 大字重叠，一路从左延伸到右，
+     在右侧的 tags 筛选按钮的下方…给他做成柔和过渡，而不是目前这样硬边").
+
+     Each stop below multiplies the top alpha by 0.56, so the value decays by a
+     constant RATIO and the curve is smooth in log space — which is what "no
+     visible edge" actually means for a translucent overlay. The ladder is dense
+     at the top because that is where the value changes fastest, and it is
+     played out over a much longer span than the old three stops (34% against
+     22%): an overlay that keeps ~0.23 of its alpha 18% of the way down can no
+     longer be read as a strip with an end.
+     ⚠️ The TOP value is the identity of the scrim — it is what keeps the HUD
+     legible, and lightening it is a different change from softening the edge. */
   .shelf-scrim {
     position: absolute;
     inset: 0;
@@ -757,14 +823,21 @@ const coverUrls = items
       linear-gradient(
         180deg,
         rgba(4, 4, 7, 0.72) 0%,
-        rgba(4, 4, 7, 0.28) 9%,
-        transparent 22%
+        rgba(4, 4, 7, 0.403) 6%,
+        rgba(4, 4, 7, 0.226) 12%,
+        rgba(4, 4, 7, 0.126) 18%,
+        rgba(4, 4, 7, 0.071) 24%,
+        rgba(4, 4, 7, 0.04) 29%,
+        transparent 34%
       ),
       linear-gradient(
         0deg,
         rgba(4, 4, 7, 0.7) 0%,
-        rgba(4, 4, 7, 0.24) 8%,
-        transparent 20%
+        rgba(4, 4, 7, 0.392) 6%,
+        rgba(4, 4, 7, 0.22) 12%,
+        rgba(4, 4, 7, 0.123) 18%,
+        rgba(4, 4, 7, 0.069) 23%,
+        transparent 30%
       );
   }
 
@@ -773,14 +846,21 @@ const coverUrls = items
       linear-gradient(
         180deg,
         rgba(240, 235, 224, 0.8) 0%,
-        rgba(240, 235, 224, 0.3) 9%,
-        transparent 22%
+        rgba(240, 235, 224, 0.448) 6%,
+        rgba(240, 235, 224, 0.251) 12%,
+        rgba(240, 235, 224, 0.14) 18%,
+        rgba(240, 235, 224, 0.079) 24%,
+        rgba(240, 235, 224, 0.044) 29%,
+        transparent 34%
       ),
       linear-gradient(
         0deg,
         rgba(240, 235, 224, 0.78) 0%,
-        rgba(240, 235, 224, 0.26) 8%,
-        transparent 20%
+        rgba(240, 235, 224, 0.437) 6%,
+        rgba(240, 235, 224, 0.245) 12%,
+        rgba(240, 235, 224, 0.137) 18%,
+        rgba(240, 235, 224, 0.077) 23%,
+        transparent 30%
       );
   }
 
@@ -3317,6 +3397,428 @@ const coverUrls = items
   }
 
   /* ══════════════════════════════════════════
+     THE QUICK PICKER — a list view of the same shelf.
+
+     Two ways to find a record: drag the row, or open the index and jump. The
+     index is the one for a visitor who already knows what they are looking for,
+     so it is deliberately plain — a list, a search box, no 3D.
+
+     It is a SECOND ENTRY POINT, never a replacement: nothing here changes what
+     the shelf does. It reuses the tag-filter's own exit/rise blend to move the
+     row (see `jumpTo`), so a jump reads as the same motion the chips use.
+     ══════════════════════════════════════════ */
+
+  /* The button sits in the header row, to the right of the chips. It is a flex
+     item of `.shelf-head`, so the chips' scroll box shrinks by exactly its
+     width and nothing can overlap. */
+  .shelf-index {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+
+    margin-bottom: 3px;
+    padding: 7px 11px;
+
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+    color: var(--text-bright);
+
+    border: 1px solid color-mix(in srgb, var(--accent) 46%, transparent);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    border-radius: 2px;
+    cursor: pointer;
+
+    transition:
+      border-color 0.28s var(--ease-out),
+      background 0.28s var(--ease-out),
+      color 0.28s var(--ease-out);
+  }
+
+  .shelf-index:hover {
+    border-color: color-mix(in srgb, var(--accent) 78%, transparent);
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+
+  .shelf-index svg {
+    width: 10px;
+    height: 10px;
+    overflow: visible;
+    transition: transform 0.32s var(--spring-snappy);
+  }
+
+  .shelf-index svg path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: square;
+    stroke-linejoin: miter;
+  }
+
+  /* ⚠️ The label itself is swapped, not the whole button: the button is what the
+     header row lays out, so replacing its content would change the row's width
+     and nudge the chips every time the picker opens. */
+  .shelf-index.is-open .shelf-index-label {
+    display: none;
+  }
+
+  .shelf-index.is-open svg {
+    transform: rotate(180deg);
+  }
+
+  .shelf-picker {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    pointer-events: none;
+  }
+
+  /* Visible, and it does the one thing an overlay with a search box needs: it
+     says the shelf behind is paused. Kept light so the tapes still read. */
+  .shelf-picker-scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(4, 4, 7, 0.46);
+    opacity: 0;
+    transition: opacity 0.3s var(--ease-out);
+  }
+
+  :global(:root[data-theme="light"]) .shelf-picker-scrim {
+    background: rgba(240, 235, 224, 0.62);
+  }
+
+  .shelf-picker.is-open .shelf-picker-scrim {
+    opacity: 1;
+  }
+
+  /* The panel borrows the record panel's language (chamfered corner, hairline
+     accent tick, frosted fill) so the two read as parts of one machine. */
+  .shelf-picker-panel {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, calc(-50% + 14px));
+
+    display: flex;
+    flex-direction: column;
+    width: min(560px, calc(100vw - 48px));
+    max-height: min(560px, 82vh);
+
+    padding: 18px 20px 16px;
+
+    border-left: 2px solid var(--accent);
+    background: linear-gradient(
+      150deg,
+      rgba(9, 9, 14, 0.96),
+      rgba(6, 6, 10, 0.985)
+    );
+
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% calc(100% - 15px),
+      calc(100% - 15px) 100%,
+      0 100%
+    );
+
+    /* Non-3D sibling of the track, so backdrop-filter is safe here. */
+    backdrop-filter: blur(16px) saturate(150%);
+
+    opacity: 0;
+    pointer-events: none;
+
+    transition:
+      opacity 0.3s var(--ease-out),
+      transform 0.42s var(--spring-gentle);
+  }
+
+  /* Safari ≤ 17 needs the prefixed form; keep it out of the rule above —
+     lightningcss folds the pair and keeps only the last one. */
+  @supports (-webkit-backdrop-filter: blur(1px)) {
+    .shelf-picker-panel {
+      -webkit-backdrop-filter: blur(16px) saturate(150%);
+    }
+  }
+
+  :global(:root[data-theme="light"]) .shelf-picker-panel {
+    background: linear-gradient(
+      150deg,
+      rgba(250, 247, 240, 0.96),
+      rgba(245, 240, 230, 0.985)
+    );
+  }
+
+  .shelf-picker.is-open {
+    pointer-events: auto;
+  }
+
+  .shelf-picker.is-open .shelf-picker-panel {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+    pointer-events: auto;
+  }
+
+  .shelf-picker-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 13px;
+  }
+
+  .shelf-picker-kicker {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 9px;
+
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  /* How many rows the search is showing, out of how many there are. Reads as
+     part of the kicker; it is `b` in the markup only so the script can find it. */
+  .shelf-picker-count {
+    font-weight: 400;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .shelf-picker-close {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 26px;
+    height: 26px;
+    padding: 0;
+
+    color: var(--text-dim);
+    background: transparent;
+    border: 1px solid var(--border-divider);
+    border-radius: 2px;
+    cursor: pointer;
+
+    transition:
+      color 0.22s var(--ease-out),
+      border-color 0.22s var(--ease-out);
+  }
+
+  .shelf-picker-close:hover {
+    color: var(--text-bright);
+    border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+
+  .shelf-picker-close svg {
+    width: 9px;
+    height: 9px;
+    overflow: visible;
+  }
+
+  .shelf-picker-close svg path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: square;
+  }
+
+  .shelf-picker-search {
+    width: 100%;
+    margin-bottom: 12px;
+    padding: 9px 11px;
+
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: var(--tracking-label);
+    color: var(--text-bright);
+
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-divider);
+    border-radius: 2px;
+    outline: none;
+
+    transition: border-color 0.22s var(--ease-out);
+  }
+
+  .shelf-picker-search::placeholder {
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+    font-size: 9px;
+  }
+
+  .shelf-picker-search:focus {
+    border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+
+  :global(:root[data-theme="light"]) .shelf-picker-search {
+    background: rgba(0, 0, 0, 0.03);
+  }
+
+  .shelf-picker-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* The page hides its scrollbar site-wide; the list needs one, or a long
+       index gives no sign that there is more below the fold. */
+    scrollbar-width: thin;
+  }
+
+  .shelf-picker-list::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .shelf-picker-list::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--accent) 32%, transparent);
+  }
+
+  /* ── one row ──
+     ⚠️ Every rule for the row and its children is `:global(...)`: the rows are
+     built by the script with `document.createElement`, so they carry no
+     `data-astro-cid-…` and a scoped selector would match nothing. */
+  :global(.shelf-picker-row) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 13px;
+
+    width: 100%;
+    padding: 10px 9px;
+
+    text-align: left;
+    color: var(--text-soft);
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--border-divider);
+    cursor: pointer;
+
+    transition:
+      background 0.2s var(--ease-out),
+      color 0.2s var(--ease-out);
+  }
+
+  :global(.shelf-picker-row:last-child) {
+    border-bottom: 0;
+  }
+
+  /* Hidden by the search box. A class rather than `[hidden]`, so the arrow-key
+     walk and the count can both still see the row. */
+  :global(.shelf-picker-row.is-filtered) {
+    display: none;
+  }
+
+  :global(.shelf-picker-row:hover),
+  :global(.shelf-picker-row:focus-visible) {
+    background: color-mix(in srgb, var(--cas-accent, var(--accent)) 10%, transparent);
+    color: var(--text-bright);
+    outline: none;
+  }
+
+  /* The record the shelf is currently on. */
+  :global(.shelf-picker-row.is-current) {
+    background: color-mix(in srgb, var(--cas-accent, var(--accent)) 14%, transparent);
+  }
+
+  :global(.shelf-picker-row.is-current .shelf-picker-num) {
+    color: var(--cas-accent, var(--accent));
+  }
+
+  :global(.shelf-picker-num) {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: var(--tracking-label);
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  :global(.shelf-picker-main) {
+    min-width: 0;
+  }
+
+  :global(.shelf-picker-title) {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-transform: uppercase;
+    color: inherit;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ⚠️ CJK needs the site's zh display font and no uppercase tracking — the
+     same pair the panel title carries. Latin stays on the display face. */
+  :global(html[lang="zh"]) .shelf-picker-title {
+    font-family: var(--font-zh-display);
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  :global(.shelf-picker-meta) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 3px;
+
+    font-family: var(--font-mono);
+    font-size: 8px;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  :global(.shelf-picker-date) {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  :global(.shelf-picker-empty) {
+    padding: 22px 4px;
+    margin: 0;
+
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .shelf-picker-hint {
+    margin: 12px 0 0;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-divider);
+
+    font-family: var(--font-mono);
+    font-size: 8px;
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  /* The hint is the first thing that can go when the panel gets tight. */
+  @media (max-height: 620px) {
+    .shelf-picker-hint {
+      display: none;
+    }
+  }
+
+  /* ══════════════════════════════════════════
      FLAT MODE — phones / reduced motion / no preserve-3d.
      A plain card switcher: no perspective, no 3D box,
      no rise. Same markup, same state machine.
@@ -3902,6 +4404,11 @@ const coverUrls = items
 
     let introT0 = 0;
     let introDuration = 0;
+    /**
+     * True while the row rises as part of a SWAP (a tag filter or a picker jump)
+     * rather than as the page's own entrance. Read by `navigate`.
+     */
+    let swapRising = false;
     let introDone = false;
 
     let lastFrame = 0;
@@ -4101,8 +4608,14 @@ const coverUrls = items
      * the first real tape to the last one, and `navigate` refuses to step past
      * either. Everything outside that range is painted, because the shelf should
      * look continuous, but it cannot be selected.
+     *
+     * `target` is for the PICKER, and it is the one way to seat the row on a
+     * chosen tape rather than on the preserved selection. ⚠️ It only reaches
+     * tapes inside the CURRENT ring — the picker builds its list from the same
+     * filtered set the ring is built from, so every row it can offer is already
+     * here. Anything else falls back to the old behaviour.
      */
-    function buildRing(filtered: Tape[]) {
+    function buildRing(filtered: Tape[], target?: Tape) {
       // ── How long does the ring have to be? ──
       //
       // ⚠️ **`ring ≥ n + 2·(span + DRAG_MAX)`, and both terms are load-bearing.**
@@ -4161,11 +4674,21 @@ const coverUrls = items
         Math.min(walkTo, Math.max(walkFrom, list.length - 1 - half)),
       );
 
-      // A kept selection survives a filter change.
+      // A kept selection survives a filter change; an explicit `target` outranks
+      // it, because a picker jump means "this record", not "wherever I was".
       const kept = centreEl();
-      const keptTape = kept ? list.find((tape) => tape.el === kept) : undefined;
-      const keptIdx = keptTape ? list.indexOf(keptTape) : -1;
-      current = keptIdx >= walkFrom && keptIdx <= walkTo ? keptIdx : seat;
+      const wanted = target?.el ?? kept;
+      const wantedTape = wanted ? list.find((tape) => tape.el === wanted) : undefined;
+      const wantedIdx = wantedTape ? list.indexOf(wantedTape) : -1;
+      // ⚠️ `wantedIdx` can legitimately be `walkFrom − 1` or `walkTo + 1`: both
+      // ranges are padded, so a tape can sit in the ring yet outside the walkable
+      // band. Seating the row on one of those would put a blank under the panel,
+      // so the clamp keeps `current` on a real record either way.
+      current = clamp(
+        wantedIdx >= walkFrom && wantedIdx <= walkTo ? wantedIdx : seat,
+        walkFrom,
+        walkTo,
+      );
 
       reseat(true);
     }
@@ -4226,7 +4749,6 @@ const coverUrls = items
         spring.value = 0;
         spring.velocity = 0;
         spring.active = false;
-        lock = false;
         return;
       }
 
@@ -4258,7 +4780,6 @@ const coverUrls = items
       spring.value = 0;
       spring.velocity = 0;
       spring.active = false;
-      lock = false;
       reseat(false);
     }
 
@@ -4331,7 +4852,6 @@ const coverUrls = items
         snap.to = -step;
         snap.t = 0;
         snap.active = true;
-        lock = true;
         return;
       }
 
@@ -4354,7 +4874,16 @@ const coverUrls = items
        ══════════════════════════════════════════ */
 
     function navigate(direction: 1 | -1) {
-      if (lock || launching || !introDone || walkTo <= walkFrom) return;
+      // ⚠️ `swapRising` is the difference between the two reasons `introDone` can
+      // be false. During the BOOT entrance the ring and the camera are still
+      // being built, so a step has to be refused; during a tag filter's or a
+      // picker jump's cosmetic rise the ring is already valid and only the motion
+      // is outstanding, and refusing presses for its whole length (~3.2 s) made
+      // both arrows feel dead after every filter click. A swap in flight is
+      // covered by `lock`, which nothing but a swap raises.
+      // ⚠️ `lock` must NOT gate `finishIntro` — that function is the only thing
+      // that lowers it, so the "safer" guard is a deadlock.
+      if (lock || launching || (!introDone && !swapRising) || walkTo <= walkFrom) return;
 
       // Refuse to walk onto the blank scenery at either end and ease back
       // instead — the shelf continues past the frame, but the archive stops.
@@ -4364,7 +4893,6 @@ const coverUrls = items
       // the arrow fire a second step out of the same gesture.
       const landing = current + Math.round(progress) + direction;
       if (landing < walkFrom || landing > walkTo) {
-        lock = true;
         spring.value = progress;
         spring.velocity = 0;
         spring.target = 0;
@@ -4460,7 +4988,6 @@ const coverUrls = items
       dragging = false;
       pointerDown = false;
       stage.classList.remove("is-dragging");
-      lock = true;
       // ⚠️ Samples belong to ONE gesture. Leaving them behind feeds the next
       // gesture's velocity a slope across a gap where the pointer was up, which
       // reads as a very fast flick in whichever direction the two drags happened
@@ -4567,7 +5094,14 @@ const coverUrls = items
       // visible, so the rebuild itself can never be seen as a jump.
       filterOutPending = false;
       filterOut = 0;
-      buildRing(filterPendingTapes);
+      // ⚠️ An empty `filterPendingTapes` means "keep the ring as it is" — that is
+      // how the picker's `jumpTo` reuses this blend without a second rebuild
+      // path: it wants the SAME records, reseated on a different one of them.
+      buildRing(
+        filterPendingTapes.length > 0 ? filterPendingTapes : list,
+        pendingSeat,
+      );
+      pendingSeat = undefined;
       filterPendingTapes = [];
       filterGapStart = now;
       filterHold = true;
@@ -4870,6 +5404,25 @@ const coverUrls = items
       };
     }
 
+    /**
+     * How long the rise-in ladder actually takes, from the ring's own size.
+     *
+     * ⚠️ **It is not `introEnd()`.** That one is sized for the BOOT entrance —
+     * ten rungs' worth of stagger plus the centre tape's pull — and it is about
+     * 4.7 s here. A tag filter and a picker jump run the SAME ladder but only
+     * have to settle the row that is already on stage, and using the boot figure
+     * for them kept `introDone` false for ~4.7 s after the swap: `navigate`
+     * refuses every press while it is false, so both arrows were inert for
+     * several seconds after every filter click and every pick. Measured over
+     * CDP: a jump released the lock at 1000 ms but `introDone` did not go true
+     * until 13 s, and the arrow pressed in between did nothing.
+     * ⚠️ The boot entrance keeps `introEnd()`: its curtain may be held by the
+     * site intro, so it must not be shortened by this.
+     */
+    function riseMs() {
+      return RISE_START + (half + PARK_SLOTS) * RISE_STAGGER + RISE_DUR;
+    }
+
     function introEnd() {
       return (
         RISE_START + (half + PARK_SLOTS) * 2 * RISE_STAGGER + RISE_DUR + PULL_DUR
@@ -5014,6 +5567,7 @@ const coverUrls = items
 
     function startIntro(full: boolean) {
       introDone = false;
+      swapRising = false;
       root.classList.remove("is-ready");
       introEl?.classList.remove("is-done");
 
@@ -5051,17 +5605,30 @@ const coverUrls = items
         introAt.set(tape, RISE_START + order * RISE_STAGGER);
       }
       introDone = false;
+      swapRising = true;
       root.classList.remove("is-ready");
       introT0 = performance.now();
-      introDuration = introEnd();
+      introDuration = riseMs();
       introEl?.classList.add("is-done");
     }
 
     function finishIntro() {
       if (introDone) return;
       introDone = true;
+      swapRising = false;
       filterHold = false;
       filterPendingTapes = [];
+
+      // ⚠️ **The step lock is released HERE, at the end of the blend.** A tag
+      // filter (and the picker's jump) raises `lock` for the length of its
+      // two-beat swap, and `recycle` is what normally clears it — but a swap that
+      // re-seats the SAME selection lands on `step === 0`, whose early return
+      // deliberately skips the re-base and with it the release. The measure of
+      // the bug is the arrow: after any filter click the shelf sat with
+      // `lock: true` for ever, so `navigate` returned immediately on every press
+      // and the arrows did nothing at all (measured over CDP: `lock` still true
+      // 5 s after the click, and `shelf-next` a no-op). This is the last frame of
+      // the blend, so clearing it here cannot release a gesture still running.
       root.classList.add("is-ready");
       introEl?.classList.add("is-done");
       try {
@@ -5391,8 +5958,385 @@ const coverUrls = items
         filterHold = false;
         // `lock` blocks a second gesture for the length of the blend; `finishIntro`
         // releases it through `recycle`/`updateUI` on the new ring.
-        lock = true;
       });
+    }
+
+    /* ══════════════════════════════════════════
+       PICKER — jump straight to a record
+
+       A second way into the same shelf: a list of the records currently in the
+       ring, with a search box. It reads every string from the tapes' own `data-`
+       attributes, which are also what `updateUI` writes the panel from, so the
+       list can never describe a different record than the tape does.
+
+       ⚠️ The list holds TAPE references, not indices, and is rebuilt from
+       `list` (the ring) every time the picker opens. That matters: a tag filter
+       rebuilds the ring and renumbers everything under it, so a list cached from
+       the previous filter would jump to the wrong tape.
+
+       ⚠️ A jump is not an index change. `current` is a RING position, so moving
+       it directly would teleport the row sideways in one frame. `jumpTo` reuses
+       the tag filter's own two-beat blend instead: the outgoing row climbs out,
+       the ring is rebuilt with the chosen tape as the seat, and the new row
+       rises in. Same motion, same machinery, no second code path to keep in
+       sync.
+       ══════════════════════════════════════════ */
+
+    const pickerEl = document.getElementById("shelf-picker");
+    const pickerListEl = document.getElementById("shelf-picker-list");
+    const pickerSearchEl = document.getElementById(
+      "shelf-picker-search",
+    ) as HTMLInputElement | null;
+    const pickerPanelEl = pickerEl?.querySelector<HTMLElement>(
+      ".shelf-picker-panel",
+    );
+    const indexBtn = document.getElementById(
+      "shelf-index",
+    ) as HTMLButtonElement | null;
+
+    /** `undefined` = "no label swap", which is what a missing button gets. */
+    const INDEX_OPEN_LABEL = indexBtn?.dataset.labelOpen;
+    const INDEX_CLOSE_LABEL = indexBtn?.dataset.labelClose;
+
+    let pickerOpen = false;
+    let pickerReturnFocus: HTMLElement | null = null;
+
+    /**
+     * The tape the NEXT ring rebuild should seat, if any. See `jumpTo`.
+     *
+     * ⚠️ It exists because the rebuild is not owned by the picker:
+     * `stepFilterSwap` calls `buildRing(tapes)` with one argument once the
+     * outgoing row has cleared the frame. Declared here rather than next to the
+     * function that writes it so the render loop's read cannot land in the
+     * temporal dead zone.
+     */
+    let pendingSeat: Tape | undefined;
+
+    /** The row elements, in ring order, so `is-current` can be re-marked. */
+    let pickerRows: HTMLButtonElement[] = [];
+
+    /**
+     * One row: number, title, its category and tags, and the date.
+     *
+     * The category and the tags come from the same `data-` attributes the record
+     * panel prints, so a row and the panel always agree. The tags are plain data
+     * there (no `#`), and the `#` is added here for the same reason it is added
+     * in `updateUI`: the raw strings are filter keys.
+     */
+    function makePickerRow(tape: Tape, i: number): HTMLButtonElement {
+      const { el } = tape;
+
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "shelf-picker-row";
+      row.setAttribute("role", "listitem");
+      row.dataset.href = el.getAttribute("href") ?? "";
+      // The row carries the tape's accent so the hover and the current mark are
+      // tinted per record, exactly like the panel and the INSPECT button.
+      const accent = el.style.getPropertyValue("--cas-accent");
+      if (accent) row.style.setProperty("--cas-accent", accent);
+
+      const num = document.createElement("span");
+      num.className = "shelf-picker-num";
+      num.textContent = el.dataset.index ?? String(i + 1).padStart(2, "0");
+
+      const main = document.createElement("span");
+      main.className = "shelf-picker-main";
+
+      const title = document.createElement("span");
+      title.className = "shelf-picker-title";
+      title.textContent = el.dataset.title ?? "";
+      main.append(title);
+
+      const bits: string[] = [];
+      if (el.dataset.category) bits.push(el.dataset.category);
+      try {
+        bits.push(
+          ...(JSON.parse(el.dataset.tags ?? "[]") as string[]).map(
+            (tag) => `#${tag}`,
+          ),
+        );
+      } catch {
+        /* a malformed tag list is not worth losing the row over */
+      }
+      if (bits.length > 0) {
+        const meta = document.createElement("span");
+        meta.className = "shelf-picker-meta";
+        for (const bit of bits) {
+          const span = document.createElement("span");
+          span.textContent = bit;
+          meta.append(span);
+        }
+        main.append(meta);
+      }
+
+      const date = document.createElement("span");
+      date.className = "shelf-picker-date";
+      date.textContent = el.dataset.date ?? "";
+
+      row.append(num, main, date);
+
+      // An explicit label, because the row's own text plus a date does not say
+      // what activating it does.
+      const openLabel = pickerPanelEl?.dataset.selectLabel;
+      if (openLabel) row.setAttribute("aria-label", `${openLabel}: ${el.dataset.title ?? ""}`);
+
+      return row;
+    }
+
+    /** The search haystack: the printed title, the category, the raw tags. */
+    const rowHaystack = (row: HTMLButtonElement) =>
+      (row.textContent ?? "").toLowerCase();
+
+    function renderPicker() {
+      if (!pickerListEl) return;
+
+      pickerListEl.replaceChildren();
+      pickerRows = [];
+
+      // ⚠️ The ring is PADDED with blank cassettes, so `list` is not the
+      // archive: on a thirteen-record shelf the ring holds thirty-seven tapes
+      // and this list rendered thirty-three unreadable rows — every blank's
+      // title is an empty string, because a blank has no `data-title` to read.
+      // The picker is an index of RECORDS, so the scenery is skipped here.
+      // (`walkFrom`/`walkTo` bound the same set, but they are ring positions and
+      // the padding moves them; `tape.empty` is the actual fact.)
+      let ordinal = 0;
+      for (const tape of list) {
+        if (tape.empty) continue;
+        const row = makePickerRow(tape, ordinal);
+        ordinal++;
+        pickerRows.push(row);
+        pickerListEl.append(row);
+      }
+
+      applyPickerFilter();
+      markPickerCurrent();
+      syncPickerCount();
+    }
+
+    function applyPickerFilter() {
+      const query = (pickerSearchEl?.value ?? "").trim().toLowerCase();
+      let shown = 0;
+
+      for (const row of pickerRows) {
+        // ⚠️ A row is hidden by a CLASS, not by the `hidden` attribute: `hidden`
+        // is what the panel itself uses to leave the a11y tree, and a filtered
+        // row still has to be skipped by the arrow-key walk.
+        const match = query === "" || rowHaystack(row).includes(query);
+        row.classList.toggle("is-filtered", !match);
+        if (match) shown++;
+      }
+
+      // The "nothing matches" line is re-created per keystroke rather than
+      // toggled, so there is only ever one of it.
+      for (const stale of pickerListEl?.querySelectorAll(".shelf-picker-empty") ?? []) {
+        stale.remove();
+      }
+      if (shown === 0 && pickerListEl) {
+        const empty = document.createElement("p");
+        empty.className = "shelf-picker-empty";
+        empty.textContent = pickerPanelEl?.dataset.noMatch ?? "";
+        pickerListEl.append(empty);
+      }
+    }
+
+    /** Mark the record the shelf is on, and keep its row in view. */
+    function markPickerCurrent() {
+      const centre = centreEl();
+      for (const row of pickerRows) {
+        const isCurrent = Boolean(centre) && row.dataset.href === centre?.getAttribute("href");
+        row.classList.toggle("is-current", isCurrent);
+        if (isCurrent) {
+          row.scrollIntoView({ block: "nearest" });
+        }
+      }
+    }
+
+    /** The filtered count, so the header can say how many rows are showing. */
+    function syncPickerCount() {
+      const count = pickerEl?.querySelector<HTMLElement>(".shelf-picker-count");
+      if (!count) return;
+      const query = (pickerSearchEl?.value ?? "").trim();
+      const shown = pickerRows.filter((row) => !row.classList.contains("is-filtered")).length;
+      count.textContent =
+        (query === "" ? "" : `${shown} / `) +
+        String(pickerRows.length).padStart(2, "0");
+    }
+
+    function openPicker() {
+      if (!pickerEl || pickerOpen || launching || !introDone) return;
+
+      pickerOpen = true;
+      pickerReturnFocus = document.activeElement as HTMLElement | null;
+      renderPicker();
+      pickerEl.hidden = false;
+      // A frame between `hidden` and the class, or the browser has nothing to
+      // transition from and the panel appears instantly.
+      requestAnimationFrame(() => pickerEl.classList.add("is-open"));
+      indexBtn?.classList.add("is-open");
+      indexBtn?.setAttribute("aria-expanded", "true");
+      if (indexBtn && INDEX_CLOSE_LABEL) indexBtn.setAttribute("aria-label", INDEX_CLOSE_LABEL);
+
+      // The search box is the reason the panel exists, so it takes the focus.
+      // ⚠️ Not synchronously: the panel is still `hidden` for this tick.
+      window.setTimeout(() => pickerSearchEl?.focus(), 60);
+    }
+
+    function closePicker(returnFocus = true) {
+      if (!pickerOpen || !pickerEl) return;
+
+      pickerOpen = false;
+      pickerEl.classList.remove("is-open");
+      indexBtn?.classList.remove("is-open");
+      indexBtn?.setAttribute("aria-expanded", "false");
+      if (indexBtn && INDEX_OPEN_LABEL) indexBtn.setAttribute("aria-label", INDEX_OPEN_LABEL);
+
+      if (pickerSearchEl) pickerSearchEl.value = "";
+
+      // `hidden` goes back on after the fade, so the dialog is out of the tab
+      // order and out of the a11y tree while it is closed.
+      window.setTimeout(() => {
+        if (!pickerOpen) pickerEl.hidden = true;
+      }, reduceMotion ? 0 : 320);
+
+      if (returnFocus) pickerReturnFocus?.focus();
+      pickerReturnFocus = null;
+    }
+
+    /**
+     * Move the shelf to a record, without teleporting it.
+     *
+     * The blend is the tag filter's, which is what keeps this to one code path:
+     * the row climbs out, the ring is rebuilt while nothing is painted, and the
+     * rise brings it back in with the chosen tape at the centre.
+     */
+    function jumpTo(tape: Tape) {
+      if (launching) return;
+
+      if (reduceMotion || mode === "flat") {
+        // No blend to run in these modes — flat mode is a straight card switcher
+        // and reduced motion has no rise at all. Seat it and go.
+        const all = allTapes.filter((t) => !t.empty);
+        buildRing(all, tape);
+        return;
+      }
+
+      filterOutPending = true;
+      filterPendingTapes = []; // the rebuild takes its rows from the ring above
+      filterOutStart = performance.now();
+      filterOut = 0;
+      filterGap = 0;
+      filterHold = false;
+      // ⚠️ The target travels through a module-level variable rather than into
+      // `buildRing` directly, because the rebuild is not owned here:
+      // `stepFilterSwap` calls `buildRing(tapes)` once the outgoing row has
+      // cleared the frame. The assignment is re-done on every pick, so a stale
+      // target cannot linger.
+      pendingSeat = tape;
+    }
+
+    /* ── the picker's wiring ── */
+
+    if (pickerEl && pickerListEl && indexBtn) {
+      indexBtn.addEventListener("click", () => {
+        if (pickerOpen) closePicker();
+        else openPicker();
+      });
+
+      document
+        .getElementById("shelf-picker-close")
+        ?.addEventListener("click", () => closePicker());
+
+      document
+        .getElementById("shelf-picker-scrim")
+        ?.addEventListener("click", () => closePicker());
+
+      pickerSearchEl?.addEventListener("input", () => {
+        applyPickerFilter();
+        syncPickerCount();
+      });
+
+      // ⚠️ The list is delegated, not bound per row: `renderPicker` replaces
+      // every row on each open, so per-row listeners would have to be torn down
+      // and re-added and the first version leaked one set per open.
+      pickerListEl.addEventListener("click", (event) => {
+        const row = (event.target as HTMLElement).closest<HTMLButtonElement>(
+          ".shelf-picker-row",
+        );
+        if (!row || row.classList.contains("is-filtered")) return;
+
+        const href = row.dataset.href;
+        const tape = allTapes.find((t) => t.el.getAttribute("href") === href);
+        if (!tape) return;
+
+        closePicker(false);
+        jumpTo(tape);
+      });
+
+      /* Escape closes, and the arrow keys walk the list — a picker that can only
+         be driven by the mouse is half a picker. */
+      pickerEl.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          closePicker();
+          return;
+        }
+        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+
+        const rows = pickerRows.filter((row) => !row.classList.contains("is-filtered"));
+        if (rows.length === 0) return;
+
+        event.preventDefault();
+        const active = document.activeElement as HTMLElement | null;
+        const at = active ? rows.indexOf(active as HTMLButtonElement) : -1;
+        const next =
+          event.key === "ArrowDown"
+            ? rows[at + 1] ?? rows[0]
+            : rows[at - 1] ?? rows[rows.length - 1];
+        next.focus();
+      });
+
+      /**
+       * A read-only view of the shelf's state, for a probe that drives this page
+       * over CDP.
+       *
+       * ⚠️ It exists because every value here is a closure local: an automated
+       * check cannot otherwise tell "the picker never opened" from "the picker
+       * opened and closed again", and it cannot see that a jump actually moved
+       * the ring rather than merely updating the markup. Getter functions, not
+       * copied values, so a probe always reads the live state.
+       */
+      (window as typeof window & { __rrsShelfInfo?: unknown }).__rrsShelfInfo = {
+        get pickerOpen() {
+          return pickerOpen;
+        },
+        get pickerRows() {
+          return pickerRows.length;
+        },
+        get currentLabel() {
+          return centreEl()?.dataset.title ?? "";
+        },
+        get ringSize() {
+          return list.length;
+        },
+        get archiveSize() {
+          return walkTo - walkFrom + 1;
+        },
+        get locked() {
+          return lock;
+        },
+        get progress() {
+          return progress;
+        },
+        get introDone() {
+          return introDone;
+        },
+        get busy() {
+          return { snap: snap.active, spring: spring.active, filter: filterOutPending || filterHold };
+        },
+      };
     }
 
     /* ══════════════════════════════════════════
@@ -5509,7 +6453,24 @@ const coverUrls = items
       // and for the length of the gap beat `introDone` is still true from the
       // PREVIOUS intro — letting the normal finish run first would bank a `1` and
       // the incoming row would never be allowed to settle.
-      if (!filterHold && !introDone && now - introT0 >= introDuration + CURTAIN_FADE) {
+      //
+      // ⚠️ **The two flags in the middle are what let a LATER swap settle, and
+      // `lock` deliberately is NOT one of them.** For a tag filter or a picker
+      // jump — which stage their own rise hundreds of milliseconds after boot —
+      // `now - introT0` is already past the finish line, so without the flags this
+      // line fires on the swap's FIRST frame, banks `introDone = true`, and every
+      // later call returns at its own first line. The visible result was a jump
+      // that left `navigate` refusing every press.
+      // ⚠️ Adding `!lock` instead looks safer and is a deadlock: `finishIntro` is
+      // the only thing that LOWERS `lock`, so gating the call on it means the
+      // release can never run — measured as `introDone` stuck `false` and both
+      // arrows inert for the rest of the visit, which is worse than the bug.
+      if (
+        !filterHold &&
+        !filterOutPending &&
+        !introDone &&
+        now - introT0 >= introDuration + CURTAIN_FADE
+      ) {
         finishIntro();
       }
 

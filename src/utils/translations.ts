@@ -144,6 +144,20 @@ export const translations = {
       booting: "MOUNTING ARCHIVE",
       empty: "NO TAPES MATCH THIS FILTER",
       loaded: "TAPES LOADED",
+
+      /* The quick picker (the INDEX button in the header) — a plain list of the
+         records the visitor can jump straight to, for anyone who does not want
+         to drag the shelf to find something. */
+      picker: {
+        open: "INDEX",
+        title: "PROJECT INDEX",
+        search: "Search title or tag",
+        searchLabel: "Search projects",
+        close: "Close",
+        select: "Open",
+        noMatch: "NOTHING MATCHES THAT SEARCH",
+        hint: "ESC OR CLICK OUTSIDE TO CLOSE",
+      },
     },
 
     detail: {
@@ -712,6 +726,18 @@ export const translations = {
       booting: "正在装填档案",
       empty: "没有符合该筛选的磁带",
       loaded: "磁带已就位",
+
+      /* 快速索引导航（页头的「索引」按钮）——给不想靠拖动找内容的人一份清单 */
+      picker: {
+        open: "索引",
+        title: "项目索引",
+        search: "搜索标题或标签",
+        searchLabel: "搜索项目",
+        close: "关闭",
+        select: "打开",
+        noMatch: "没有匹配的项目",
+        hint: "按 ESC 或点击空白处关闭",
+      },
     },
 
     detail: {
@@ -1256,6 +1282,19 @@ export const translations = {
       booting: "ARCHIEF LADEN",
       empty: "GEEN TAPES VOOR DIT FILTER",
       loaded: "TAPES GELADEN",
+
+      /* De snelle index (de INDEX-knop in de kop) — een gewone lijst van de
+         dossiers, voor wie niet wil slepen om iets te vinden. */
+      picker: {
+        open: "INDEX",
+        title: "PROJECTINDEX",
+        search: "Zoek op titel of tag",
+        searchLabel: "Projecten zoeken",
+        close: "Sluiten",
+        select: "Openen",
+        noMatch: "NIETS GEVONDEN MET DEZE ZOEKOPDRACHT",
+        hint: "ESC OF KLIK BUITEN OM TE SLUITEN",
+      },
     },
 
     detail: {
