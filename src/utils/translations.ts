@@ -219,6 +219,11 @@ export const translations = {
       updated: "UPDATED",
     },
 
+    /* The ART page's link out to the standalone fan page (/fan/). */
+    fan: {
+      cta: "OPEN THE PINK ARCHIVE",
+    },
+
     aboutPreview: {
       header: "PERSONNEL_DOSSIER // PROFILE_MODULE",
       operator: "OPERATOR",
@@ -800,6 +805,11 @@ export const translations = {
       updated: "已更新",
     },
 
+    /* ART 页跳去独立粉丝页（/fan/）的按钮文案。 */
+    fan: {
+      cta: "打开粉色档案库",
+    },
+
     aboutPreview: {
       header: "个人档案 // 资料模块",
       operator: "操作员",
@@ -1354,6 +1364,11 @@ export const translations = {
       header: "SYS.LOG // RECENTE_ACTIVITEITEN",
       type: "TYPE:",
       updated: "UP-TO-DATE",
+    },
+
+    /* De link op de ART-pagina naar de losse fanpagina (/fan/). */
+    fan: {
+      cta: "OPEN HET ROZE ARCHIEF",
     },
 
     aboutPreview: {

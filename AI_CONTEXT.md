@@ -419,7 +419,7 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 | 改站点开场 / 预加载 | `Layout.astro`「SITE INTRO GUARD」（`<head>` 内联脚本，决定放不放 + 拥有 `window.__rrsIntroGate`）+ `src/scripts/site-intro.ts` + `global.css §16`。三态：会话首个页面放 / F5 放 / 站内跳转不放；进度必须真的到 100、退场是信号色扫描、入场动画只能 `fill-mode: backwards`——**动手前必读 `docs/site-intro.md`** |
 | 改页脚链接/版权              | `src/components/Footer.astro`                                                                                           |
 | 改项目/实验列表（磁带盒书架） | `src/components/CassetteShelf.astro`（六页共用）+ `src/scripts/shelf-tuner.ts`（临时调参面板）。⚠️ **动手前必读 `docs/cassette-shelf.md`**：preserve-3d 卫生、单一定位公式 `slotIndex`、拖动落点符号、环长预算、箭头几何、调参入口、复验清单全部在那里。名词表见 §5.3；决策背景见 `docs/decisions.md` 决策 22b |
-| 改「索引」快速跳转选择器 | 同上，`docs/cassette-shelf.md` §九：`.shelf-index` 按钮（页头）+ `.shelf-picker` 浮层 + 脚本 `renderPicker` / `jumpTo`。⚠️ 列表由磁带自己的 `data-` 属性生成，必须跳过 `tape.empty` 的空白磁带；跳转复用筛选的两拍混合（`filterOutPending` + `pendingSeat`） |
+| 改「索引」快速跳转选择器 | 同上，`docs/cassette-shelf.md` §九：`.shelf-index` 按钮（页头）+ `.shelf-picker` 浮层 + 脚本 `renderPicker` / `jumpTo`。⚠️ 列表由磁带自己的 `data-` 属性生成，必须跳过 `tape.empty` 的空白磁带；跳转复用筛选的两拍混合（`filterOutPending` + `pendingSeat`）；⚠️ 跳转是「走过去」的 glide（走 current，不是重建环），入场梯级只在站内跳转播（读 __rrsIntroPlayed）——详见 docs/cassette-shelf.md 最后两节。
 | 改项目/实验卡片（首页精选、notes） | `src/components/ProjectCard.astro`（`.card` 的 `backdrop-filter: blur(20px)`；⚠️ 它**不能**和 `-webkit-backdrop-filter` 写进同一条规则——构建期 lightningcss 会按别名合并、只留最后一条（`-webkit` 在后则生产站整条失效），Safari 兜底因此放在紧随的 `@supports` 独立规则里，见决策 22；⚠️ `main`/`.card` 入场动画必须用 `animation-fill-mode: backwards`，残留 transform 会让 Chrome 丢掉模糊）                                                                                      |
 | 改详情页排版/TOC/灯箱        | `src/components/ProjectDetail.astro`                                                                                    |
 | 改滚动进度条                 | `src/components/ScrollMeter.astro`                                                                                      |
@@ -439,6 +439,7 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 | 改 404                       | `src/pages/404.astro`                                                                                                   |
 | 改分享卡                     | `scripts/og-card-gen.mjs`（改后 `npm run og-card` 重跑）+ `public/og-card.png`                                          |
 | 改 art 展示                  | ⚠️ 冻结区：`src/pages/art/index.astro`、`zh/art/index.astro`、`ArtGallery.astro`、`gallery` 字段;仅允许 SEO frontmatter |
+| 改粉丝页 /fan/（粉色小屋） | src/components/FanPage.astro + src/components/FanCta.astro + src/utils/fan.ts；三个路由 src/pages/{,zh/,nl/}fan/index.astro。⚠️ **故意不跟主站设计系统**：粉=表面/蓝=信号、只有一套主题（覆盖 .fan-root 的 token）、不显示主站导航与页脚。**动手前读 docs/fan-page.md** |
 | 改 about 页                  | `src/pages/about/index.astro` + `src/pages/zh/about/index.astro`（双文件都要改）                                        |
 | 构建/部署问题                | `package.json`、`astro.config.mjs`；Cloudflare 控制台（仓库内无部署配置）                                               |
 

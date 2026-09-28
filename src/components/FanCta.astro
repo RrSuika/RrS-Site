@@ -1,0 +1,105 @@
+---
+/**
+ * FanCta — the ART page's one link OUT of the site.
+ *
+ * ⚠️ It is a component and not a block repeated in three pages because the three
+ * `/art` pages are separate files with separate `<style>` blocks: the same markup
+ * pasted three times would mean the same CSS pasted three times, and the art
+ * pages are the one area of this repo where a silent drift between the three
+ * languages is hardest to notice.
+ *
+ * ⚠️ Deliberately NOT the site's amber accent: this is the only control on the
+ * page that leaves the site, and it wears the destination's own pink. The hover
+ * is the site's usual gesture (an accent panel travelling up under the text),
+ * so it still belongs here even though its colour comes from elsewhere.
+ */
+import { getLanguageFromPath, getLocalizedPath } from "../utils/i18n";
+import { getTranslations } from "../utils/translations";
+
+const language = getLanguageFromPath(Astro.url.pathname);
+const t = getTranslations(language);
+---
+
+<a
+  class="fan-cta"
+  href={getLocalizedPath("/fan", language)}
+  target="_blank"
+  rel="noopener"
+>
+  <span class="fan-cta-dot" aria-hidden="true"></span>
+  <span class="fan-cta-text">{t.fan.cta}</span>
+  <span class="fan-cta-arrow" aria-hidden="true">↗</span>
+</a>
+
+<style>
+  /* ⚠️ `isolation: isolate` is what keeps the `z-index: -1` fill behind the
+     label instead of behind the page — the same trap the tag chips hit. */
+  .fan-cta {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 22px;
+    padding: 11px 18px;
+
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    text-decoration: none;
+
+    color: #ff6fa8;
+    border: 1.5px solid rgba(255, 111, 168, 0.55);
+    border-radius: 2px;
+    background: rgba(255, 111, 168, 0.07);
+
+    transition:
+      color 0.4s var(--ease-out),
+      border-color 0.4s var(--ease-out),
+      transform 0.3s var(--spring-snappy);
+  }
+
+  .fan-cta::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: #f5308a;
+    transform: translateY(101%);
+    transition: transform 0.4s var(--ease-out);
+    pointer-events: none;
+  }
+
+  .fan-cta:hover,
+  .fan-cta:focus-visible {
+    color: #fff;
+    border-color: #f5308a;
+    transform: translateY(-2px);
+  }
+
+  .fan-cta:hover::before,
+  .fan-cta:focus-visible::before {
+    transform: translateY(0);
+  }
+
+  .fan-cta-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  .fan-cta-arrow {
+    font-size: 13px;
+    line-height: 1;
+    transition: transform 0.35s var(--spring-gentle);
+  }
+
+  .fan-cta:hover .fan-cta-arrow {
+    transform: translate(2px, -2px);
+  }
+</style>

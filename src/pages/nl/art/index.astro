@@ -1,5 +1,6 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
+import FanCta from "../../../components/FanCta.astro";
 import { getLanguageFromPath } from "../../../utils/i18n";
 import { getTranslations } from "../../../utils/translations";
 import { getArtImages } from "../../../utils/artImages";
@@ -102,6 +103,8 @@ const hasContent = categories.some((c) => c.images.length > 0);
       <p class="hero-hint">
         ← scrollen → slepen &nbsp;|&nbsp; klik om te bekijken
       </p>
+
+      <FanCta />
     </section>
 
     {

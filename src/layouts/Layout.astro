@@ -111,6 +111,79 @@ const websiteSchema = {
         }
       })();
     </script>
+
+    <!--
+      ── WARM THE OTHER LISTING PAGE ──
+      The two listing pages are the heaviest on the site: each renders a full
+      cassette row and fetches a dozen 960px covers. They share NO covers with
+      the home page (measured: 3 images against the shelf's 12), so a visitor
+      arriving from the home page paid for the listing document first and its
+      covers after it.
+
+      This fetches the OTHER listing as soon as the cover opens — on every page
+      that has an intro, the home page included, and that is the case that
+      matters. The document lands in the HTTP cache, and because the document
+      carries the cover URLs the covers follow on their own.
+
+      ⚠️ A fetch(), not a prefetch link: a prefetch hint is advisory and
+      browsers drop it when the URL is also a navigation target, while a fetch
+      puts the DOCUMENT in the cache.
+      ⚠️ It does NOT also preload the covers: measured, a preload hint for an
+      image whose document is being fetched concurrently is dropped by the
+      browser, so it was a hint that did nothing.
+      ⚠️ The page the visitor is ALREADY on is skipped. Fetching it anyway can
+      be counted against the arrival (measured as a CLS of 0.121 on the
+      projects page).
+      ⚠️ Nothing here starts before the cover opens.
+    -->
+    <script is:inline>
+      (() => {
+        var started = false;
+
+        var warm = () => {
+          if (started) return;
+          started = true;
+
+          var here = location.pathname;
+          var prefix = here.indexOf("/zh/") === 0 ? "/zh" : here.indexOf("/nl/") === 0 ? "/nl" : "";
+          var hereBare = here.replace(/^(\/zh|\/nl)/, "");
+
+          var pages = ["/projects/", "/lab/"];
+          for (var i = 0; i < pages.length; i++) {
+            // Skip the page the visitor is on: re-fetching it is what the
+            // browser flagged as a shift.
+            if (pages[i] === hereBare) continue;
+            try {
+              fetch(prefix + pages[i], { priority: "low" }).catch(function () {});
+            } catch (_) {
+              /* no fetch — nothing to warm, nothing to report */
+            }
+          }
+        };
+
+        // Instant path: the flag is already set (an intro that was skipped, or
+        // one that opened while this script was still parsing).
+        if (window.__rrsIntroOpened) {
+          warm();
+          return;
+        }
+
+        // Normal path: the cover opens later. The interval is a safety net for
+        // a document where the flag is set with nothing this script can see.
+        var waited = 0;
+        var poll = window.setInterval(function () {
+          if (started) {
+            window.clearInterval(poll);
+            return;
+          }
+          waited += 150;
+          if (window.__rrsIntroOpened || waited >= 5000) {
+            window.clearInterval(poll);
+            warm();
+          }
+        }, 150);
+      })();
+    </script>
     <style is:global>
       html:not([data-theme]) body { visibility: hidden; }
     </style>
@@ -164,6 +237,8 @@ const websiteSchema = {
         if (skip) {
           root.classList.add("is-intro-skip");
           window.__rrsIntroGate = Promise.resolve();
+          // No cover on this load, so everything that waits on it can start.
+          window.__rrsIntroOpened = true;
           // Take the markup out of the document too: `display: none` is enough
           // for the eye, but a full-page cover has no business staying in the
           // DOM of every page of the session.
@@ -178,6 +253,10 @@ const websiteSchema = {
         }
 
         root.classList.add("is-intro");
+        // Published for the cassette shelf: it plays its own staggered entrance
+        // only when the cover was SKIPPED, so a session's first page shows one
+        // opening rather than two stacked ones.
+        window.__rrsIntroPlayed = true;
         try {
           sessionStorage.setItem(KEY, "1");
         } catch (_) {}
@@ -189,6 +268,9 @@ const websiteSchema = {
           if (window.__rrsIntroResolveDone) return;
           window.__rrsIntroResolveDone = true;
           resolveGate();
+          // The cover is open. Everything that warms the NEXT page hangs off
+          // this, so none of it can compete with the first paint.
+          window.__rrsIntroOpened = true;
         };
 
         // Safety net: the cover must never outlive the script that opens it.

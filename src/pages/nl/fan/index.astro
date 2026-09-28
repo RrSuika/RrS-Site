@@ -1,0 +1,11 @@
+---
+/**
+ * `/nl/fan/` — the fan page ships in English and Chinese only, so the NL URL
+ * serves the English copy with a Dutch-language chrome around it (`html lang`
+ * still comes from the path). It exists so the navbar's NL mirror is never a
+ * 404: the three-language navbar assumes every route has an nl twin.
+ */
+import FanPage from "../../../components/FanPage.astro";
+---
+
+<FanPage language="en" />

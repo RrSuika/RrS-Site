@@ -250,7 +250,7 @@ const coverUrls = items
 
       <div class="shelf-track" id="shelf-track">
         {
-          items.map((item) => (
+          items.map((item, index) => (
             <a
               class="cas"
               href={item.url}
@@ -276,7 +276,14 @@ const coverUrls = items
                       alt=""
                       width={item.width}
                       height={item.height}
-                      loading="eager"
+                      /* ⚠️ Only the tapes that are ON STAGE at rest load
+                         eagerly. Every cover used to be eager, so a shelf page
+                         fetched thirteen 960px webp covers (~1.2 MB) at full
+                         priority before it could settle — the other side of the
+                         "要等好几秒" report. Everything past the first five is
+                         off-stage, and by the time a visitor steps to it the
+                         file is there. */
+                      loading={index < MAX_SLOT_COUNT + 1 ? "eager" : "lazy"}
                       decoding="async"
                       draggable="false"
                     />
@@ -595,8 +602,6 @@ const coverUrls = items
     } catch {
       /* private mode — preload every time, which is the safe direction */
     }
-    if (seen) return;
-
     let urls = [];
     try {
       urls = JSON.parse(el.dataset.covers || "[]");
@@ -604,13 +609,12 @@ const coverUrls = items
       urls = [];
     }
 
-    for (const href of urls) {
-      const link = document.createElement("link");
-      link.rel = "preload";
-      link.as = "image";
-      link.href = href;
-      document.head.appendChild(link);
-    }
+    /* The covers are for THIS page, so they only have to wait for the cover
+       itself — never for the first paint. */
+    const g = window.__rrsIntroGate;
+    if (g) Promise.resolve(g).then(warmCovers, warmCovers);
+    else warmCovers();
+
   })();
 </script>
 
@@ -620,6 +624,9 @@ const coverUrls = items
      ══════════════════════════════════════════ */
 
   .shelf-page {
+    /* the stage's offset inside the page = the header's height. The scrim reads
+       this to anchor its gradient at the PAGE's top instead of the stage's. */
+    --shelf-top: 80px;
     display: flex;
     flex-direction: column;
     min-height: calc(100vh - 76px); /* 76px = sticky navbar */
@@ -816,19 +823,41 @@ const coverUrls = items
      legible, and lightening it is a different change from softening the edge. */
   .shelf-scrim {
     position: absolute;
-    inset: 0;
+    /* ⚠️ Reaches ABOVE the stage, to the page's own top (`--shelf-top` is the
+       stage's offset inside the page). This is the whole fix for the reported
+       hard edge: with `inset: 0` the ramp's maximum sat 80px inside the page and
+       drew a full-width seam. The stage clips it back to its own box, so this
+       changes nothing outside the stage — it only moves where the dark end of the
+       curve is anchored. */
+    top: calc(-1 * var(--shelf-top, 80px));
+    right: 0;
+    bottom: 0;
+    left: 0;
     pointer-events: none;
 
+    /* Each stop multiplies the one before by about 0.56, so the value decays by a
+       constant RATIO and the curve is smooth in log space — which is what "no
+       visible edge" means for a translucent overlay. The ladder is dense at the
+       top because that is where the value changes fastest.
+       0.50 at 22% is the value at the stage's top (page 80px / 810px = 9.9% of
+       this box, and step 3 lands at 13%); it was 0.72. */
     background:
       linear-gradient(
         180deg,
-        rgba(4, 4, 7, 0.72) 0%,
-        rgba(4, 4, 7, 0.403) 6%,
-        rgba(4, 4, 7, 0.226) 12%,
-        rgba(4, 4, 7, 0.126) 18%,
-        rgba(4, 4, 7, 0.071) 24%,
-        rgba(4, 4, 7, 0.04) 29%,
-        transparent 34%
+        rgba(4, 4, 7, 0.62) 0%,
+        rgba(4, 4, 7, 0.5) 4%,
+        rgba(4, 4, 7, 0.393) 8%,
+        rgba(4, 4, 7, 0.309) 13%,
+        rgba(4, 4, 7, 0.243) 19%,
+        rgba(4, 4, 7, 0.191) 26%,
+        rgba(4, 4, 7, 0.15) 33%,
+        rgba(4, 4, 7, 0.118) 40%,
+        rgba(4, 4, 7, 0.093) 47%,
+        rgba(4, 4, 7, 0.073) 54%,
+        rgba(4, 4, 7, 0.057) 61%,
+        rgba(4, 4, 7, 0.045) 68%,
+        rgba(4, 4, 7, 0.02) 80%,
+        transparent 92%
       ),
       linear-gradient(
         0deg,
@@ -845,13 +874,20 @@ const coverUrls = items
     background:
       linear-gradient(
         180deg,
-        rgba(240, 235, 224, 0.8) 0%,
-        rgba(240, 235, 224, 0.448) 6%,
-        rgba(240, 235, 224, 0.251) 12%,
-        rgba(240, 235, 224, 0.14) 18%,
-        rgba(240, 235, 224, 0.079) 24%,
-        rgba(240, 235, 224, 0.044) 29%,
-        transparent 34%
+        rgba(240, 235, 224, 0.68) 0%,
+        rgba(240, 235, 224, 0.56) 4%,
+        rgba(240, 235, 224, 0.44) 8%,
+        rgba(240, 235, 224, 0.346) 13%,
+        rgba(240, 235, 224, 0.272) 19%,
+        rgba(240, 235, 224, 0.214) 26%,
+        rgba(240, 235, 224, 0.168) 33%,
+        rgba(240, 235, 224, 0.132) 40%,
+        rgba(240, 235, 224, 0.104) 47%,
+        rgba(240, 235, 224, 0.082) 54%,
+        rgba(240, 235, 224, 0.064) 61%,
+        rgba(240, 235, 224, 0.05) 68%,
+        rgba(240, 235, 224, 0.022) 80%,
+        transparent 92%
       ),
       linear-gradient(
         0deg,
@@ -1052,6 +1088,28 @@ const coverUrls = items
     will-change: auto;
   }
 
+  /* ⚠️ `will-change` is a PROMISE, not a hint: it allocates a compositor layer.
+     Applied only to the tapes that are climbing right now, never to all thirty
+     for the life of the page. */
+  .cas.is-climbing {
+    will-change: transform;
+  }
+
+  /* ⚠️ While the ladder runs, drop the two effects that cost the most per frame:
+     the frosted panels' backdrop filter, and the far tapes' changing blur radius.
+     Both come back the moment the row settles. Measured cause of the perceived
+     frame drop: a backdrop filter re-samples everything behind it on every frame
+     the content under it moves, and the ladder moves every tape. */
+  .shelf.is-ladder .shelf-panel,
+  .shelf.is-ladder .shelf-hud,
+  .shelf.is-ladder .shelf-nav {
+    backdrop-filter: none;
+  }
+
+  .shelf.is-ladder .cas.is-far .cas-f > * {
+    filter: none;
+  }
+
   /* ── Warm glossy plastic for the light theme ──
      The era's cassette was not chrome: it was an off-white / pale-buff
      polystyrene moulding with a hard specular sheen, and that is what the user
@@ -1172,6 +1230,17 @@ const coverUrls = items
 
   .cas:focus-visible {
     outline: none;
+  }
+
+  /* ⚠️ The veil's opacity transition is what makes the entrance look like every
+     tape flashing in turn: the render loop writes `--cas-o` on every frame while
+     the row animates, and each write restarts the 200ms crossfade on
+     `.cas-f::after`, so the paint trails the pose. Switched off while animating
+     and restored the moment the shelf settles — which is when the veil wants it.
+     ⚠️ `::after` and not `.cas-f`: the transition lives on the VEIL, and adding
+     one to `.cas-f` itself would be a second, heavier fade on the same property. */
+  .shelf.is-anim .cas-f::after {
+    transition: none;
   }
 
   .cas-f {
@@ -4077,6 +4146,16 @@ const coverUrls = items
     // constants — change them together and re-measure.
     const SPREAD_X = 2.2;
     const SPREAD_X2 = 0.12;
+    /**
+     * Lateral spread while the LADDER runs. A cassette is ~2.4 world units wide and
+     * the settled spacing at p=1 is 2.31, i.e. almost no clearance — fine when the
+     * row is still, not fine while the centre tape is rotated and lifted forward.
+     * Measured complaint: the centre tape turns THROUGH its left neighbour during
+     * the rise. The neighbours step aside by this factor while it turns.
+     * ⚠️ Applies to `SPREAD_X` only. `SPREAD_X2` and `PASS_GAP` shape the settled
+     * composition; scaling those would change how the shelf looks at rest.
+     */
+    const RISE_SPREAD = 1.34;
     // z of the selected tape, and how hard the rest recede. The reference's
     // selected book sits at z = 0.95 with the rear wall falling to ≈ −7.6, which
     // is a big separation: the row loses itself in depth, and the pull-out reads
@@ -4157,14 +4236,39 @@ const coverUrls = items
     const SHELF_Z = -3.42;
     // The reference rises a 2.05-scaled wall up to 2.30 and then lets the rear
     // fall back to 1.30 while the selected tape lands at 1.18 in front of it.
-    const RISE_SCALE_FROM = 2.05;
+    /* ⚠️ 2.05 made adjacent boxes OVERLAP inside a 1440px stage before the rear
+       wall retreats, which is half of the reported interpenetration (the other
+       half was un-posed tapes parked at the origin). 1.72 keeps the same
+       "climb, then settle back" read with a visible gap between neighbours. */
+    const RISE_SCALE_FROM = 1.72;
     const RISE_SCALE_TO = 2.3;
+    /**
+     * How many rungs the ladder actually spans. ⚠️ `2 * MAX_SLOTS + PARK_SLOTS`,
+     * NOT `MAX_SLOTS + PARK_SLOTS`. `introAt` is keyed on
+     * `clamp(slotIndex, -span, span) + span`, and `slotIndex` is
+     * `tape.ring - current + progress` with `tape.ring` running the whole ring
+     * (`0 .. 2*half`) — so the last painted rung is at order `2*half + PARK_SLOTS`.
+     * `half + PARK_SLOTS` is only the distance from the SELECTION to the edge,
+     * i.e. half the ladder, and using it as the ladder's length made the
+     * entrance clock 780ms too short (see `riseMs`).
+     */
+    const RISE_LAST_ORDER = 2 * MAX_SLOTS + PARK_SLOTS;
 
-    const RISE_START = 260;
-    const RISE_STAGGER = 130;
-    const RISE_DUR = 1150;
-    const PULL_DUR = 1700;
-    const CURTAIN_FADE = 320;
+    /**
+     * Symmetric ease, slope π/2 at the ends and 0 at the extremes. Used for the
+     * ladder because it is the only one of the four already in this file that both
+     * STARTS and ENDS slowly — `easeOutCubic` starts at slope 3, which is what put
+     * a 35px step on the first frame of every tape's climb.
+     */
+    function easeInOutSine(t: number) {
+      return 0.5 - 0.5 * Math.cos(Math.PI * clamp(t));
+    }
+
+    const RISE_START = 150;
+    const RISE_STAGGER = 90;
+    const RISE_DUR = 900;
+    const PULL_DUR = 1250;
+    const CURTAIN_FADE = 260;
 
     /* ── Drag: the row follows the pointer, and a flick throws it ──
        ⚠️ The gesture is a **position**, not a step count. `dragOffset` is the
@@ -4261,26 +4365,26 @@ const coverUrls = items
     const FILTER_GAP_MS = 260;
 
     const CARD_KEY = "rrsuika-shelf-card";
-    const WARM_KEY = "rrsuika-shelf-warm";
 
     /**
-     * The record the visitor was on, and whether they have already seen the
-     * intro. Read ONCE, at module scope, before any renderer code can write
-     * them back — `updateUI` owns `CARD_KEY`, so a later read returns the value
-     * the boot itself just wrote.
+     * The record the visitor was on. Read ONCE, at module scope, before any
+     * renderer code can write it back — `updateUI` owns this key, so a later read
+     * returns the value the boot itself just wrote, which is always "0".
+     *
+     * ⚠️ `sessionStorage["rrsuika-shelf-warm"]` is owned by the INLINE preload
+     * script below (it gates the one-per-session cover preload) and is no longer
+     * read here: the shelf's entrance is decided by the site intro's own
+     * `__rrsIntroPlayed` flag instead of a second notion of "have they been here
+     * before".
      */
-    const boot = (() => {
+    const restored = (() => {
       try {
-        return {
-          warm: sessionStorage.getItem(WARM_KEY) === "1",
-          card: Number.parseInt(sessionStorage.getItem(CARD_KEY) ?? "", 10),
-        };
+        const card = Number.parseInt(sessionStorage.getItem(CARD_KEY) ?? "", 10);
+        return Number.isFinite(card) && card >= 0 ? card : -1;
       } catch {
-        return { warm: false, card: Number.NaN };
+        return -1;
       }
     })();
-    const warm = boot.warm;
-    const restored = Number.isFinite(boot.card) && boot.card >= 0 ? boot.card : -1;
     /* ══════════════════════════════════════════
        MATH
        ══════════════════════════════════════════ */
@@ -4380,6 +4484,8 @@ const coverUrls = items
       /** Last `--cas-depth` written (quantised), so the veil/blur only repaint
        *  when the tape actually moves a step. -1 = nothing written yet. */
       depth: number;
+      /** true while this tape carries `is-climbing` */
+      climbing?: boolean;
     }
 
     let mode: "3d" | "flat" = "3d";
@@ -4404,6 +4510,12 @@ const coverUrls = items
 
     let introT0 = 0;
     let introDuration = 0;
+    /** when `introDone` last went true; `crisp` holds the breath a little longer */
+    let introSettledAt = -1e9;
+    /** 1 when the row is settled, `RISE_SPREAD` while the ladder runs */
+    let riseSpread = 1;
+    /** how long the breath is held after the intro, so the flip frame is a no-op */
+    const BREATH_SETTLE_MS = 700;
     /**
      * True while the row rises as part of a SWAP (a tag filter or a picker jump)
      * rather than as the page's own entrance. Read by `navigate`.
@@ -4451,6 +4563,41 @@ const coverUrls = items
       active: false,
       dur: STEP_FROM_REST,
     };
+
+    /**
+     * THE PICKER'S GLIDE — the row runs from the current record to the chosen
+     * one, instead of the outgoing row climbing away and a fresh one rising in.
+     *
+     * ⚠️ **It is a walk of the whole row, not a re-seat, and that is why it
+     * cannot be a big `snap`.** `snap` eases `progress` onto `−step` and ends by
+     * calling `recycle(step)`, which RE-BASES the ring — picture-preserving for
+     * one step but not for a ten-slot walk, because everything past `DRAG_MAX`
+     * (5) has no ring left to re-base onto. Here `current` itself is walked, one
+     * whole slot at a time, so every tape's `ring − current + progress` changes
+     * continuously and the passes in between are the neighbouring records
+     * sliding by — which is exactly what the visitor asked to see.
+     *
+     * A whole-slot walk also sidesteps the pass interpenetration fix
+     * (`PASS_TWIST` / `PASS_GAP`): those two terms key on a FRACTIONAL slot, and
+     * at every intermediate TAKE no tape is between slots, so nothing collides.
+     */
+    const glide = {
+      /** How far the walk has run, in slots (0 → `dist`). */
+      at: 0,
+      /** Total slots to cross, always positive. */
+      dist: 0,
+      /** +1 or −1: which way along the ring. */
+      dir: 1,
+      /** The fractional slot carried between frames. */
+      carried: 0,
+      t: 0,
+      active: false,
+      dur: 0,
+    };
+    /** Steps one slot per second at full speed, then eases out onto the tape. */
+    const GLIDE_SLOT_MS = 120;
+    const GLIDE_BASE_MS = 420;
+    const GLIDE_MAX_MS = 1600;
 
     let launching = false;
     let launchT0 = 0;
@@ -4514,7 +4661,15 @@ const coverUrls = items
       side: number;
     }
 
-    function heroPose(p: number, time: number, seed: number): Pose {
+    /**
+     * @param crisp  drop the two terms that only exist while the row is alive —
+     *   the idle breath and the centre lift. The ladder asks for `crisp` so that
+     *   the pose it ARRIVES at is bit-for-bit the pose the shelf SETTLES into.
+     *   ⚠️ Without it the visitor sees the row stop, then step: `idle` goes false
+     *   the instant `introDone` flips, and the banked breath is dropped in one
+     *   frame (measured as "动画停止以后整体往上移动").
+     */
+    function heroPose(p: number, time: number, seed: number, crisp = false, spread = 1): Pose {
       const abs = Math.abs(p);
       const side = smooth(clamp(abs / SIDE_SPAN));
 
@@ -4522,8 +4677,9 @@ const coverUrls = items
       // slot where the two tapes either side of the centre cross. See `PASS_TWIST`.
       const pass = 4 * abs * Math.max(0, 1 - abs);
 
+      // `spread` widens only the LINEAR term; see `RISE_SPREAD`.
       const x =
-        p * SPREAD_X +
+        p * SPREAD_X * spread +
         p * abs * SPREAD_X2 +
         Math.sign(p) * TUNE("passGap", PASS_GAP) * pass;
       const z = TUNE("zNear", Z_NEAR) - Math.pow(abs, Z_POW) * Z_FALL;
@@ -4531,10 +4687,11 @@ const coverUrls = items
       // A slow breath while the shelf is alive, frozen once it settles. Keeping
       // it running at rest meant every tape was re-composited on every frame
       // forever, which showed up as uneven frame times during a step.
-      const breath = idle
-        ? Math.sin((time * Math.PI * 2) / 8 + seed * 0.3) * 0.032 +
-          Math.sin((time * Math.PI * 2) / 13 - seed * 0.17) * 0.014
-        : 0;
+      const breath =
+        !crisp && idle
+          ? Math.sin((time * Math.PI * 2) / 8 + seed * 0.3) * 0.032 +
+            Math.sin((time * Math.PI * 2) / 13 - seed * 0.17) * 0.014
+          : 0;
       const y = TUNE("yBase", Y_BASE) - Math.pow(abs, Y_POW) * Y_FALL + breath;
 
       const scale = 1 / (1 + SCALE_FALL * abs);
@@ -4552,6 +4709,10 @@ const coverUrls = items
       const rz = TUNE("rzBase", RZ_BASE) + p * (RZ_SPREAD + RZ_SPREAD2 * abs);
       const heroMask = Math.exp(-p * p * LIFT_FALL);
       const rx = TUNE("rxBase", RX_BASE) + RX_SIDE * side + TUNE("rxHero", RX_HERO) * heroMask;
+      // ⚠️ `lift` is part of the DESTINATION, not a decoration on it. Gating it on
+      // `crisp` made the centre tape blend toward `lift = 0` and then receive
+      // `lift = 0.3` on the flip frame — measured as **15.9px in one frame**, and
+      // only for the centre, because `heroMask` is ~1 there and ~0 three slots out.
       const lift = TUNE("lift", LIFT) * heroMask;
 
       return { x, y: y + lift, z, rx, ry, rz, scale, abs, side };
@@ -5093,15 +5254,15 @@ const coverUrls = items
       // The old row is out of frame: re-seat the matched tapes while nothing is
       // visible, so the rebuild itself can never be seen as a jump.
       filterOutPending = false;
-      filterOut = 0;
-      // ⚠️ An empty `filterPendingTapes` means "keep the ring as it is" — that is
-      // how the picker's `jumpTo` reuses this blend without a second rebuild
-      // path: it wants the SAME records, reseated on a different one of them.
-      buildRing(
-        filterPendingTapes.length > 0 ? filterPendingTapes : list,
-        pendingSeat,
-      );
-      pendingSeat = undefined;
+      // ⚠️ **`filterOut` STAYS at 1 here — it must not fall back to 0.** It used
+      // to, and that painted ONE frame of the freshly-built ring at full opacity:
+      // the new tapes arrive with `tape.vis = 1`, so the moment the multiply by
+      // `(1 - filterOut)` stopped being a multiply by 0 they were drawn whole.
+      // Measured over CDP as `--cas-o` running 1.00 → 0.01 → **1.00** → 0, which
+      // the visitor reported as the tapes flashing in and vanishing again before
+      // the rise. `startRiseIn` clears it when it takes the beat over.
+      filterOut = 1;
+      buildRing(filterPendingTapes.length > 0 ? filterPendingTapes : list);
       filterPendingTapes = [];
       filterGapStart = now;
       filterHold = true;
@@ -5162,6 +5323,51 @@ const coverUrls = items
           recycle(-snap.to);
         }
       }
+
+      // ── the picker's glide: the row WALKS to the chosen record ──
+      //
+      // ⚠️ `current` is moved by whole slots here, which is the opposite of what
+      // the step tween does (`progress` moves, `current` is re-based once at the
+      // end). The picture is the same invariant either way — `ring − current +
+      // progress` — but only a walk can cross more than `DRAG_MAX` slots, and
+      // only a walk shows the records in between go by. Driving the world
+      // X from `progress` would instead stack all the travel into one offset and
+      // (past `DRAG_MAX`) hit the archive's own clamp.
+      //
+      // ⚠️ A pointer that grabs the row outranks this tween, exactly like the
+      // spring and the step: `stage.pointerdown` cancels it and re-anchors.
+      if (glide.active && !dragging) {
+        glide.t += dt / (glide.dur / 1000);
+        const t = clamp(glide.t);
+        // Ease-OUT only: the row sets off at speed and settles onto the tape. An
+        // ease-in-out would read as a wind-up before every pick.
+        const target = glide.dist * easeOutCubic(t);
+        glide.carried += target - glide.at;
+        glide.at = target;
+
+        // Whole slots move `current`; the fraction rides `progress`. Both feed
+        // the one position formula, so the walk is continuous.
+        const whole = Math.floor(glide.carried);
+        if (whole > 0) {
+          current = wrap(current + glide.dir * whole, list.length);
+          glide.carried -= whole;
+        }
+        progress = -glide.dir * glide.carried;
+
+        if (t >= 1) {
+          glide.active = false;
+          glide.at = 0;
+          glide.carried = 0;
+          // Land exactly: no fractional slot may survive a glide, or the row
+          // rests between two tapes and the next arrow moves it by half a slot.
+          progress = 0;
+          spring.value = 0;
+          spring.velocity = 0;
+          spring.active = false;
+          lock = false;
+          reseat(false);
+        }
+      }
     }
 
     function renderFrame(now: number) {
@@ -5199,20 +5405,47 @@ const coverUrls = items
       // settled shelf costs no repaints at all.
       const rowBusy =
         !introDone ||
+        filterOut > 0 ||
         snap.active ||
         spring.active ||
+        glide.active ||
         dragging ||
         launching ||
         filterOutPending ||
         filterHold ||
         filterGap > 0 ||
         Math.abs(progress) > 0.0005;
-      idle = rowBusy;
+      // ⚠️ `rowBusy` goes false the instant `introDone` flips, and the breath term
+      // in `heroPose` is gated on `idle` — so freezing it at that exact moment
+      // steps Y by up to ~5px in one frame on every tape at once. Stay "idle"
+      // until the row is genuinely at rest instead.
+      idle = rowBusy || Math.abs(progress) > 0.0005 || snap.active || spring.active;
+      // the ladder's spread, eased so the neighbours slide back rather than snap
+      const spreadTarget = introDone ? 1 : RISE_SPREAD;
+      if (Math.abs(riseSpread - spreadTarget) > 0.001) {
+        riseSpread += (spreadTarget - riseSpread) * Math.min(1, dt * 3.4);
+      } else {
+        riseSpread = spreadTarget;
+      }
+      // ⚠️ Mirrored onto the element so CSS can tell "the row is animating" from
+      // "the shelf has settled". `.cas-f::after` carries `transition: opacity`
+      // for the depth veil, and while the render loop writes `--cas-o` every
+      // frame that transition fights it: each write restarts a 200ms crossfade,
+      // so the painted opacity lags the pose behind. The ladder walks left to
+      // right, so the lag lands on one tape at a time — reported as every tape
+      // flashing in turn. `is-anim` switches the transition off; a settled shelf
+      // gets it back, which is when the veil actually needs it.
+      if (root.classList.contains("is-anim") !== rowBusy) {
+        root.classList.toggle("is-anim", rowBusy);
+      }
 
       if (launching) {
         const lt = easeInOutCubic(clamp((now - launchT0) / LAUNCH_DUR));
         if (lt >= 1) return;
       }
+
+      /** tapes that painted a climb this frame, so `will-change` can be cleared */
+      const climbing = new Set<HTMLElement>();
 
       for (const tape of allTapes) {
         const { el } = tape;
@@ -5232,6 +5465,19 @@ const coverUrls = items
         const inRing = tape.ring >= 0;
         const band = span - Math.min(0, progress * Math.sign(sink));
         const within = inRing && Math.abs(sink) <= Math.max(1, band);
+
+        // ⚠️ A tape with NO POSE renders as an identity box at the stage's
+        // origin. Measured during the rise: only tapes 10..19 carried an inline
+        // transform, and the other twenty sat as full-size cassettes stacked at
+        // (0,0) — which is what poked through the middle of the row while the
+        // band was at scale 2.05. `is-hidden` is the element-level switch and does
+        // not touch `tape.vis`, so the band's own fade is unchanged.
+        if (!inRing && !tape.hidden) {
+          tape.hidden = true;
+          el.classList.add("is-hidden");
+          el.setAttribute("aria-hidden", "true");
+          el.style.removeProperty("--cas-o");
+        }
 
         tape.vis = smoothTo(
           tape.vis,
@@ -5301,7 +5547,18 @@ const coverUrls = items
           continue;
         }
 
-        const hero = heroPose(pos, time, tape.ring);
+        // `crisp` now means ONLY "freeze the breath". Dropping it on the flip frame
+        // would step every tape by the banked breath at once; it is released on a
+        // short timer in `finishIntro` instead, so the flip frame is a no-op.
+        // ⚠️ `riseSpread` is 1 when settled and `RISE_SPREAD` during the ladder, and
+        // it is eased on `introDone`, so the neighbours slide back rather than snap.
+        const hero = heroPose(
+          pos,
+          time,
+          tape.ring,
+          !introDone || now - introSettledAt < BREATH_SETTLE_MS,
+          riseSpread,
+        );
         let { x, y, z, rx, ry, rz, scale } = hero;
         let opacity = tape.vis;
 
@@ -5327,12 +5584,20 @@ const coverUrls = items
         // reference never slides them laterally) and then the rear wall
         // retreats while the selection pulls forward out of it.
         if (introElapsed < (introAt.get(tape) ?? 0) + RISE_DUR + 60) {
-          const rt = easeOutCubic(
+          // ⚠️ `easeOutCubic` has slope 3 at t=0, so the FIRST frame of a climb
+          // moved 3x the average — measured 35px in one frame at pos 5, with the
+          // rest of the 900ms averaging ~12. A sine ease has slope π/2 at the ends
+          // and zero at both extremes: the tape leaves the lane and arrives at the
+          // hero pose without a snap at either end.
+          const rt = easeInOutSine(
             clamp((introElapsed - (introAt.get(tape) ?? 0)) / RISE_DUR),
           );
           const from = introFrom(tape, pos);
 
-          x = from.x;
+          // ⚠️ X is LERPED, not held. Holding it on the shelf lane and switching
+          // to the hero curve at the end is what made the whole row jump sideways
+          // when the rise finished; see `heroX`.
+          x = lerp(from.x, heroX(pos, riseSpread), rt);
           y = lerp(from.y, hero.y, rt);
           z = lerp(from.z, hero.z, rt);
           rx = lerp(0.025, hero.rx, rt);
@@ -5340,6 +5605,10 @@ const coverUrls = items
           rz = lerp(0, hero.rz, rt);
           scale = lerp(RISE_SCALE_FROM, hero.scale, rt);
           opacity *= clamp(rt * 1.7);
+          // ⚠️ `will-change` only while this tape is actually moving. Thirty
+          // permanent compositor layers is a real cost for the whole page; the
+          // climbing ones are the only tapes that need one.
+          climbing.add(el);
         }
 
         // ── launch: the selected tape flies at the viewer ──
@@ -5368,14 +5637,42 @@ const coverUrls = items
         // also the cheapest state: one tape repaints its reel, nine do not.
         // (`--reel-spin` drives a `repeating-conic-gradient` rotation, i.e. a
         // full repaint of that reel, so it is written only when it changes.)
-        if (!reduceMotion && hero.abs < 0.5) {
+        // ⚠️ The reel spin is FROZEN while the ladder runs. A spin write repaints
+        // a `repeating-conic-gradient`, the most expensive thing on a tape, and the
+        // ladder already repaints every tape every frame. The selection keeps its
+        // last angle and picks the spin back up the moment the row settles.
+        if (!reduceMotion && hero.abs < 0.5 && introDone) {
           const rate = rowBusy ? 0.9 + 0.5 * (1 - hero.abs) : 0.22;
           const spin = time * rate + tape.ring;
           tape.reelSpin = spin;
           el.style.setProperty("--reel-spin", spin.toFixed(4) + "rad");
         }
+        if (tape.reelSpin !== undefined && !introDone) climbing.add(el);
 
         el.style.zIndex = String(Math.round(30 - hero.abs * 2));
+      }
+
+      /* ⚠️ `will-change` is applied ONLY to the tapes that painted a climb this
+         frame, and taken off everything else. It used to sit on all thirty tapes
+         for the life of the page, which keeps thirty compositor layers alive. The
+         toggle is one class write per tape only when the set CHANGES, not per
+         frame. */
+      for (const tape of allTapes) {
+        const want = climbing.has(tape.el);
+        if (tape.climbing !== want) {
+          tape.climbing = want;
+          tape.el.classList.toggle("is-climbing", want);
+        }
+      }
+      // ⚠️ One class on the ROOT as well, so CSS can drop the two expensive
+      // effects for the duration of the ladder: the panels' `backdrop-filter`
+      // (re-sampled whenever the content behind them changes, and during the rise
+      // that is every frame) and the far tapes' changing `filter: blur()` radius
+      // (a full re-rasterisation per tape per frame). Neither earns anything while
+      // the row is moving.
+      const anyClimb = climbing.size > 0;
+      if (root.classList.contains("is-ladder") !== anyClimb) {
+        root.classList.toggle("is-ladder", anyClimb);
       }
 
       // DOM order == row order. A recycled tape keeps its node and its state
@@ -5405,6 +5702,24 @@ const coverUrls = items
     }
 
     /**
+     * Where a tape's X ends up: the hero curve, which is NOT `pos * SPREAD_X`.
+     *
+     * ⚠️ This is the fix for 「突然刷新放大」. The climb used to hold X on the
+     * shelf lane for its whole duration and only switch to the hero X when the rise
+     * ended, so every tape that is not at the centre jumped sideways at the end —
+     * the outermost ones by the most, which is why the visitor saw the leftmost
+     * tape go from fully on screen to half off screen in one frame.
+     */
+    /**
+     * ⚠️ `spread` MUST match what the render loop uses, or the ladder's X target
+     * and the pose it lands on disagree — the same mistake that produced the 230px
+     * sideways jump earlier in this file.
+     */
+    function heroX(pos: number, spread = 1) {
+      return heroPose(pos, 0, 0, true, spread).x;
+    }
+
+    /**
      * How long the rise-in ladder actually takes, from the ring's own size.
      *
      * ⚠️ **It is not `introEnd()`.** That one is sized for the BOOT entrance —
@@ -5420,13 +5735,30 @@ const coverUrls = items
      * site intro, so it must not be shortened by this.
      */
     function riseMs() {
-      return RISE_START + (half + PARK_SLOTS) * RISE_STAGGER + RISE_DUR;
+      // ⚠️ The LAST RUNG's own finish, which is the earliest moment the entrance
+      // can be called done. Using a shorter figure froze `rt` mid-blend for the
+      // final tapes and the gate snapped them to the hero pose — measured as the
+      // row lurching outward at the end of the entrance.
+      return RISE_START + RISE_LAST_ORDER * RISE_STAGGER + RISE_DUR;
     }
 
+    /**
+     * How long the page's own entrance runs.
+     *
+     * ⚠️ **This used to be the full boot sequence — ten rungs plus the centre
+     * tape's pull, ~4.7 s — and the shelf read as "loading" for that whole
+     * time.** The ladder itself is what the visitor is watching, and it is over
+     * in `riseMs()`; the balance was four and a half seconds of a finished row
+     * with no arrows, no panel and no working input, reported as "每次切换到
+     * project 或 lab 界面，都要等好几秒加载". The entrance clock is now the
+     * ladder's own length plus the curtain fade, so the shelf is interactive the
+     * moment it has finished arriving.
+     *
+     * ⚠️ The ladder is also snappier: 90 ms per rung over four rungs a side,
+     * against 130 ms over five. Total rise ~1.6 s.
+     */
     function introEnd() {
-      return (
-        RISE_START + (half + PARK_SLOTS) * 2 * RISE_STAGGER + RISE_DUR + PULL_DUR
-      );
+      return riseMs() + PULL_DUR * 0.25;
     }
 
     /* ══════════════════════════════════════════
@@ -5565,7 +5897,15 @@ const coverUrls = items
     /** true while a swap owns the beat, so the intro's own finish is deferred */
     let filterHold = false;
 
-    function startIntro(full: boolean) {
+    /**
+     * `mode` is one of:
+     *   · `ladder` — the staggered rise, for an IN-SITE arrival (see `enter`).
+     *   · `silent` — no entrance at all: the row is simply there.
+     *
+     * (A third caller, a tag swap, uses `startRiseIn` instead, which is the same
+     * ladder without the curtain.)
+     */
+    function startIntro(mode: "ladder" | "silent") {
       introDone = false;
       swapRising = false;
       root.classList.remove("is-ready");
@@ -5583,7 +5923,10 @@ const coverUrls = items
       introT0 = performance.now();
       introDuration = introEnd();
 
-      if (!full || reduceMotion) {
+      if (mode === "silent" || reduceMotion) {
+        // Back-date the clock past the whole sequence: the rise never plays, and
+        // the finish fires on the first frame. This is also what lifts the
+        // curtain, so `silent` is a shelf that is simply already there.
         introT0 = performance.now() - introEnd() - CURTAIN_FADE - 400;
       }
     }
@@ -5606,6 +5949,8 @@ const coverUrls = items
       }
       introDone = false;
       swapRising = true;
+      // the rise takes the beat over from the exit fade (see `stepFilterSwap`)
+      filterOut = 0;
       root.classList.remove("is-ready");
       introT0 = performance.now();
       introDuration = riseMs();
@@ -5629,6 +5974,10 @@ const coverUrls = items
       // and the arrows did nothing at all (measured over CDP: `lock` still true
       // 5 s after the click, and `shelf-next` a no-op). This is the last frame of
       // the blend, so clearing it here cannot release a gesture still running.
+      // ⚠️ Stamp the settle time. `crisp` keeps the breath frozen for
+      // `BREATH_SETTLE_MS` past this, so the frame `introDone` flips changes
+      // nothing at all — the breath is released quietly afterwards.
+      introSettledAt = performance.now();
       root.classList.add("is-ready");
       introEl?.classList.add("is-done");
       try {
@@ -5688,8 +6037,15 @@ const coverUrls = items
       dragSamples = [{ x: event.clientX, t: performance.now() }];
 
       // Any in-flight motion is cancelled and taken over from where it is.
+      // ⚠️ The GLIDE is included: a visitor who grabs the shelf while it is
+      // walking to a pick should get the row, exactly as they can during a spring
+      // settle. Leaving it running would fight the pointer for `current` — both
+      // write it — and the walk would carry on under the gesture.
       spring.active = false;
       snap.active = false;
+      glide.active = false;
+      glide.carried = 0;
+      lock = false;
       spring.velocity = 0;
       spring.value = progress;
 
@@ -6001,17 +6357,6 @@ const coverUrls = items
     let pickerOpen = false;
     let pickerReturnFocus: HTMLElement | null = null;
 
-    /**
-     * The tape the NEXT ring rebuild should seat, if any. See `jumpTo`.
-     *
-     * ⚠️ It exists because the rebuild is not owned by the picker:
-     * `stepFilterSwap` calls `buildRing(tapes)` with one argument once the
-     * outgoing row has cleared the frame. Declared here rather than next to the
-     * function that writes it so the render loop's read cannot land in the
-     * temporal dead zone.
-     */
-    let pendingSeat: Tape | undefined;
-
     /** The row elements, in ring order, so `is-current` can be re-marked. */
     let pickerRows: HTMLButtonElement[] = [];
 
@@ -6205,35 +6550,62 @@ const coverUrls = items
     }
 
     /**
-     * Move the shelf to a record, without teleporting it.
+     * Walk the row from the current record to the chosen one.
      *
-     * The blend is the tag filter's, which is what keeps this to one code path:
-     * the row climbs out, the ring is rebuilt while nothing is painted, and the
-     * rise brings it back in with the chosen tape at the centre.
+     * ⚠️ This used to reuse the tag filter's two-beat blend — the outgoing row
+     * climbed out of frame, the ring was rebuilt with the chosen tape as the
+     * seat, and a fresh row rose in. What the visitor asked for is the OTHER
+     * motion (2026-09-19: "不是抽出磁带盒，再渐入磁带盒，而是改成从当前磁带盒移动到
+     * 选择的项目的磁带盒的动画"), so the picker now glides: the row runs along
+     * the shelf, the records in between slide past, and it settles on the pick.
+     * The filter's blend is untouched and still owns the tag chips.
      */
     function jumpTo(tape: Tape) {
       if (launching) return;
 
-      if (reduceMotion || mode === "flat") {
-        // No blend to run in these modes — flat mode is a straight card switcher
-        // and reduced motion has no rise at all. Seat it and go.
-        const all = allTapes.filter((t) => !t.empty);
-        buildRing(all, tape);
+      const target = list.indexOf(tape);
+      if (target < 0) return; // not in the ring — the picker cannot offer one
+
+      // The SHORTEST way round the ring, and the direction matters for the
+      // picture: a walk either way crosses real tapes and blanks alike, and
+      // taking the long way is just a longer animation for the same arrival.
+      const forward = wrap(target - current, list.length);
+      const dir = forward <= list.length / 2 ? 1 : -1;
+      const dist = forward <= list.length / 2 ? forward : list.length - forward;
+      if (dist === 0) return;
+
+      if (reduceMotion) {
+        // No travel at all — seat it and go.
+        current = target;
+        reseat(true);
         return;
       }
 
-      filterOutPending = true;
-      filterPendingTapes = []; // the rebuild takes its rows from the ring above
-      filterOutStart = performance.now();
-      filterOut = 0;
-      filterGap = 0;
-      filterHold = false;
-      // ⚠️ The target travels through a module-level variable rather than into
-      // `buildRing` directly, because the rebuild is not owned here:
-      // `stepFilterSwap` calls `buildRing(tapes)` once the outgoing row has
-      // cleared the frame. The assignment is re-done on every pick, so a stale
-      // target cannot linger.
-      pendingSeat = tape;
+      glide.dir = dir;
+      glide.dist = dist;
+      glide.at = 0;
+      glide.carried = 0;
+      glide.t = 0;
+      // Long walks are capped: past ~1.6 s a pick reads as a cutscene, and the
+      // per-slot term is what keeps a two-tape hop feeling proportional.
+      glide.dur = Math.min(GLIDE_MAX_MS, GLIDE_BASE_MS + dist * GLIDE_SLOT_MS);
+      glide.active = true;
+
+      // In flat mode the cards are a straight row with no perspective, so the
+      // same walk is correct here too (`renderFrame` maps `progress` onto a
+      // translate) — it just needs a shorter, calmer clock.
+      if (mode === "flat") glide.dur = Math.min(900, 300 + dist * 90);
+
+      // The step lock keeps every other gesture out of the walk — the arrows, the
+      // wheel and a pointer press all read it. `stage.pointerdown` deliberately
+      // still takes the row over: a visitor who grabs the shelf mid-flight
+      // should get it, exactly as during a spring settle.
+      lock = true;
+      snap.active = false;
+      spring.active = false;
+      spring.velocity = 0;
+      spring.value = 0;
+      progress = 0;
     }
 
     /* ── the picker's wiring ── */
@@ -6334,7 +6706,50 @@ const coverUrls = items
           return introDone;
         },
         get busy() {
-          return { snap: snap.active, spring: spring.active, filter: filterOutPending || filterHold };
+          return { snap: snap.active, spring: spring.active, filter: filterOutPending || filterHold, glide: glide.active };
+        },
+        /**
+         * True while the row is doing the staggered entrance or a swap's rise —
+         * i.e. while tapes are climbing rather than simply fading.
+         *
+         * ⚠️ It exists because a probe cannot tell the two apart from `--cas-o`:
+         * a MODE CHANGE (`applyMode` → `reseat` → `startRiseIn`) fades up the
+         * same two tapes a ladder does, and reading opacity as "is the entrance
+         * running" answers yes for both.
+         */
+        get rising() {
+          return !introDone;
+        },
+        get swapRising() {
+          return swapRising;
+        },
+        /** Live glide state, so a probe can see the walk it is measuring. */
+        get glide() {
+          return {
+            active: glide.active,
+            at: +glide.at.toFixed(2),
+            dist: glide.dist,
+            dir: glide.dir,
+            carried: +glide.carried.toFixed(3),
+            dur: Math.round(glide.dur),
+            t: +glide.t.toFixed(2),
+          };
+        },
+        /** Ring position of the selection, and the walkable band around it. */
+        get index() {
+          return current;
+        },
+        get bounds() {
+          return {
+            from: walkFrom,
+            to: walkTo,
+            ring: list.length,
+            lock,
+            launching,
+            introDone,
+            swapRising,
+            glide: glide.active,
+          };
         },
       };
     }
@@ -6535,24 +6950,66 @@ const coverUrls = items
       updateUI(true);
     }
 
-    // The curtain is a first-visit moment only. A return visit — including the
-    // one a language switch causes — lifts it on the first frame, so the shelf
-    // never flashes black at a visitor who has already seen it. A tag filter
-    // does not start an intro at all.
-    const fullIntro = !warm && mode === "3d" && !reduceMotion;
+    // ── WHICH ENTRANCE ──
+    //
+    // The shelf's staggered rise is now the arrival for an IN-SITE navigation —
+    // tapping PROJECTS or LAB in the navbar and watching the tapes climb into
+    // place. On the FIRST page of a session (and on F5) the site intro is the
+    // only opening, so the shelf is simply already there when the paper opens
+    // (2026-09-19: "如果用户是第一次加载这个网页，这时候则只播放 RrSuika Studio
+    // 入场动画，而不是磁带盒入场动画").
+    //
+    // ⚠️ The decision is read from the SITE INTRO'S OWN GUARD, not re-derived
+    // here. Layout's inline script already answers exactly this question — it
+    // plays the cover on a session's first page and on a reload, and skips it on
+    // an in-site navigation — and it publishes the answer as `__rrsIntroPlayed`
+    // for consumers like this one. Re-deriving it from `sessionStorage` is what
+    // made the first attempt wrong: the guard SETS `rrsuika-intro-seen` before
+    // this module runs, so on the first load the key already reads "1" and the
+    // shelf played its ladder underneath the cover.
+    //
+    // So: the cover played ⇒ the shelf is simply already there when the paper
+    // opens (2026-09-19: "如果用户是第一次加载这个网页，这时候则只播放 RrSuika
+    // Studio 入场动画，而不是磁带盒入场动画"). The cover was skipped ⇒ this is an
+    // in-site arrival, and the ladder IS the arrival animation.
+    const siteIntroPlayed = Boolean(
+      (window as typeof window & { __rrsIntroPlayed?: boolean }).__rrsIntroPlayed,
+    );
+    const entrance: "ladder" | "silent" =
+      !siteIntroPlayed && mode === "3d" ? "ladder" : "silent";
 
     measure();
-    startIntro(fullIntro);
+    // ⚠️ An IN-SITE arrival uses `startRiseIn`, NOT `startIntro("ladder")`.
+    // The two play the same ladder, and that is the whole trap: `startIntro`
+    // ALSO arms the curtain (`introEl.classList.remove("is-done")`) and does not
+    // lift it until `finishIntro` runs a full `introEnd()` later. So the rise
+    // played underneath an opaque black plate reading `MOUNTING ARCHIVE`: the
+    // visitor watched a progress bar instead of the animation, and waited about
+    // 2.1s for the privilege (2026-09-28: the visitor still could not see the
+    // tapes rise, and did not want to wait for a progress bar at all).
+    // `startRiseIn` is the same ladder with `is-done` LEFT ON the curtain, so the
+    // plate is already gone and the rise itself is what the visitor sees.
+    //
+    // The BOOT entrance keeps the curtain: it is covered by the site intro anyway,
+    // and the entrance has to be re-staged when the cover opens.
+    if (entrance === "ladder") startRiseIn();
+    else startIntro(entrance);
     measure();
     start();
-    // ⚠️ `startIntro` also arms the *curtain*, which the intro now covers: on a
-    // load where the site intro is playing, the shelf's own entrance would run
-    // unseen underneath it and be over before the paper opens. Layout exposes
-    // `__rrsIntroGate` for exactly this — hold the shelf's entrance until the
-    // intro has opened, then play it. With no gate (every other load) this is a
-    // resolved promise and nothing changes.
-    const introGate = (window as typeof window & { __rrsIntroGate?: Promise<void> }).__rrsIntroGate;
-    if (introGate) introGate.then(() => startIntro(fullIntro));
+    // ⚠️ `startIntro` also arms the *curtain*, which the site intro covers on a
+    // first load. Layout exposes `__rrsIntroGate` for exactly this — hold the
+    // shelf's entrance until the intro has opened, then play it. With no gate
+    // (every other load) this is a resolved promise and nothing changes.
+    // ⚠️ On a first load the gate is present AND the entrance is `silent`, so the
+    // row is staged with back-dated clocks both before and after the cover: the
+    // shelf is already settled the moment the paper opens, and nothing climbs.
+    // Re-stage inside the gate's callback: the staging above happened while the
+    // cover was still up, and the ladder has to start when it opens.
+    if (siteIntroPlayed) {
+      (window as typeof window & { __rrsIntroGate?: Promise<void> }).__rrsIntroGate?.then(
+        () => startIntro(entrance),
+      );
+    }
 
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);

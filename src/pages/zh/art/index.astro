@@ -1,5 +1,6 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
+import FanCta from "../../../components/FanCta.astro";
 import { getLanguageFromPath } from "../../../utils/i18n";
 import { getTranslations } from "../../../utils/translations";
 import { getArtImages } from "../../../utils/artImages";
@@ -81,6 +82,8 @@ const hasContent = categories.some((c) => c.images.length > 0);
       <h1>{t.sections.art.title}</h1>
       <p class="hero-sub">{t.sections.art.description}</p>
       <p class="hero-hint">← 滚动浏览 → 拖拽加速 &nbsp;|&nbsp; 点击查看大图</p>
+
+      <FanCta />
     </section>
 
     {
