@@ -1,0 +1,820 @@
+---
+/**
+ * Mosaic Lens — the fan page's background.
+ *
+ * ⚠️ PROVENANCE: this is the visitor's own "Mosaic Lens" WebGL2 component
+ * (React, two passes: a layered-fold field into an FBO, then a mosaic finish
+ * with a lens that resolves under the pointer) ported to this site's plain-TS
+ * house style. The shaders are 1:1 apart from the comments; the React props
+ * became CSS custom properties on `.fan-root`, and the wrapper lost the demo's
+ * `min-width: 1200px` box because this one is the page, not a card.
+ *
+ * ⚠️ WHY IT LIVES IN ITS OWN COMPONENT: FanPage.astro is already ~3400 lines
+ * and this is ~300 lines of shader + GL plumbing with its own lifecycle
+ * (context loss, hidden tab, reduced motion). Keeping it separate also means
+ * the fan page's own script never has to know how the background is drawn.
+ *
+ * The palette is NOT hard-coded here: it is read from custom properties so the
+ * pink world stays declared in one place (`.fan-root`, FanPage.astro).
+ */
+---
+
+<div class="fan-mosaic" data-mosaic aria-hidden="true">
+  <canvas class="fan-mosaic-canvas" data-mosaic-canvas></canvas>
+</div>
+
+<style>
+  /* ⚠️ `z-index: -1` is deliberate and it NEEDS `.fan-root { isolation: isolate }`
+     in FanPage.astro. Negative-z children paint ABOVE their parent's own
+     background but BELOW every in-flow / z-index:0 descendant, which is exactly
+     the slot this background wants: over `.fan-root`'s own gradient stack (the
+     no-WebGL fallback), under the print grain (`::before`), under the hero wash
+     (`::after`) and under all content (z-index 1).
+     ⚠️ Without that `isolation` the parent is not a stacking context, so a
+     negative-z child escapes to the nearest one — and paints BEHIND
+     `.fan-root`'s opaque background, i.e. invisible with no error anywhere. */
+  .fan-mosaic {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    /* It is a picture. Nothing here is a target, and the lens follows the
+       WINDOW pointer anyway, so the canvas never needs to be hit-tested. */
+    pointer-events: none;
+  }
+
+  .fan-mosaic-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+</style>
+
+<script>
+  (() => {
+    const wrapEl = document.querySelector<HTMLElement>("[data-mosaic]");
+    const canvasEl = document.querySelector<HTMLCanvasElement>("[data-mosaic-canvas]");
+    if (!wrapEl || !canvasEl) return;
+    // Bound to non-nullable names so every closure below keeps its type.
+    const wrap: HTMLElement = wrapEl;
+    const canvas: HTMLCanvasElement = canvasEl;
+    /* The host page, for the grain handshake below. */
+    const root = wrap.closest<HTMLElement>(".fan-root") ?? document.body;
+
+    /* ── budget ────────────────────────────────────────────────────────────
+       ⚠️ The field pass is a 74-iteration loop PER PIXEL with six or so
+       trig calls in each. It is not a cheap effect and it must not be sized
+       like one. Three caps, each with its own reason:
+
+       `MAX_DPR` 1.5, not the demo's 2: at dpr 2 the field buffer is four times
+       the pixels of dpr 1 for a background nobody is reading.
+       `FIELD_MAX_SIDE` clamps the field buffer's LONG side in device px, so a
+       2560px-wide window cannot quadruple the cost of a 1280px one. It is safe
+       to cut the resolution this hard because the finish pass SAMPLES this
+       buffer through a mosaic: the output is 10–14px blocks, so detail below
+       the block size was never going to be visible, and only the lens region
+       (which resolves to 1:1) can tell the difference.
+       `FIELD_FPS` re-renders the expensive pass 24 times a second while the
+       cheap finish pass still runs every frame. The field's own clock moves at
+       `uTime * 0.49` and breathes at 0.735 rad/s (an ~8.5s cycle), so at 24Hz
+       the motion is indistinguishable — while the mosaic and the lens, which
+       are what the eye actually tracks, stay at display rate. */
+    const MAX_DPR = 1.5;
+    const FIELD_MAX_SIDE = 1400;
+    const FIELD_FPS = 24;
+
+    const LAYERS = 74;
+    /* ⚠️ `GAIN` is the field's exposure, and it is the ONE number that decides
+       whether this reads as paper with pink linework or as a slab of pink. The
+       visitor's original shipped it as a shader constant (0.54) tuned against a
+       near-BLACK background, where the glow is added to black. This page's
+       background is CREAM, and the finish pass turns field brightness into
+       `bg*(1-strength) + L*0.96` — so the same exposure that gives a nebula on
+       black saturates every mid-tone into flat pink on paper. It is a uniform
+       here (CSS: `--fan-mosaic-gain`) so the pink world can set it in one place;
+       0.54 stays the default so the shader is still the visitor's. */
+    const GAIN = 0.54;
+    const TIERS = 4;
+    /* The print grain's pitch in CSS px. Mirrors `background-size` on
+       `.fan-root::before`. */
+    const DOT_PITCH = 7;
+
+    const NAME = "fan-mosaic";
+
+    const VERT_SRC = `#version 300 es
+const vec2 P[3] = vec2[3](vec2(-1.0, -1.0), vec2(3.0, -1.0), vec2(-1.0, 3.0));
+void main() { gl_Position = vec4(P[gl_VertexID], 0.0, 1.0); }
+`;
+
+    const FIELD_SRC = `#version 300 es
+precision highp float;
+uniform vec2 uRes;
+uniform float uTime;
+uniform vec3 uC1;
+uniform vec3 uC2;
+uniform float uSize;
+uniform float uAngle;
+uniform float uGain;
+out vec4 o;
+
+const float TAU = 6.28318530718;
+const float LAYERS = ${LAYERS.toFixed(1)};
+const vec2 CENTRE = vec2(-0.25, -0.56);
+const float TILT = -2.2;
+const float ZOOM = 1.05;
+const float THETA = 2.12;
+const float SHEAR = 0.956;
+const float SHRINK = 0.949;
+const vec2 WARP_FREQ = vec2(0.58, 2.8);
+const vec2 WARP_AMP = vec2(0.16, 0.034);
+const vec2 ASPECT = vec2(1.65, 0.22);
+const float OFFSET = 0.31;
+const float GLOW = 0.0021;
+const float SOFT = 0.0019;
+const float FALLOFF = 0.37;
+const float PHASE = 64.0;
+const float CYCLE = 0.16;
+const float HUE_TRAVEL = 2.0;
+
+mat2 rot(float a) { float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
+
+void main() {
+  vec2 R = uRes;
+  vec2 pos = (gl_FragCoord.xy - 0.5 * R) / R.y;
+
+  pos = rot(uAngle) * pos / uSize;
+  float t = uTime * 0.49 + PHASE;
+  float breath = (-sin(uTime * 0.735) + sin(uTime * 0.49 + 1.0)) * 0.25 + 0.5;
+  vec2 u = rot(TILT) * ((pos - CENTRE) * (ZOOM - breath * 0.085));
+  mat2 fold = mat2(cos(THETA), sin(THETA), -SHEAR, cos(THETA));
+
+  vec3 col = vec3(0.0);
+  for (float i = 1.0; i <= LAYERS; i += 1.0) {
+    u.x -= sin(u.y * WARP_FREQ.x + t + i * 0.007) * WARP_AMP.x;
+    u.y -= sin(u.x * WARP_FREQ.y - t + i * 0.02) * WARP_AMP.y;
+    u = fold * u * SHRINK;
+    vec2 q = (u - vec2(OFFSET + breath * 0.1, 0.0)) * ASPECT;
+    float g = GLOW / (dot(q, q) + SOFT) * (0.25 + breath * 0.4);
+    float r = length(u);
+    float k = sin(i * CYCLE + t * 1.2 + r * HUE_TRAVEL) * 0.5 + 0.5;
+    col += g * mix(uC1, uC2, k) * (0.62 + 0.5 * k) * exp2(-r * FALLOFF);
+  }
+  vec3 x = max(col * uGain, 0.0);
+  col = (x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14);
+  col = pow(clamp(col, 0.0, 1.0), vec3(0.85, 0.92, 0.98));
+  col *= 1.0 - smoothstep(0.5, 1.6, length(pos)) * 0.07;
+  o = vec4(col, 1.0);
+}
+`;
+
+    const FINISH_SRC = `#version 300 es
+precision highp float;
+uniform sampler2D uField;
+uniform vec2 uRes;
+uniform float uTime;
+uniform vec3 uBg;
+uniform float uPaper;
+uniform vec2 uMouse;
+uniform float uOn;
+uniform float uReach;
+uniform float uTile;
+out vec4 o;
+
+const float TIERS = ${TIERS.toFixed(1)};
+uniform float uFrost;
+uniform float uContrast;
+uniform float uGrain;
+uniform float uDot;
+uniform float uDotPitch;
+uniform vec3 uDotCol;
+
+float ign(vec2 p, float f) { p += 5.588238 * mod(f, 64.0); return fract(52.9829189 * fract(0.06711056 * p.x + 0.00583715 * p.y)); }
+
+vec3 scene(vec2 uv) { return texture(uField, clamp(uv, 0.0, 1.0)).rgb; }
+
+/* ── FROSTED GLASS ───────────────────────────────────────────────────────
+   The original finish pass averaged four samples on a square cell grid, which
+   is a MOSAIC: hard blocks, axis-aligned. On a soft pink wash those blocks read
+   as a screen door laid over the page, not as the page's own surface.
+   Frost is not a grid, so two things change:
+   1. the taps sit on a VOGEL DISC (golden-angle spiral), which is isotropic —
+      no grain direction, no block edges, no aliasing against the print dots;
+   2. every pixel's tap pattern is displaced by its own random vector. That is
+      what ground glass physically does: it refracts each ray a little
+      differently. A blur alone gives you a soft picture; the per-pixel
+      refraction is what makes it read as FROST rather than as a low-resolution
+      image.
+   Both scale with 'cell', so the lens (which drives 'cell' to 0) clears the
+   glass back to the sharp field under the pointer. */
+const int FROST_TAPS = 6;
+const float GOLDEN = 2.39996323;
+
+vec2 jitter(vec2 frag, float amt) {
+  return (vec2(ign(frag, 1.0), ign(frag, 31.0)) - 0.5) * amt;
+}
+
+vec3 frost(vec2 frag, float radius, vec2 j) {
+  vec3 sum = vec3(0.0);
+  float wsum = 0.0;
+  for (int i = 0; i < FROST_TAPS; i++) {
+    float fi = float(i) + 0.5;
+    float a = fi * GOLDEN;
+    float r = sqrt(fi / float(FROST_TAPS)) * radius;
+    vec2 off = vec2(cos(a), sin(a)) * r + j;
+    // outer taps weigh less: the kernel falls off like a lens, not like a box
+    float w = 1.0 - 0.6 * (fi / float(FROST_TAPS));
+    sum += scene((frag + off) / uRes) * w;
+    wsum += w;
+  }
+  return sum / wsum;
+}
+
+/* The page's print grain, which used to be a separate CSS layer sitting ON TOP
+   of the glass. Drawing it here is the whole point of "make the texture and the
+   effect blend": it is looked up THROUGH the same per-pixel refraction, so the
+   dots belong to the glass — they scatter where it is frosted and snap back to
+   a crisp grid where the lens clears it.
+   '.fan-root[data-mosaic="on"]::before' switches the CSS copy off: two dot
+   grids at slightly different phases moiré, which looks far worse than either. */
+float dots(vec2 p) {
+  vec2 g = abs(fract(p / uDotPitch) - 0.5);
+  return 1.0 - smoothstep(0.10, 0.26, length(g));
+}
+
+void main() {
+  vec2 frag = gl_FragCoord.xy;
+
+  /* the lens: 'tier' rises with proximity to the pointer and 4 is "clear" */
+  float base = max(uTile, 1.0);
+  float tier = 0.0;
+  if (uOn > 1e-4) {
+    vec2 cc = (floor(frag / base) + 0.5) * base;
+    vec2 d = (cc - uMouse) / uReach;
+    float w = uOn * exp(-dot(d, d));
+    tier = floor(min(w * (TIERS + 1.0), TIERS));
+  }
+
+  float cell = base / exp2(min(tier, TIERS - 1.0));
+  float clear = tier >= TIERS ? 1.0 : 0.0;
+  vec2 j = jitter(frag, uGrain * (1.0 - clear) * (cell / base));
+
+  vec3 L = clear > 0.5 ? scene(frag / uRes) : frost(frag, cell * uFrost, j);
+  L = max(L, 0.0);
+
+  /* ── CONTRAST ──────────────────────────────────────────────────────────
+     NOT the same knob as 'gain', and this is the one that answers "the
+     background is too strong behind the text". 'gain' scales the field BEFORE
+     the tone curve, and the curve plus the 'pow(col, vec3(0.85,0.92,0.98))'
+     lift give most of that range straight back — measured, halving gain moved
+     the paper's darkest sampled patch by under 8/255. This scales the field's
+     DEVIATION FROM THE PAPER instead, which is a direct contrast control on
+     what the visitor sees, and it leaves the frost's texture intact (the
+     speckle is high-frequency, so it survives the squeeze).
+     '--fan-mosaic-contrast: 1' is the shader as the visitor wrote it. */
+  L = uBg + (L - uBg) * uContrast;
+
+  vec3 dark = uBg + L * (1.0 - uBg);
+  float strength = clamp(max(L.r, max(L.g, L.b)), 0.0, 1.0);
+  vec3 paper = uBg * (1.0 - strength) + L * 0.96;
+  vec3 col = mix(dark, paper, uPaper);
+
+  col = mix(col, uDotCol, dots(frag + j * 2.0) * uDot);
+  col += (ign(frag, floor(uTime * 24.0)) - 0.5) / 255.0;
+  o = vec4(clamp(col, 0.0, 1.0), 1.0);
+}
+`;
+
+    /* ── colour parsing ────────────────────────────────────────────────────
+       Lifted from the visitor's component, including the `var(--x, #hex)`
+       unwrap: `getComputedStyle` resolves custom properties in Chrome, but the
+       unwrap keeps a hand-written fallback readable in the stylesheet. */
+    type RGB = [number, number, number];
+    const colorCache = new Map<string, RGB | null>();
+
+    function parseColor(input: string | undefined): RGB | null {
+      if (!input) return null;
+      const key = String(input);
+      const hit = colorCache.get(key);
+      if (hit !== undefined) return hit;
+      let s = key.trim();
+      const v = s.match(/^var\(\s*--[^,]+,\s*(.+)\)$/);
+      if (v) s = v[1].trim();
+      let out: RGB | null = null;
+      if (s.charAt(0) === "#") {
+        let h = s.slice(1);
+        if (h.length === 3 || h.length === 4) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+        if (h.length >= 6) {
+          const r = parseInt(h.slice(0, 2), 16);
+          const g = parseInt(h.slice(2, 4), 16);
+          const b = parseInt(h.slice(4, 6), 16);
+          if (Number.isFinite(r) && Number.isFinite(g) && Number.isFinite(b)) out = [r / 255, g / 255, b / 255];
+        }
+      } else {
+        const m = s.match(/^(rgba?|hsla?)\(([^)]*)\)/i);
+        if (m) {
+          const parts = m[2].split(/[\s,/]+/).filter(Boolean);
+          const f = (i: number) => parseFloat(parts[i]);
+          if (parts.length >= 3 && [0, 1, 2].every((i) => Number.isFinite(f(i)))) {
+            if (m[1].toLowerCase().startsWith("rgb")) {
+              const ch = (i: number) => (parts[i].endsWith("%") ? f(i) / 100 : f(i) / 255);
+              out = [ch(0), ch(1), ch(2)];
+            } else {
+              const hh = (((f(0) % 360) + 360) % 360) / 360;
+              const ss = f(1) / 100;
+              const ll = f(2) / 100;
+              const q = ll < 0.5 ? ll * (1 + ss) : ll + ss - ll * ss;
+              const p = 2 * ll - q;
+              const hue = (t: number) => {
+                t = t < 0 ? t + 1 : t > 1 ? t - 1 : t;
+                if (t < 1 / 6) return p + (q - p) * 6 * t;
+                if (t < 1 / 2) return q;
+                if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                return p;
+              };
+              out = [hue(hh + 1 / 3), hue(hh), hue(hh - 1 / 3)];
+            }
+            out = out.map((c) => Math.min(1, Math.max(0, c))) as RGB;
+          }
+        }
+      }
+      colorCache.set(key, out);
+      return out;
+    }
+
+    const clampN = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
+
+    const FALLBACK = { bg: "#fff0ec", c1: "#ff6fa8", c2: "#f5308a", dot: "#f5308a" };
+
+    /* ── config from CSS ───────────────────────────────────────────────────
+       ⚠️ Read from the CANVAS, so the properties inherit from `.fan-root`
+       (the palette's single source) and a later override wins. */
+    function readCfg() {
+      const cs = getComputedStyle(canvas);
+      const numOf = (name: string, fb: number) => {
+        const v = parseFloat(cs.getPropertyValue(name));
+        return Number.isFinite(v) ? v : fb;
+      };
+      const strOf = (name: string, fb: string) => (cs.getPropertyValue(name) || "").trim() || fb;
+      return {
+        bg: strOf("--fan-mosaic-bg", FALLBACK.bg),
+        c1: strOf("--fan-mosaic-c1", FALLBACK.c1),
+        c2: strOf("--fan-mosaic-c2", FALLBACK.c2),
+        speed: clampN(numOf("--fan-mosaic-speed", 100), 0, 100) / 50,
+        size: clampN(numOf("--fan-mosaic-size", 100), 50, 200) / 100,
+        angle: (clampN(numOf("--fan-mosaic-angle", 0), -180, 180) * Math.PI) / 180,
+        tile: clampN(Math.round(numOf("--fan-mosaic-tile", 12)), 6, 48),
+        hover: clampN(numOf("--fan-mosaic-hover", 100), 0, 200) / 100,
+        gain: clampN(numOf("--fan-mosaic-gain", GAIN), 0, 4),
+        /* frost = blur radius as a multiple of the tile; grain = the per-pixel
+           refraction in CSS px; dot = how much of the print grain shows through
+           the glass. */
+        contrast: clampN(numOf("--fan-mosaic-contrast", 1), 0, 1.5),
+        frost: clampN(numOf("--fan-mosaic-frost", 1.1), 0, 4),
+        grain: clampN(numOf("--fan-mosaic-grain", 0.7), 0, 8),
+        dot: clampN(numOf("--fan-mosaic-dot", 0.18), 0, 1),
+        dotCol: strOf("--fan-dot", FALLBACK.dot),
+        reach: clampN(numOf("--fan-mosaic-reach", 300), 10, 800),
+      };
+    }
+    let cfg = readCfg();
+
+    /* ── GL plumbing ───────────────────────────────────────────────────── */
+    type Locations = Record<string, WebGLUniformLocation | null>;
+
+    function link(gl: WebGL2RenderingContext, frag: string, label: string): WebGLProgram | null {
+      const shader = (type: number, src: string) => {
+        const sh = gl.createShader(type);
+        if (!sh) return null;
+        gl.shaderSource(sh, src);
+        gl.compileShader(sh);
+        if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+          console.error(`${NAME} ${label} shader:`, gl.getShaderInfoLog(sh));
+          gl.deleteShader(sh);
+          return null;
+        }
+        return sh;
+      };
+      const vs = shader(gl.VERTEX_SHADER, VERT_SRC);
+      const fs = shader(gl.FRAGMENT_SHADER, frag);
+      if (!vs || !fs) return null;
+      const prog = gl.createProgram();
+      if (!prog) return null;
+      gl.attachShader(prog, vs);
+      gl.attachShader(prog, fs);
+      gl.linkProgram(prog);
+      gl.deleteShader(vs);
+      gl.deleteShader(fs);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        console.error(`${NAME} ${label} link:`, gl.getProgramInfoLog(prog));
+        gl.deleteProgram(prog);
+        return null;
+      }
+      return prog;
+    }
+
+    function locations(gl: WebGL2RenderingContext, prog: WebGLProgram, names: string[]): Locations {
+      const out: Locations = {};
+      for (const n of names) out[n] = gl.getUniformLocation(prog, n);
+      return out;
+    }
+
+    /* ⚠️ The field is a FRAMEBUFFER, not the canvas: the finish pass has to
+       read the field at shifted coordinates to build each mosaic cell, which a
+       shader cannot do to the surface it is drawing into. Half-float first, and
+       it falls back to RGBA8 in place if the FBO comes back incomplete — the
+       field's bright filaments go over 1.0 and a byte buffer clips them. */
+    function fieldTarget(gl: WebGL2RenderingContext) {
+      const fbo = gl.createFramebuffer();
+      let tex: WebGLTexture | null = null;
+      let w = 0;
+      let h = 0;
+      let half = !!gl.getExtension("EXT_color_buffer_float");
+      return {
+        fbo,
+        texture: () => tex,
+        width: () => w,
+        height: () => h,
+        resize(nw: number, nh: number) {
+          if (nw === w && nh === h && tex) return;
+          for (let attempt = 0; attempt < 2; attempt++) {
+            if (tex) gl.deleteTexture(tex);
+            tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texImage2D(
+              gl.TEXTURE_2D,
+              0,
+              half ? gl.RGBA16F : gl.RGBA8,
+              nw,
+              nh,
+              0,
+              gl.RGBA,
+              half ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE,
+              null,
+            );
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+            const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            if (ok || !half) break;
+            half = false;
+          }
+          w = nw;
+          h = nh;
+        },
+        dispose() {
+          if (tex) gl.deleteTexture(tex);
+          gl.deleteFramebuffer(fbo);
+        },
+      };
+    }
+
+    /* ⚠️ Pointer tracked on the WINDOW, and the rect is re-read on every move:
+       the canvas is fixed to the viewport, so `clientX/Y` alone would do, but
+       going through the rect keeps this correct if the wrapper ever stops
+       filling the screen. `pointerout` with no `relatedTarget` is the only
+       reliable "the pointer left the window" signal. */
+    const ptr = { tx: -1e4, ty: -1e4, inside: false, seen: false };
+    const readPointer = (e: PointerEvent) => {
+      const r = wrap.getBoundingClientRect();
+      const sx = wrap.offsetWidth / (r.width || 1);
+      const sy = wrap.offsetHeight / (r.height || 1);
+      ptr.tx = (e.clientX - r.left) * sx;
+      ptr.ty = (e.clientY - r.top) * sy;
+      ptr.inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      ptr.seen = true;
+    };
+    const leftWindow = (e: PointerEvent) => {
+      if (!e.relatedTarget) ptr.inside = false;
+    };
+    window.addEventListener("pointermove", readPointer, { passive: true });
+    window.addEventListener("pointerdown", readPointer, { passive: true });
+    document.addEventListener("pointerout", leftWindow);
+
+    const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    type Engine = {
+      gl: WebGL2RenderingContext;
+      draw: (clock: number, dt: number, size: { w: number; h: number; dpr: number }, field: boolean) => void;
+
+      dispose: () => void;
+    };
+
+    function makeEngine(gl: WebGL2RenderingContext): Engine | null {
+      const field = link(gl, FIELD_SRC, "field");
+      const finish = link(gl, FINISH_SRC, "finish");
+      if (!field || !finish) return null;
+      const uf = locations(gl, field, ["uRes", "uTime", "uC1", "uC2", "uSize", "uAngle", "uGain"]);
+      const un = locations(gl, finish, ["uField", "uRes", "uTime", "uBg", "uPaper", "uMouse", "uOn", "uReach", "uTile", "uFrost", "uContrast", "uGrain", "uDot", "uDotPitch", "uDotCol"]);
+      const vao = gl.createVertexArray();
+      gl.bindVertexArray(vao);
+      const target = fieldTarget(gl);
+
+      let mx = 0;
+      let my = 0;
+      let on = 0;
+      let seeded = false;
+
+      /* The two passes are separate functions, not one block: `passField` is the
+         expensive one (74 layers per pixel) and keeping it addressable is what
+         makes the per-frame cost legible when reading this file. */
+      let c1: RGB = [1, 0, 0];
+      let c2: RGB = [1, 0, 0];
+      const passField = (clock: number) => {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
+        gl.viewport(0, 0, target.width(), target.height());
+        gl.useProgram(field);
+        gl.uniform2f(uf.uRes, target.width(), target.height());
+        gl.uniform1f(uf.uTime, clock);
+        gl.uniform3f(uf.uC1, c1[0], c1[1], c1[2]);
+        gl.uniform3f(uf.uC2, c2[0], c2[1], c2[2]);
+        gl.uniform1f(uf.uSize, cfg.size);
+        gl.uniform1f(uf.uAngle, cfg.angle);
+        gl.uniform1f(uf.uGain, cfg.gain);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      };
+
+      const draw: Engine["draw"] = (clock, dt, size, drawField) => {
+        const { w: bw, h: bh, dpr } = size;
+
+        /* ── the lens follow ─────────────────────────────────────────────── */
+        const present = ptr.inside ? 1 : 0;
+        if (!seeded) {
+          // First entry starts the lens AT the pointer instead of sliding in
+          // from wherever it was parked.
+          if (present && ptr.seen) {
+            mx = ptr.tx;
+            my = ptr.ty;
+            seeded = true;
+          }
+          if (!present) {
+            mx = ptr.tx > -1e3 ? ptr.tx : bw / dpr / 2;
+            my = ptr.ty > -1e3 ? ptr.ty : bh / dpr / 2;
+          }
+        }
+        if (present && on < 0.02 && ptr.seen) {
+          mx = ptr.tx;
+          my = ptr.ty;
+        }
+        on += (present - on) * (1 - Math.exp(-dt * 5));
+        const k = 1 - Math.exp(-dt * 16);
+        mx += (ptr.tx - mx) * k;
+        my += (ptr.ty - my) * k;
+
+        c1 = parseColor(cfg.c1) ?? (parseColor(FALLBACK.c1) as RGB);
+        c2 = parseColor(cfg.c2) ?? (parseColor(FALLBACK.c2) as RGB);
+        const bg = parseColor(cfg.bg) ?? (parseColor(FALLBACK.bg) as RGB);
+        const dotCol = parseColor(cfg.dotCol) ?? (parseColor(FALLBACK.dot) as RGB);
+        const bgLum = 0.2126 * bg[0] + 0.7152 * bg[1] + 0.0722 * bg[2];
+
+        const sx = bw / (wrap.offsetWidth || 1);
+        const sy = bh / (wrap.offsetHeight || 1);
+
+        /* ── pass 1: the field ───────────────────────────────────────────── */
+        if (drawField) {
+          const long = Math.max(bw, bh);
+          const k2 = Math.min(0.5, FIELD_MAX_SIDE / long);
+          target.resize(Math.max(1, Math.round(bw * k2)), Math.max(1, Math.round(bh * k2)));
+          passField(clock);
+        }
+
+        /* ── pass 2: the mosaic + lens ───────────────────────────────────── */
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, bw, bh);
+        gl.useProgram(finish);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, target.texture());
+        gl.uniform1i(un.uField, 0);
+        gl.uniform2f(un.uRes, bw, bh);
+        gl.uniform1f(un.uTime, clock);
+        gl.uniform3f(un.uBg, bg[0], bg[1], bg[2]);
+        gl.uniform1f(un.uPaper, clampN((bgLum - 0.35) / 0.3, 0, 1));
+        // gl_FragCoord is bottom-up, the pointer is top-down.
+        gl.uniform2f(un.uMouse, mx * sx, bh - my * sy);
+        gl.uniform1f(un.uOn, on * cfg.hover);
+        gl.uniform1f(un.uReach, cfg.reach * sy);
+        gl.uniform1f(un.uTile, Math.max(1, Math.round(cfg.tile * dpr)));
+        gl.uniform1f(un.uFrost, cfg.frost);
+        gl.uniform1f(un.uContrast, cfg.contrast);
+        gl.uniform1f(un.uGrain, cfg.grain * dpr);
+        gl.uniform1f(un.uDot, cfg.dot);
+        /* ⚠️ 7 matches the CSS layer's `background-size: 7px 7px`
+           (`.fan-root::before`). It is copied, not shared — if that layer is ever
+           re-pitched, this has to move with it, or the two grain patterns stop
+           being the same texture. */
+        gl.uniform1f(un.uDotPitch, DOT_PITCH * dpr);
+        gl.uniform3f(un.uDotCol, dotCol[0], dotCol[1], dotCol[2]);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      };
+
+      return {
+        gl,
+        draw,
+
+        dispose() {
+          target.dispose();
+          gl.deleteVertexArray(vao);
+          gl.deleteProgram(field);
+          gl.deleteProgram(finish);
+        },
+      };
+    }
+
+    /* ── lifecycle ─────────────────────────────────────────────────────────
+       Four states this has to survive, all of them real on a phone:
+       no WebGL2 (the canvas stays untouched, so `.fan-root`'s own gradient
+       shows through — the page is never blank), the tab going to the
+       background (a 74-layer shader on a hidden tab is pure battery),
+       reduced motion (one static frame, same picture, no clock), and a lost
+       context (the GPU can drop it when the tab is backgrounded; every object
+       is invalid afterwards, so the programs are rebuilt). */
+    const gl = canvas.getContext("webgl2", {
+      antialias: false,
+      alpha: false,
+      depth: false,
+      stencil: false,
+      // A decorative background has no business waking a discrete GPU.
+      powerPreference: "low-power",
+    });
+
+    if (!gl) {
+      console.info(`${NAME}: WebGL2 unavailable — the CSS background stays.`);
+      return;
+    }
+    /* Bound to a non-nullable name: `boot` below is a HOISTED function
+       declaration, and TypeScript discards the narrowing from the guard above
+       inside it (`ts(2345): Argument of type 'WebGL2RenderingContext | null'`). */
+    const ctx: WebGL2RenderingContext = gl;
+
+    let engine: Engine | null = null;
+    let raf = 0;
+    let running = false;
+    let lastNow = -1;
+    let lastField = -1e9;
+    let clock = 0;
+    let sizeDirty = true;
+    let size = { w: 0, h: 0, dpr: 1 };
+
+    function measure() {
+      const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+      /* ⚠️ CLAMPED TO THE VIEWPORT, not read straight off the wrapper's box.
+         The wrapper is `position: fixed; inset: 0`, but its own stylesheet is a
+         separate file and this first runs from `boot()`, which can be before
+         that file is applied. Measured on a reduced-motion load: `offsetHeight`
+         came back as the DOCUMENT height — 3935px — so the first frame was drawn
+         into a 1440x3935 buffer, 4x the pixels of the viewport, for a background
+         that can only ever show one viewport of itself. The clamp is also just
+         correct: whatever the layout says, this element's job is the viewport. */
+      const vw = document.documentElement.clientWidth || window.innerWidth || 1200;
+      const vh = document.documentElement.clientHeight || window.innerHeight || 800;
+      const cw = Math.min(wrap.offsetWidth || vw, vw);
+      const ch = Math.min(wrap.offsetHeight || vh, vh);
+      const w = Math.max(1, Math.round(cw * dpr));
+      const h = Math.max(1, Math.round(ch * dpr));
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+      size = { w, h, dpr };
+      sizeDirty = false;
+    }
+
+    function frame(now: number) {
+      if (!running) {
+        raf = 0;
+        return;
+      }
+      raf = requestAnimationFrame(frame);
+      if (!engine) return;
+      const dt = lastNow < 0 ? 0 : clampN((now - lastNow) / 1000, 0, 0.05);
+      lastNow = now;
+      clock = (clock + dt * cfg.speed) % 3600;
+      if (sizeDirty) measure();
+      // ⚠️ The field pass is throttled, the finish pass is not: the mosaic and
+      // the lens are what the eye tracks, and they cost a texture fetch each.
+      const field = now - lastField >= 1000 / FIELD_FPS;
+      if (field) lastField = now;
+      engine.draw(clock, dt, size, field);
+    }
+
+    function start() {
+      if (running || !engine) return;
+      running = true;
+      lastNow = -1;
+      sizeDirty = true;
+      measure();
+      raf = requestAnimationFrame(frame);
+    }
+
+    function stop() {
+      running = false;
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+    }
+
+    function staticFrame() {
+      // Reduced motion: the same picture, held. `clock` stays 0, so the field
+      // sits at its phase-64 pose rather than mid-breath.
+      sizeDirty = true;
+      measure();
+      lastField = 0;
+      engine?.draw(0, 1 / 60, size, true);
+    }
+
+    function sync() {
+      if (REDUCED.matches || document.hidden) {
+        stop();
+        if (REDUCED.matches) staticFrame();
+      } else {
+        start();
+      }
+    }
+
+    function boot() {
+      engine?.dispose();
+      engine = makeEngine(ctx);
+      if (!engine) return false;
+      /* ⚠️ THE GRAIN HANDSHAKE. The finish shader now draws the page's print
+         grain itself, in the same place and pitch as `.fan-root::before`, so the
+         CSS copy has to stand down while the shader owns the surface — two dot
+         grids at slightly different phases moiré, which is worse than either.
+         The attribute is also the fallback switch: a LOST context clears it and
+         the CSS paper (background + sky + grain) becomes the visible page again. */
+      root.setAttribute("data-mosaic", "on");
+      sync();
+      return true;
+    }
+
+    let ro: ResizeObserver | null = null;
+    if ("ResizeObserver" in window) {
+      ro = new ResizeObserver(() => {
+        sizeDirty = true;
+      });
+      ro.observe(wrap);
+    }
+    window.addEventListener("resize", () => {
+      sizeDirty = true;
+    });
+    window.addEventListener("orientationchange", () => {
+      sizeDirty = true;
+    });
+    document.addEventListener("visibilitychange", sync);
+    REDUCED.addEventListener?.("change", sync);
+
+    canvas.addEventListener("webglcontextlost", (e) => {
+      e.preventDefault();
+      stop();
+      // the canvas is blank from here on, so hand the surface back to the CSS
+      root.removeAttribute("data-mosaic");
+    });
+    canvas.addEventListener("webglcontextrestored", () => {
+      boot();
+    });
+
+    /* ⚠️ The palette is read once per boot, not per frame: `getComputedStyle`
+       on every frame is a style recalculation for a value that only changes if
+       the stylesheet does. `window.__fanMosaic.reload()` re-reads it, which is
+       what the tuning pass and the docs' re-verification list use. */
+    (window as typeof window & { __fanMosaic?: unknown }).__fanMosaic = {
+      get cfg() {
+        return cfg;
+      },
+      reload() {
+        cfg = readCfg();
+        if (REDUCED.matches) staticFrame();
+        return cfg;
+      },
+      /* ⚠️ There is NO `bench()` hook here on purpose. A first version timed the
+         field pass with `gl.finish()` around a loop of draws and reported
+         `0.0025ms` for 200 passes of a 74-layer shader over 342k pixels — i.e.
+         the driver never made `finish()` wait. A probe that lies is worse than
+         no probe. The honest measurement is the page's own frame interval with
+         the loop paused and running (`pause`/`resume` below), which is what
+         `输入/sss/mosaic-verify.mjs` uses. */
+      /* For A/B measurement: the same page, the same conditions, minus the
+         background. Stopping the loop is the only way to attribute a frame-rate
+         reading to the mosaic rather than to the page it sits on. */
+      pause() {
+        stop();
+        return running;
+      },
+      resume() {
+        sync();
+        return running;
+      },
+      info() {
+        return {
+          running,
+          reduced: REDUCED.matches,
+          hidden: document.hidden,
+          canvas: { w: canvas.width, h: canvas.height },
+          config: cfg,
+        };
+      },
+    };
+
+    if (!boot()) console.info(`${NAME}: shader build failed — the CSS background stays.`);
+  })();
+</script>

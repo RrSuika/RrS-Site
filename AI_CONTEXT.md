@@ -439,7 +439,7 @@ Layout 负责：head 全套（主题守卫内联脚本→防闪烁、charset/vie
 | 改 404                       | `src/pages/404.astro`                                                                                                   |
 | 改分享卡                     | `scripts/og-card-gen.mjs`（改后 `npm run og-card` 重跑）+ `public/og-card.png`                                          |
 | 改 art 展示                  | ⚠️ 冻结区：`src/pages/art/index.astro`、`zh/art/index.astro`、`ArtGallery.astro`、`gallery` 字段;仅允许 SEO frontmatter |
-| 改粉丝页 /fan/（粉色小屋） | src/components/FanPage.astro + src/components/FanCta.astro + src/utils/fan.ts；三个路由 src/pages/{,zh/,nl/}fan/index.astro。⚠️ **故意不跟主站设计系统**：粉=表面/蓝=信号、只有一套主题（覆盖 .fan-root 的 token）、不显示主站导航与页脚。**动手前读 docs/fan-page.md** |
+| 改粉丝页 /fan/（粉色小屋） | src/components/FanPage.astro + src/components/FanMosaic.astro（**动态背景**：两趟 WebGL2，field 74 层折叠加 finish 磨砂玻璃+指针镜头；调参全在 .fan-root 的 --fan-mosaic-* / --fan-sky-opacity。⚠️ 可读性看 --fan-mosaic-contrast，不是 gain；印刷网点由着色器画、CSS 那层靠 data-mosaic="on" 退场）+ src/components/FanCta.astro + src/utils/fan.ts；三个路由 src/pages/{,zh/,nl/}fan/index.astro。⚠️ **故意不跟主站设计系统**：粉=表面/蓝=信号、只有一套主题（覆盖 .fan-root 的 token）、不显示主站导航与页脚。⚠️ 画布是 z-index:-1 的定长子元素，靠 .fan-root 的 `isolation: isolate` 才画在背景之上，且 .fan-mosaic / .fan-sky **必须**留在 `.fan-root > *:not(...)` 白名单里。**动手前读 docs/fan-page.md §十二** |
 | 改 about 页                  | `src/pages/about/index.astro` + `src/pages/zh/about/index.astro`（双文件都要改）                                        |
 | 构建/部署问题                | `package.json`、`astro.config.mjs`；Cloudflare 控制台（仓库内无部署配置）                                               |
 

@@ -93,7 +93,7 @@ const en: FanCopy = {
     // thinking") and the visitor asked for it to be rewritten as something a fan
     // would actually enjoy reading. Same published facts, warmer voice.
     paras: [
-      "Hello! I am RrSuika (毛毛), and I draw: girls, food that looks almost edible, and whatever else wanders into my head at 2am.",
+      "Hi there! I’m RrSuika (毛毛). I love drawing, food and sleeping. I enjoy boundless imagination and a youthful mindset.",
       "By day I am an industrial designer; by night I am someone who draws. One desk, drawings on the left and half-taken-apart electronics on the right — and I am the bit in between.",
       "What I want to dig into is drawing and aesthetics as a discipline, and I like teaching beginners. There is a particular satisfaction in finding that something abstract can be pinned down by a concrete rule.",
     ],
@@ -131,7 +131,7 @@ const en: FanCopy = {
     // exaggerated grovel, and English has a native register for it — "have mercy"
     // plus the self-deprecating hurry reads as the same joke rather than as a
     // translation.
-    nudgeThanks: "Easy, easy — I'm drawing as fast as I can!",
+    nudgeThanks: "I'm drawing as fast as I can!",
   },
 
   contact: {

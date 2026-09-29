@@ -23,6 +23,7 @@
  *   surfaces the page goes flat and the CTA stops reading as an event.
  */
 import Layout from "../layouts/Layout.astro";
+import FanMosaic from "./FanMosaic.astro";
 import {
   getLanguageFromPath,
   getLocalizedPath,
@@ -277,6 +278,18 @@ const artHref = getLocalizedPath("/art", language);
   noIndex
 >
   <div class="fan-root" data-fan>
+    <!-- The animated background. It is a direct child of .fan-root and
+         `position: fixed` at z-index -1 — which is why `.fan-root` carries
+         `isolation: isolate` and why `.fan-mosaic` is named in the
+         `.fan-root > *:not(...)` list below. Both are load-bearing. -->
+    <FanMosaic />
+
+    <!-- The hero's pink sky, kept as its OWN layer so it can sit OVER the
+         animated background instead of under it. See .fan-sky in the styles:
+         the canvas covers .fan-root's background, so anything meant to be
+         seen on top of the mosaic has to be a real element. -->
+    <div class="fan-sky" aria-hidden="true"></div>
+
     <!-- ══════════ TOP BAR ══════════ -->
     <div class="fan-top">
       <a class="fan-back" href={artHref}>{c.back}</a>
@@ -1529,6 +1542,35 @@ const artHref = getLocalizedPath("/art", language);
        vibrates against it like a warning sign, and a pale cream reads as beige. */
     --fan-gold: #e0a92a;
 
+    /* ── the animated background (`FanMosaic.astro`) ──────────────────────
+       ⚠️ Declared HERE, on `.fan-root`, and read by the canvas through
+       `getComputedStyle`: the pink world stays in one place, and the shader
+       never hard-codes a colour. The three colour stops are deliberately the
+       page's OWN pinks — the effect is the page's paper, not a separate
+       artwork bolted behind it.
+       `--fan-mosaic-bg` is the paper the mosaic sits on (also the colour the
+       field's empty areas resolve to), so it must match the page's cream or
+       the hero reads as a rectangle. */
+    --fan-mosaic-bg: #fff0ec;
+    --fan-mosaic-c1: #ff6fa8;
+    --fan-mosaic-c2: #f5308a;
+    --fan-mosaic-tile: 18;
+    --fan-mosaic-gain: 0.2;
+    /* contrast is the readability knob: 1 = the shader as written, lower squeezes the field's deviation from the paper, so the paper stays pale behind body text while the frost's texture survives. frost / grain / dot are the glass: `frost` is the blur radius as a
+       multiple of the tile, `grain` is the per-pixel refraction in CSS px (the
+       thing that makes it frost and not just a blur), `dot` is how much of the
+       page's print grain shows through the glass. */
+    --fan-mosaic-contrast: 0.6;
+    --fan-mosaic-frost: 2;
+    --fan-mosaic-grain: 1.4;
+    --fan-mosaic-dot: 0.26;
+    --fan-mosaic-reach: 300;
+    --fan-mosaic-size: 70;
+    --fan-mosaic-angle: 0;
+    --fan-mosaic-speed: 100;
+    --fan-mosaic-hover: 100;
+    --fan-sky-opacity: 0.3;
+
     /* ⚠️ `--accent` is NOT overridden here — it also paints the skip link and
        the focus rings, which this page does not draw. Everything this page
        draws sets its own colour. */
@@ -1546,15 +1588,62 @@ const artHref = getLocalizedPath("/art", language);
 
     position: relative;
     min-height: 100vh;
+    /* ⚠️ LOAD-BEARING for the animated background, not tidiness. `.fan-mosaic`
+       is a `position: fixed` child at `z-index: -1`, and a negative-z child
+       paints above its parent's own background ONLY if the parent is a stacking
+       context. Without this, the canvas escapes to the nearest stacking context
+       and paints BEHIND `.fan-root`'s opaque background: a blank cream page,
+       a running shader, and no error in the console.
+       ⚠️ `isolation: isolate` and NOT `z-index: 0`: `z-index` on a
+       `position: relative` box also works, but it would make this element equal
+       to a sibling's z-index and pull the whole page into a stacking fight with
+       the site shell. `isolation` does the containment and nothing else. */
+    isolation: isolate;
     /* This clip is NOT what breaks the sticky module bar — that was the blanket
        `.fan-root > *` rule below, which set `position: relative` on the bar as
        well. See the note there. Measured in Chrome: with the clip present the
        bar still sticks (top 0 after 1200 and 3000 px of scroll). */
     overflow-x: clip;
-    /* the deck's key-visual wash: a soft white radial behind everything, which is
-       what keeps a long pink page from reading as one flat slab of pink */
+    /* ⚠️ Only the CREAM lives here now. The three pink washes moved to
+       .fan-sky below, because the animated background (a fixed canvas at
+       z-index -1) paints OVER this element's own background — a wash left here
+       would be invisible the moment WebGL2 comes up. Keeping just the paper on
+       .fan-root also means the no-WebGL2 fallback is still a finished-looking
+       page: cream + .fan-sky + the grain. */
     background-color: var(--fan-cream);
     color: var(--fan-ink);
+    background-image: linear-gradient(
+      180deg,
+      var(--fan-cream) 0%,
+      var(--fan-cream-2) 42%,
+      var(--fan-cream) 100%
+    );
+    font-family: var(--font-body);
+  }
+
+  /* ── THE HERO'S PINK SKY ──────────────────────────────────────────────
+     The page's key-visual wash, as a real element rather than a background
+     layer, for one reason: it has to paint ON TOP of the mosaic. It is a
+     sibling of the canvas at the same z-index: -1, and paint order inside
+     that layer is DOM order, so this one comes second and wins.
+     ⚠️ --fan-sky-opacity is the whole point of the layer existing as a knob:
+     at 1 the hero is the flat pink the page had before the mosaic, at 0 the
+     mosaic runs uncovered, and in between the pink reads as a tint over live
+     linework. Anything ABOVE 0 means the mosaic is at its most legible the
+     moment the sky's own gradient fades, ~1360px down.
+     ⚠️ height: 1400px is not a layout choice: the old wash was
+     ellipse 120% 52% at 50% -6% of the WHOLE PAGE (3973px tall measured),
+     whose colour stops run out around 1360px. This box reproduces that
+     geometry; changing the height changes where the hero's pink ends. */
+  .fan-sky {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1400px;
+    z-index: -1;
+    pointer-events: none;
+    opacity: var(--fan-sky-opacity, 0.5);
     background:
       radial-gradient(
         ellipse 120% 52% at 50% -6%,
@@ -1571,14 +1660,7 @@ const artHref = getLocalizedPath("/art", language);
         ellipse 80% 40% at 100% 46%,
         rgba(255, 111, 168, 0.34) 0%,
         transparent 64%
-      ),
-      linear-gradient(
-        180deg,
-        var(--fan-cream) 0%,
-        var(--fan-cream-2) 42%,
-        var(--fan-cream) 100%
       );
-    font-family: var(--font-body);
   }
 
   /* The print grain: one dotted layer for the whole page, so every section
@@ -1598,6 +1680,18 @@ const artHref = getLocalizedPath("/art", language);
       rgba(255, 255, 255, 0.72) 0%,
       rgba(255, 255, 255, 0) 68%
     );
+  }
+
+  /* ⚠️ THE PRINT GRAIN IS DRAWN TWICE, ON PURPOSE, AND ONLY ONE OF THEM SHOWS.
+     The shader in `FanMosaic.astro` draws this same dot grid (same 7px pitch)
+     INTO the glass, refracted per pixel by the frost, so the grain belongs to
+     the surface instead of sitting on top of it. This CSS copy is what the page
+     falls back to when there is no WebGL2 (and for the frame or two before the
+     shader's first draw), and it is switched off the moment the shader is up —
+     two dot grids at slightly different phases moiré, which looks far worse than
+     either one alone. The switch is `data-mosaic="on"`, written by the component. */
+  .fan-root[data-mosaic="on"]::before {
+    opacity: 0;
   }
 
   .fan-root::before {
@@ -1628,8 +1722,16 @@ const artHref = getLocalizedPath("/art", language);
      ⚠️ THREE times this rule has eaten a position: the sticky module bar, the
      fixed page rail, and the fixed sheep layer (which ended up 758×0 with
      `overflow: hidden`, so every sheep was clipped away). When something on this
-     page will not position, look at THIS LIST first. */
-  .fan-root > *:not(.fan-modules, .fan-rail, .sheep-layer) {
+     page will not position, look at THIS LIST first.
+     ⚠️ `.fan-mosaic` is the fourth and `.fan-sky` the fifth, and both are the
+     same trap. `.fan-mosaic` is `position: fixed; z-index: -1`; without the
+     exclusion this rule gives it `position: relative; z-index: 1`, turning the
+     viewport-fixed background into a 100vh band at the TOP OF THE DOCUMENT that
+     scrolls away and covers the content. `.fan-sky` is `position: absolute;
+     z-index: -1` and would be forced to `relative`, which would push the hero's
+     pink wash into the flow as a 1400px-tall block and shove the whole page
+     down. (The `isolation: isolate` note above explains the other half.) */
+  .fan-root > *:not(.fan-modules, .fan-rail, .sheep-layer, .fan-mosaic, .fan-sky) {
     position: relative;
     z-index: 1;
   }
