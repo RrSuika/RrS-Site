@@ -47,6 +47,18 @@ Headless Chrome 的虚拟时间会**饿死 `requestAnimationFrame`**，所有 rA
 `Set-Content` 不带显式编码会把 3 字节字符（`—`、`≈`、`≤`、CJK 文件名、`═` 分隔线）打成 `U+FFFD`——曾一次性产生 843 个类型错误。
 用文件工具，或 `[System.IO.File]::WriteAllText(path, text, New-Object System.Text.UTF8Encoding($false))`；写完用 `ReadAllText` + 数 `U+FFFD` 复核。
 
+### 7.1 回写脚本的锚点要按**这个文件自己的换行**拼
+
+⚠️ **同一个仓库里两种换行并存**：`src/components/CassetteShelf.astro`（以及其它早期文件）是 **CRLF**，而新建的文件（`FanPage.astro`、`FanMosaic.astro`、`docs/*.md`）是 **LF**。
+
+用脚本按锚点做替换时，多行锚点如果写死 `\n`，在 CRLF 文件里**永远匹配不上**，而报错只有一句「anchor missing」——2026-09-28 因此在同一个补丁上连试了三次（先怀疑反引号被转义、又怀疑 here-string 的问题），实际原因只是换行。
+
+规则：
+
+1. 拼锚点前先确认换行：把 `\r\n` 和「前面不是 `\r` 的 `\n`」各数一次。
+2. 多行锚点和替换文本都用**同一个**换行变量拼（`$nl = [string][char]13 + [string][char]10`），不要混。
+3. 报「anchor missing」时，先把锚点拆成单行逐个 `.Contains()` 验证，能立刻区分「换行不对」和「文字不对」。
+
 ## 8. 构建产物的几个假象
 
 - 「dev 正常、生产失效」的**纯 CSS** 问题，第一嫌疑是构建期压缩器，不是部署或缓存：先比对生产 HTML 引用的 CSS 与本机 `dist` 里的同名文件**字节是否一致**。

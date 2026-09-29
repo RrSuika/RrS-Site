@@ -4512,8 +4512,6 @@ const coverUrls = items
     let introDuration = 0;
     /** when `introDone` last went true; `crisp` holds the breath a little longer */
     let introSettledAt = -1e9;
-    /** 1 when the row is settled, `RISE_SPREAD` while the ladder runs */
-    let riseSpread = 1;
     /** how long the breath is held after the intro, so the flip frame is a no-op */
     const BREATH_SETTLE_MS = 700;
     /**
@@ -5420,13 +5418,16 @@ const coverUrls = items
       // steps Y by up to ~5px in one frame on every tape at once. Stay "idle"
       // until the row is genuinely at rest instead.
       idle = rowBusy || Math.abs(progress) > 0.0005 || snap.active || spring.active;
-      // the ladder's spread, eased so the neighbours slide back rather than snap
-      const spreadTarget = introDone ? 1 : RISE_SPREAD;
-      if (Math.abs(riseSpread - spreadTarget) > 0.001) {
-        riseSpread += (spreadTarget - riseSpread) * Math.min(1, dt * 3.4);
-      } else {
-        riseSpread = spreadTarget;
-      }
+      /* ⚠️ THE LADDER'S STEP-ASIDE IS NO LONGER EASED HERE.
+         It used to be a ROW-wide `riseSpread` (1.34 during the climb, eased back
+         to 1 the moment `introDone` flipped). That made every tape LAND on the
+         wide positions and only then slide inward — measured: 166px of travel
+         per tape AFTER the last climb had ended, still moving 1.5s later, with
+         two more tapes arriving from off the left edge and the row going from 6
+         tapes on screen to 11. The visitor reads that as a second animation
+         (「动画结束后两侧的磁带盒会再往中间拉伸一次」).
+         The clearance is now a per-tape transient INSIDE the climb; see
+         `spreadNow` there. */
       // ⚠️ Mirrored onto the element so CSS can tell "the row is animating" from
       // "the shelf has settled". `.cas-f::after` carries `transition: opacity`
       // for the depth veil, and while the render loop writes `--cas-o` every
@@ -5550,14 +5551,11 @@ const coverUrls = items
         // `crisp` now means ONLY "freeze the breath". Dropping it on the flip frame
         // would step every tape by the banked breath at once; it is released on a
         // short timer in `finishIntro` instead, so the flip frame is a no-op.
-        // ⚠️ `riseSpread` is 1 when settled and `RISE_SPREAD` during the ladder, and
-        // it is eased on `introDone`, so the neighbours slide back rather than snap.
         const hero = heroPose(
           pos,
           time,
           tape.ring,
           !introDone || now - introSettledAt < BREATH_SETTLE_MS,
-          riseSpread,
         );
         let { x, y, z, rx, ry, rz, scale } = hero;
         let opacity = tape.vis;
@@ -5597,7 +5595,29 @@ const coverUrls = items
           // ⚠️ X is LERPED, not held. Holding it on the shelf lane and switching
           // to the hero curve at the end is what made the whole row jump sideways
           // when the rise finished; see `heroX`.
-          x = lerp(from.x, heroX(pos, riseSpread), rt);
+          // ⚠️ THE STEP-ASIDE IS PER TAPE AND IT ENDS EXACTLY AT LANDING.
+          // `RISE_SPREAD` exists for one reason: a neighbour has to be out of
+          // the way while the centre tape (at `RISE_SCALE_FROM`, 1.72x, and
+          // turning) sweeps through it. Applying it to the DESTINATION (the old
+          // row-wide version) left every tape resting on the wide pose until
+          // something else pulled it back. Applied to `rt` instead, the wide
+          // pose is a TRANSIENT on the way in: at `rt = 1` the multiplier is
+          // exactly 1, so a tape lands on the very position it will rest at and
+          // NOTHING moves once the ladder is over.
+          //   - held to `rt = 0.72`, because before that the footprint is still
+          //     oversized (scale runs 1.72 down to ~0.9 across the climb);
+          //   - released over the last 28%, by which point the tape is down to its
+          //     hero scale and the clearance is moot.
+          // ⚠️ ...and it is weighted by DISTANCE FROM THE CENTRE. Only the tape
+          // immediately either side of the centre is ever in the turning tape's
+          // way, so the outer tapes (and the BLANK cassettes that fill the left
+          // of the row) stay on their final X for the whole climb instead of
+          // swinging out and back with the centre — measured without the
+          // weighting: the two blanks nearest the left edge travelled 190px
+          // outward and then 190px back during the ladder.
+          const near = clamp(1.6 - 0.6 * Math.abs(pos));
+          const spreadNow = 1 + (RISE_SPREAD - 1) * near * (1 - smooth((rt - 0.72) / 0.28));
+          x = lerp(from.x, heroX(pos, spreadNow), rt);
           y = lerp(from.y, hero.y, rt);
           z = lerp(from.z, hero.z, rt);
           rx = lerp(0.025, hero.rx, rt);
