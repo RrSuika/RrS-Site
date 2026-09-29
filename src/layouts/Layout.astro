@@ -231,6 +231,21 @@ const websiteSchema = {
         var skip = false;
         var resolveGate = () => {};
 
+        /* ⚠️ THE LANGUAGE CROSS-FADE HAS TO BE DECIDED HERE, before the first paint.
+           `FanPage` switches languages by navigating to the other document, and the
+           incoming page used to arm its own fade from a deferred module — i.e. after
+           it had already painted, so what the visitor saw was the bare paper for a
+           frame (「闪一下白色的方格背景，然后刷新出另一个语言」). This runs in
+           <head>, so `is-lang-in` is on the element before anything is drawn.
+           Browsers with CROSS-DOCUMENT view transitions do this themselves
+           (`@view-transition` in global.css), so the flag is simply dropped there. */
+        try {
+          if (sessionStorage.getItem("rrsuika-lang-fade") === "1") {
+            sessionStorage.removeItem("rrsuika-lang-fade");
+            if (!("onpagereveal" in window)) root.classList.add("is-lang-in");
+          }
+        } catch (_) {}
+
         /* ⚠️ A page with its own arrival opts out of the site cover. Read from the
            markup (not from a script) so the decision cannot race the guard. */
         if (root.hasAttribute("data-own-intro")) {

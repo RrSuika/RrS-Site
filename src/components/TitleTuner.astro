@@ -1,0 +1,255 @@
+---
+/**
+ * TitleTuner.astro — a TEMPORARY tuning panel for the hero wordmark's letter gaps.
+ *
+ * The visitor asked for it directly: 「让我能调整 RRSUIKA STUDIO 大标题的每个字的间距，
+ * 然后加个能复制调整好的代码给你的按钮」. Same shape as the shelf's temporary tuner:
+ * it is rendered only in `astro dev` (see the `import.meta.env.DEV` guard at the call
+ * site), it never ships to production, and its whole purpose is to produce a snippet
+ * that gets pasted back into `FanPage.astro` and then deleted with the component.
+ *
+ * ⚠️ It tunes `margin-right` on the wordmark's own per-character spans (`.tl`), which
+ * are part of the page and NOT part of this panel — so the numbers it copies out are
+ * the same numbers the page will use, instead of a value that only exists while the
+ * panel is on screen.
+ *
+ * ⚠️ `position: fixed` and therefore rendered OUTSIDE `.fan-root`: that element's
+ * `> *:not(...)` rule forces `position: relative` on every direct child it does not
+ * name, which would drop this panel into the flow at the top of the page.
+ */
+interface Props {
+  /** the wordmark, one entry per character */
+  label: string;
+}
+
+const { label } = Astro.props;
+const chars = [...label];
+---
+
+<div class="tt" id="title-tuner" data-chars={JSON.stringify(chars)}>
+  <button class="tt-toggle" type="button" aria-expanded="false">字距调试</button>
+
+  <div class="tt-panel" hidden>
+    <p class="tt-hint">
+      拖动每个字「后面」的间距。满意后点 <b>复制代码</b>，把复制到的内容发给我，我写进页面。
+    </p>
+
+    <div class="tt-rows"></div>
+
+    <div class="tt-actions">
+      <button class="tt-reset" type="button">全部归零</button>
+      <button class="tt-copy" type="button">复制代码</button>
+      <span class="tt-status" role="status" aria-live="polite"></span>
+    </div>
+  </div>
+</div>
+
+<style>
+  .tt {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    z-index: 2147483000;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: #eae6df;
+  }
+
+  .tt-toggle {
+    padding: 8px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 999px;
+    background: rgba(12, 12, 20, 0.9);
+    color: inherit;
+    font: inherit;
+    letter-spacing: 1px;
+    cursor: pointer;
+  }
+
+  .tt-toggle:hover {
+    border-color: #e8943a;
+  }
+
+  .tt-panel {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 8px);
+    width: 300px;
+    max-height: 70vh;
+    overflow: auto;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    background: rgba(12, 12, 20, 0.94);
+    box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.8);
+  }
+
+  .tt-hint {
+    margin: 0 0 10px;
+    line-height: 1.6;
+    color: rgba(234, 230, 223, 0.66);
+  }
+
+  .tt-hint b {
+    color: #e8943a;
+  }
+
+  .tt-rows {
+    display: grid;
+    gap: 6px;
+  }
+
+  .tt-row {
+    display: grid;
+    grid-template-columns: 22px 1fr 44px;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tt-ch {
+    text-align: center;
+    color: #ff9dc0;
+    font-weight: 700;
+  }
+
+  .tt-row input[type="range"] {
+    width: 100%;
+    accent-color: #e8943a;
+  }
+
+  .tt-val {
+    text-align: right;
+    color: rgba(234, 230, 223, 0.8);
+  }
+
+  .tt-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .tt-actions button {
+    padding: 7px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .tt-copy {
+    border-color: #e8943a !important;
+    color: #e8943a !important;
+  }
+
+  .tt-status {
+    color: #7fd6a8;
+  }
+</style>
+
+<script>
+  (() => {
+    const root = document.getElementById("title-tuner");
+    if (!root) return;
+    const KEY = "rrs-title-gaps";
+    const chars: string[] = JSON.parse(root.dataset.chars || "[]");
+    const title = document.querySelector<HTMLElement>(".fan-title");
+    const letters = title ? [...title.querySelectorAll<HTMLElement>(".tl")] : [];
+    if (!letters.length) return;
+
+    const toggle = root.querySelector<HTMLButtonElement>(".tt-toggle");
+    const panel = root.querySelector<HTMLElement>(".tt-panel");
+    const rows = root.querySelector<HTMLElement>(".tt-rows");
+    const status = root.querySelector<HTMLElement>(".tt-status");
+    if (!toggle || !panel || !rows || !status) return;
+
+    /* one row per GAP, so the last letter has no slider: a gap needs two letters */
+    const gaps = Math.max(0, letters.length - 1);
+    let values: number[] = new Array(gaps).fill(0);
+    try {
+      const saved = JSON.parse(localStorage.getItem(KEY) || "[]");
+      if (Array.isArray(saved) && saved.length === gaps) values = saved.map(Number);
+    } catch (_) {}
+
+    const apply = () => {
+      for (let i = 0; i < gaps; i++) {
+        letters[i].style.marginRight = values[i] ? values[i] + "px" : "";
+      }
+      try {
+        localStorage.setItem(KEY, JSON.stringify(values));
+      } catch (_) {}
+    };
+
+    const inputs: HTMLInputElement[] = [];
+    for (let i = 0; i < gaps; i++) {
+      const row = document.createElement("label");
+      row.className = "tt-row";
+      const ch = document.createElement("span");
+      ch.className = "tt-ch";
+      ch.textContent = chars[i] === " " ? "␣" : chars[i];
+      const input = document.createElement("input");
+      input.type = "range";
+      input.min = "-6";
+      input.max = "30";
+      input.step = "0.5";
+      input.value = String(values[i] ?? 0);
+      const out = document.createElement("span");
+      out.className = "tt-val";
+      out.textContent = (values[i] ?? 0).toFixed(1);
+      input.addEventListener("input", () => {
+        values[i] = Number(input.value);
+        out.textContent = values[i].toFixed(1);
+        apply();
+      });
+      inputs.push(input);
+      row.append(ch, input, out);
+      rows.append(row);
+    }
+    apply();
+
+    toggle.addEventListener("click", () => {
+      const open = panel.hidden;
+      panel.hidden = !open;
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.textContent = open ? "收起调试" : "字距调试";
+    });
+
+    root.querySelector(".tt-reset")?.addEventListener("click", () => {
+      values = new Array(gaps).fill(0);
+      inputs.forEach((input, i) => {
+        input.value = "0";
+        const out = input.nextElementSibling;
+        if (out) out.textContent = "0.0";
+      });
+      apply();
+      status.textContent = "已归零";
+    });
+
+    root.querySelector(".tt-copy")?.addEventListener("click", async () => {
+      const list = values.map((v) => (Number.isFinite(v) ? v : 0));
+      const css = [
+        "/* RRSUIKA STUDIO 逐字间距（TitleTuner 导出） */",
+        ...list.map((v, i) => `  .fan-title .tl:nth-child(${i + 1}) { margin-right: ${v}px; }`),
+        `/* gaps: ${list.join(", ")} */`,
+      ].join("\n");
+      try {
+        await navigator.clipboard.writeText(css);
+        status.textContent = "已复制 ✓ 发给我即可";
+      } catch (_) {
+        /* clipboard needs a secure context; this is the honest fallback */
+        const box = document.createElement("textarea");
+        box.value = css;
+        box.style.position = "fixed";
+        box.style.opacity = "0";
+        document.body.append(box);
+        box.select();
+        const done = document.execCommand("copy");
+        box.remove();
+        status.textContent = done ? "已复制 ✓" : "复制失败，请手动抄一下";
+        if (!done) console.info(css);
+      }
+    });
+  })();
+</script>

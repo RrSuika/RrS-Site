@@ -2516,3 +2516,50 @@ html.is-intro {
     animation: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   CROSS-DOCUMENT VIEW TRANSITIONS (2026-09-30)
+
+   Ship-wide opt-in, because this is a multi-page build with no client router: the
+   only way a language switch (`/fan/` ⇄ `/zh/fan/`) can cross-fade instead of
+   flashing is for the BROWSER to hold the old page's snapshot until the new one has
+   painted. Chrome/Edge 126+ and Safari 18.2+ do it; anything else navigates exactly
+   as before, which is why this is safe to switch on globally.
+
+   ⚠️ The durations are deliberately shorter than the default 250ms and match the
+   page's own `--ease-out`: the outgoing snapshot fades a touch faster than the
+   incoming one so the switch reads as one movement rather than two.
+   ⚠️ `view-transition-name: fan-lang-pill` lives in `FanPage.astro` (on both
+   documents' pill), which is what makes the blue box SLIDE from one label to the
+   other across the navigation instead of being re-drawn.
+   ═══════════════════════════════════════════════════════════════ */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: rrsVtOut 0.22s var(--ease-out) both;
+}
+
+::view-transition-new(root) {
+  animation: rrsVtIn 0.3s var(--ease-out) both;
+}
+
+@keyframes rrsVtOut {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes rrsVtIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}

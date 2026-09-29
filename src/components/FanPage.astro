@@ -25,6 +25,7 @@
 import Layout from "../layouts/Layout.astro";
 import FanMosaic from "./FanMosaic.astro";
 import FanIntro from "./FanIntro.astro";
+import TitleTuner from "./TitleTuner.astro";
 import {
   getLanguageFromPath,
   getLocalizedPath,
@@ -276,6 +277,12 @@ const artHref = getLocalizedPath("/art", language);
       being first is what gets the cover painted before the page behind it. */}
   <FanIntro language={language} />
 
+  {/* ⚠️ TEMPORARY, and outside `.fan-root`: that element forces `position: relative`
+      on every direct child it does not name, which would put this panel in the flow.
+      Stripped from production by the build-time guard — delete this line, the import
+      and `TitleTuner.astro` once the gaps are baked in. */}
+  {import.meta.env.DEV && <TitleTuner label={c.hero.title} />}
+
   <div class="fan-root" data-fan>
     <!-- The animated background. It is a direct child of .fan-root and
          `position: fixed` at z-index -1 — which is why `.fan-root` carries
@@ -396,8 +403,13 @@ const artHref = getLocalizedPath("/art", language);
 
       <span class="fan-hero-echo" data-orn aria-hidden="true">{c.hero.cn}</span>
 
+      {/* ⚠️ Split into ONE SPAN PER CHARACTER. Not decoration: the letter gaps are
+          tuned by hand (`TitleTuner`, dev only) and the pasted CSS addresses
+          `.fan-title .tl:nth-child(n)` — a single text node could not take per-letter
+          margins, and the tuning would live only in the tuner. The space becomes a
+          non-breaking space so the per-letter margin applies to it too. */}
       <h1 class="fan-title">
-        <span class="title-en">{c.hero.title}</span>
+        {c.hero.title.split("").map((ch) => <span class="tl">{ch === " " ? "\u00A0" : ch}</span>)}
       </h1>
       <p class="fan-title-cn">{c.hero.cn}</p>
       <p class="fan-sub">{c.hero.sub}</p>
@@ -858,6 +870,12 @@ const artHref = getLocalizedPath("/art", language);
     const LANGS = document.querySelector<HTMLElement>(".fan-langs");
     const KEY = "rrsuika-lang-fade";
     if (!LANGS) return;
+    /* ⚠️ `pagereveal` existing means this browser does CROSS-DOCUMENT view
+       transitions, and then the manual fade must not run at all: two animations on
+       the same navigation is worse than either, and the first version of this faded
+       the page out by hand on top of the browser's own snapshot. */
+    const browserDoesIt = "onpagereveal" in window;
+    if (browserDoesIt) return;
     const root = document.documentElement;
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -883,15 +901,12 @@ const artHref = getLocalizedPath("/art", language);
       } catch (_) {}
     });
 
-    let fadeIn = false;
-    try {
-      fadeIn = sessionStorage.getItem(KEY) === "1";
-      sessionStorage.removeItem(KEY);
-    } catch (_) {}
-    /* ⚠️ Never while the arrival owns the page: `is-fi` is holding the hero at
-       opacity 0 itself, and the two would fight over the same property. */
-    if (fadeIn && !still && !root.classList.contains("is-fi")) {
-      root.classList.add("is-lang-in");
+    /* ⚠️ The hidden state itself is set in <head> (Layout.astro), BEFORE the first
+       paint. Setting it here was the bug the visitor reported — this script is a
+       deferred module, so the page had already painted its background when the class
+       landed, and the "fade in" was really a flash of bare paper: 「闪一下白色的方格
+       背景，然后刷新出另一个语言」. All this does now is RELEASE it. */
+    if (root.classList.contains("is-lang-in")) {
       requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("is-lang-in")));
     }
   })();
@@ -2244,6 +2259,11 @@ const artHref = getLocalizedPath("/art", language);
     background: var(--fan-blue);
     pointer-events: none;
     transition: transform 0.34s var(--ease-out);
+    /* ⚠️ The same name in BOTH documents is what lets the browser carry this element
+       across the navigation instead of snapping it: with `@view-transition
+       { navigation: auto }` (global.css §14) the blue box is animated from where it
+       was to where it lands, which is exactly the effect that was asked for. */
+    view-transition-name: fan-lang-pill;
   }
 
   .fan-langs[data-active="zh"] .fan-lang-pill {
