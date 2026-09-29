@@ -25,7 +25,6 @@
 import Layout from "../layouts/Layout.astro";
 import FanMosaic from "./FanMosaic.astro";
 import FanIntro from "./FanIntro.astro";
-import TitleTuner from "./TitleTuner.astro";
 import {
   getLanguageFromPath,
   getLocalizedPath,
@@ -255,6 +254,21 @@ const HERO_ORNS: { kind: string; x: string; y: string; size: number; turn: numbe
   { kind: "bubble", x: "13%", y: "35%", size: 14, turn: 0, op: 0.6, ink: INK.blue },
 ];
 
+/**
+ * Per-letter spacing of the wordmark, in px: ONE ENTRY PER CHARACTER SPAN, in the
+ * order the markup below builds them (`RRSUIKA STUDIO` is 14 spans, the space
+ * included). The number is the gap to the RIGHT of that character; the last entry is
+ * the end of the run, where there is nothing to space against.
+ *
+ * ⚠️ These are the VISITOR's numbers, tuned on the real page (2026-09-30) with a
+ * temporary dev-only slider panel that has since been deleted — Pacifico's own
+ * spacing evened out pair by pair, which is the only way to do it: the face's
+ * advances differ a lot (`U` wanted +19.5 after it, `D` -3.25). All zeroes is the
+ * untouched default; to re-tune, write the numbers here and reload — the values are
+ * plain `margin-right` on the spans below, so a devtools edit previews them live.
+ */
+const TITLE_GAPS: number[] = [2, 3.75, 5, 19.5, 4, 11.25, 0, 14.75, -0.25, -2, 8.5, -3.25, 0, 0];
+
 const enHref = getLocalizedPath("/fan/", "en");
 const zhHref = getLocalizedPath("/fan/", "zh");
 const artHref = getLocalizedPath("/art", language);
@@ -277,11 +291,6 @@ const artHref = getLocalizedPath("/art", language);
       being first is what gets the cover painted before the page behind it. */}
   <FanIntro language={language} />
 
-  {/* ⚠️ TEMPORARY, and outside `.fan-root`: that element forces `position: relative`
-      on every direct child it does not name, which would put this panel in the flow.
-      Stripped from production by the build-time guard — delete this line, the import
-      and `TitleTuner.astro` once the gaps are baked in. */}
-  {import.meta.env.DEV && <TitleTuner label={c.hero.title} />}
 
   <div class="fan-root" data-fan>
     <!-- The animated background. It is a direct child of .fan-root and
@@ -403,13 +412,16 @@ const artHref = getLocalizedPath("/art", language);
 
       <span class="fan-hero-echo" data-orn aria-hidden="true">{c.hero.cn}</span>
 
-      {/* ⚠️ Split into ONE SPAN PER CHARACTER. Not decoration: the letter gaps are
-          tuned by hand (`TitleTuner`, dev only) and the pasted CSS addresses
-          `.fan-title .tl:nth-child(n)` — a single text node could not take per-letter
-          margins, and the tuning would live only in the tuner. The space becomes a
-          non-breaking space so the per-letter margin applies to it too. */}
+      {/* ⚠️ Split into ONE SPAN PER CHARACTER. Not decoration: `TITLE_GAPS` is indexed
+          by exactly this order, and a single text node could not take per-letter
+          margins. The space becomes a non-breaking space so it is a span like any
+          other (and can carry its own gap). */}
       <h1 class="fan-title">
-        {c.hero.title.split("").map((ch) => <span class="tl">{ch === " " ? "\u00A0" : ch}</span>)}
+        {c.hero.title.split("").map((ch, i) => (
+          <span
+            class="tl"
+            style={TITLE_GAPS[i] ? `margin-right:${TITLE_GAPS[i]}px` : undefined}>{ch === " " ? "\u00A0" : ch}</span>
+        ))}
       </h1>
       <p class="fan-title-cn">{c.hero.cn}</p>
       <p class="fan-sub">{c.hero.sub}</p>
@@ -791,33 +803,58 @@ const artHref = getLocalizedPath("/art", language);
   });
 
   /**
-   * One loop, in px: the gap between the first card and the card `unique` places
-   * along it. Falls back to the track's own width when there are not yet two
-   * cards to compare.
-   */
-  /**
-   * One period, taken the way the /art page takes it:
+   * One period, in px: the distance from the first card to the card `unique` places
+   * along the track - exactly one repeat of the set, measured on the laid-out cards.
    *
-   *     const copies = Number(track.dataset.copies) || 2;
-   *     const setWidth = track.scrollWidth / copies;
+   * ⚠️ **This replaced `track.scrollWidth / copies` (the /art page's line), and the
+   * reason is measurable.** A `.row-track` is a flex row with `gap: 16px` and
+   * `padding: 0 24px`, so
    *
-   * ⚠️ **This is the fix for the reset the visitor kept seeing.** Measuring card 0
-   * to card `unique` is the right period only when the gap between cards is
-   * perfectly uniform; with rows of different lengths one sub-pixel of error per
-   * period IS the jump at the wrap. `scrollWidth / copies` is one copy of the set BY
-   * CONSTRUCTION — the track's own laid-out width over how many times the set was
-   * repeated — so the wrap lands on identical pixels whatever the card widths turn
-   * out to be. The /art page has shipped this line for months.
+   *     scrollWidth / copies = period + (2 x 24 - 16) / copies
+   *
+   * i.e. the padding is counted once per copy and the missing last gap once per copy.
+   * Measured on this page at 1440: row 0 stored **2178** against a true **2167.22**
+   * (3 copies), row 1 **755** against **746.94**, row 2 **1592** against **1584** - so
+   * every wrap teleported the row ~8-11px off where it started. `scrollWidth/copies`
+   * is only "one set by construction" when the track has neither padding nor gaps.
+   * Rects are sub-pixel and give the cards' own spacing directly.
+   *
+   * ⚠️ **AND IT HAS TO BE RE-MEASURED.** A plate is exactly as wide as its cover
+   * (`.plate-media img { width: auto }` at a fixed 232px height), so the layout this
+   * is read from does not exist until the covers have decoded. Read once, at script
+   * time, on a cold load, the period is the width of a row of EMPTY boxes - and then
+   * every wrap teleports the row by a whole screen, which is the visitor's 「图片拖动
+   * 到一定距离后，他会突然消失，从画面的另一边出现」. The ResizeObserver below is
+   * what catches the covers arriving; it fires on the track's own box, whatever made
+   * it change.
    */
   function measurePeriod(row: Row): number {
-    const copies = Number(row.track.dataset.copies) || 1;
-    const setWidth = row.track.scrollWidth / copies;
-    return setWidth > 1 ? setWidth : row.track.scrollWidth || 1;
+    const cards = row.track.children;
+    const first = cards[0];
+    const next = cards[row.unique];
+    if (first instanceof HTMLElement && next instanceof HTMLElement) {
+      const period = next.getBoundingClientRect().left - first.getBoundingClientRect().left;
+      if (period > 1) return period;
+    }
+    /* too few cards laid out to compare (not yet, or a row of one) - the track's own
+       width is the honest fallback and is what the first frame uses anyway */
+    return row.track.scrollWidth || 1;
   }
 
   window.addEventListener("resize", () => {
     for (const row of rows) row.period = measurePeriod(row);
   });
+
+  /* ⚠️ The track changes size on its own: every cover that decodes widens its plate.
+     Re-measuring on those changes is what keeps the wrap seamless - see the note on
+     `measurePeriod`. Cheap enough to run per change (two rect reads per row) and it
+     reads no layout that it writes. */
+  if ("ResizeObserver" in window) {
+    const reMeasure = new ResizeObserver(() => {
+      for (const row of rows) row.period = measurePeriod(row);
+    });
+    for (const row of rows) reMeasure.observe(row.track);
+  }
 
   const reduceMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)",
@@ -856,28 +893,40 @@ const artHref = getLocalizedPath("/art", language);
     }
     requestAnimationFrame(frame);
   }
+  /* ⚠️ A probe handle, like `window.__fanIntro` / `window.__fanMosaic`: the wrap is
+     INVISIBLE when the period is right and a visible jump when it is wrong, and the
+     only honest way to tell those apart is to read `period` and compare it with the
+     cards' own spacing in the DOM (`输入/_scratch/fan-wrap.mjs`). Nothing in the page
+     reads it. */
+  (window as typeof window & { __fanRows?: unknown }).__fanRows = rows;
+
   if (rows.length > 0) requestAnimationFrame(frame);
 
-  /* ── the language cross-fade ──
-     ⚠️ Three guards, all load-bearing:
-       - a modified click (cmd/ctrl/shift/middle) must keep its normal behaviour;
-       - the ALREADY ACTIVE label is a no-op, not a reload;
-       - the navigation is fired on a timer, never on `transitionend`: a slow page
-         must not be able to leave the visitor looking at a faded-out one.
-     The flag is what tells the ARRIVING page to fade in; without it an ordinary
-     visit (or a back/forward) would fade in for no reason. */
+  /* ── the language switch: it plays the page's ARRIVAL, it does not fade ──
+     `/fan/` and `/zh/fan/` are two documents, so this is a navigation and the switch
+     cannot be animated from here. The visitor asked for the page's own cloud-burst
+     arrival to BE the switch — 「切换语言时，我需要直接播放运动入场动画，然后结束后是
+     另一个语言」 — so the click does exactly one thing: it leaves a note for the
+     ARRIVING document, whose `FanIntro` reads it and plays even though this session
+     has already seen the arrival once (see `KEY_SWITCHED` there).
+
+     ⚠️ The navigation is NOT intercepted, faded or delayed any more. Two earlier
+     versions animated this side (a text cross-fade, then a screenshot of the whole
+     page under `@view-transition`) and both of them fought the same fact: nothing
+     here knows when the other document will be ready to paint. Left alone, the
+     browser keeps THIS page on screen until the next one has something to show —
+     which is now the arrival cover, because the incoming document is held unpainted
+     until that cover can cover (the `is-fi-hold` guard in `Layout.astro`).
+
+     ⚠️ Two guards stay: a modified click (cmd/ctrl/shift/middle) means "open it
+     somewhere else" and must not arm anything here, and the ALREADY ACTIVE label is
+     a no-op rather than a reload — arming the flag for a click that goes nowhere
+     would make some LATER navigation play the arrival out of nowhere. */
   (() => {
     const LANGS = document.querySelector<HTMLElement>(".fan-langs");
-    const KEY = "rrsuika-lang-fade";
     if (!LANGS) return;
-    /* ⚠️ `pagereveal` existing means this browser does CROSS-DOCUMENT view
-       transitions, and then the manual fade must not run at all: two animations on
-       the same navigation is worse than either, and the first version of this faded
-       the page out by hand on top of the browser's own snapshot. */
-    const browserDoesIt = "onpagereveal" in window;
-    if (browserDoesIt) return;
-    const root = document.documentElement;
-    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    /* the same key `FanIntro.astro` reads; it is cleared as it is consumed */
+    const KEY = "rrsuika-fan-arrive";
 
     LANGS.addEventListener("click", (event: MouseEvent) => {
       const link = (event.target as HTMLElement).closest<HTMLAnchorElement>("a.fan-lang");
@@ -885,39 +934,38 @@ const artHref = getLocalizedPath("/art", language);
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
         return;
       }
-      if (!still) {
-        event.preventDefault();
-        root.classList.add("is-lang-out");
-        try {
-          sessionStorage.setItem(KEY, "1");
-        } catch (_) {}
-        window.setTimeout(() => {
-          location.href = link.href;
-        }, 180);
-        return;
-      }
       try {
         sessionStorage.setItem(KEY, "1");
       } catch (_) {}
     });
-
-    /* ⚠️ The hidden state itself is set in <head> (Layout.astro), BEFORE the first
-       paint. Setting it here was the bug the visitor reported — this script is a
-       deferred module, so the page had already painted its background when the class
-       landed, and the "fade in" was really a flash of bare paper: 「闪一下白色的方格
-       背景，然后刷新出另一个语言」. All this does now is RELEASE it. */
-    if (root.classList.contains("is-lang-in")) {
-      requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("is-lang-in")));
-    }
   })();
 
-  /* ── warm every UNIQUE plate so a repeat can never arrive undecoded ──
-     The rows paint 2-3 copies of the same set; only the first copy carries an
-     `eager` image, and the copies further along are pure decoration. Decoding
-     the unique URLs once is what makes the loop continuous instead of
-     stop-start, and it is exactly what the /art page gets for free by putting
-     every image in the document. Deferred to `load` so it never competes with
-     the first paint. */
+  /* ── warm every plate - and do it DURING the arrival when there is one ──
+     The rows paint 2-3 copies of the same set; only the first two carry an `eager`
+     image, and the copies further along are `lazy`. Decoding the unique URLs once is
+     what makes the loop continuous instead of stop-start, and it is exactly what the
+     /art page gets for free by putting every image in the document.
+
+     ⚠️ **The arrival is the free window, and the visitor asked for it in as many
+     words**: 「云朵加载动画完成后，翻到下面的画廊时，图片依旧要先加载出现，这个等待
+     本应该在云朵加载动画时完成」. While the cloud cover is up the page is behind an
+     opaque canvas, so nothing that loads now can spoil a frame - and the cover is up
+     for 3.5s, which is longer than the whole gallery takes on a warm connection.
+
+     ⚠️ **It flips the LAZY copies to `eager` rather than only pre-fetching into the
+     cache.** A pre-fetch (`new Image()`) fills the HTTP cache but leaves the real
+     `<img>` elements unfetched, and a plate is exactly as wide as its cover
+     (`.plate-media img { width: auto }`), so each cover that arrives later grows its
+     plate from a stub to its real width AND SHIFTS EVERY CARD AFTER IT - measured on
+     a cold load: 47 of 67 covers ready when the arrival ended, the remaining 20
+     arriving whenever the visitor scrolled or dragged them into view, each one
+     re-flowing its row. Driving the elements themselves means the layout is final
+     before the cover opens. (`warmPlates` still runs as well: it is what the lightbox
+     reads, and it is the same URLs, so it costs no extra bytes.)
+
+     Without an arrival (an ordinary navigation inside the session) there is nothing
+     to hide the work behind, so the deferred path stays: `load` + 200ms, off the
+     first paint. */
   const warmPlates = () => {
     const seen = new Set<string>();
     document.querySelectorAll<HTMLElement>(".plate").forEach((plate) => {
@@ -929,8 +977,22 @@ const artHref = getLocalizedPath("/art", language);
       img.src = src;
     });
   };
-  if (document.readyState === "complete") window.setTimeout(warmPlates, 200);
-  else window.addEventListener("load", () => window.setTimeout(warmPlates, 200), { once: true });
+
+  /* `is-fi` is set by `FanIntro` on `<html>` before the hero is parsed, and cleared
+     when the arrival finishes - so this is true exactly when a cover is covering. */
+  const arrivalCovering = document.documentElement.classList.contains("is-fi");
+  if (arrivalCovering) {
+    document
+      .querySelectorAll<HTMLImageElement>(".plate img")
+      .forEach((img) => {
+        img.loading = "eager";
+      });
+    warmPlates();
+  } else if (document.readyState === "complete") {
+    window.setTimeout(warmPlates, 200);
+  } else {
+    window.addEventListener("load", () => window.setTimeout(warmPlates, 200), { once: true });
+  }
   /* ── a click opens the lightbox; a drag does not. Track the press origin so
         a row drag never lands on a plate. ── */
   const lb = document.getElementById("fan-lightbox");
@@ -1264,20 +1326,29 @@ const artHref = getLocalizedPath("/art", language);
      * rebound at all. The visitor: 「水果做的 Q 弹一点，比如落地会弹一下，现在
      * 感觉太重了。参考捏捏乐那种 Q 弹的感觉」. A restitution needs the previous
      * position moved UP past the floor (`t.y + vn * B`) so the implied velocity
-     * reverses. 0.42 keeps 42% of the impact speed, i.e. about a sixth of the
-     * height, so a drop gives one clear bounce and a small second one.
+     * reverses.
+     * ⚠️ **RAISED 0.42 -> 0.62 (2026-09-30), on the visitor's second pass at this**:
+     * 「让水果落下来后弹一下，更 Q 弹，整体更接近抓娃娃机/捏捏乐的手感」. 0.42 measured as
+     * an effective 0.27 (the bounce leaves at 8.9px/frame from a 32.7px/frame impact,
+     * i.e. a 56px hop off a full-height drop), which read as a thud with a twitch.
+     * 0.62 measures 0.41 - 13.5px/frame off the same impact - and `fruit-bounce.mjs`
+     * puts the rebound at **169px**: one clear bounce, then a rest.
      */
-    const GROUND_BOUNCE = 0.42;
+    const GROUND_BOUNCE = 0.62;
     /**
      * ⚠️ **THE BOUNCE NEEDS A FLOOR OF ITS OWN, or gravity bounces for ever.** A
      * body at rest on the floor penetrates by one frame of gravity every frame
-     * (0.72px), and a restitution of 0.42 turns that into a 0.3px rebound, then a
-     * 0.3px fall, then again — a permanent buzz. Measured with no threshold: 134.6px
-     * of travel per toy over 1.8s on a settled pile (it was 19.7px). Below this
-     * impact speed there is no rebound at all and the old dissipation applies,
-     * which is what lets a pile sleep.
+     * (0.72px), and a restitution turns that into a sub-pixel rebound, then a fall,
+     * then again — a permanent buzz. Measured with no threshold at 0.42: 134.6px of
+     * travel per toy over 1.8s on a settled pile (it was 19.7px). Below this impact
+     * speed there is no rebound at all and the old dissipation applies, which is
+     * what lets a pile sleep.
+     * ⚠️ Raised 4.5 -> 5.5 together with GROUND_BOUNCE: the bar has to clear the
+     * resting penetration at the higher restitution too. Verified after the change —
+     * `vpile-tail.mjs` decays 596 -> 37 -> 33 -> 22.7 -> 15.8 px per toy and
+     * `vpile.mjs` passes all five pile checks, so stacks still go to sleep.
      */
-    const GROUND_BOUNCE_MIN = 4.5;
+    const GROUND_BOUNCE_MIN = 5.5;
     /** the sub-threshold dissipation: this is the pre-bounce behaviour, kept for rests */
     const GROUND_REST = 0.2;
     /**
@@ -1289,22 +1360,63 @@ const artHref = getLocalizedPath("/art", language);
      * them with dt in frames: ω·dt was 16, far past the stability limit, so the
      * discrete spring oscillated for ever at ±11px and the fruit looked like it was
      * still bouncing 9s after it had landed (measured: 61 direction changes).
-     * 0.07 / 0.19 is ω≈0.26 rad/frame (≈2.5Hz) with ζ≈0.37: two visible wobbles
-     * and a stop.
+     * 0.07 / 0.19 was ω≈0.26 rad/frame (≈2.5Hz) with ζ≈0.37 — two visible wobbles
+     * and a stop. ⚠️ **SOFTENED to 0.05 / 0.13 (2026-09-30) for the 捏捏乐 pass**:
+     * ω≈0.22 with ζ≈0.29, a slower wobble that overshoots further into the stretch.
+     * Measured on one drop: the squash saturates at SQ_MAX, crosses zero ~300ms later
+     * and reaches **-0.303** of stretch before coming back, against -0.141 before.
      * ⚠️ VISUAL ONLY — it never touches x/y/px/py, so the
      * collision radius and everything measured about the pile are unchanged.
      */
-    const SQ_K = 0.07;
-    const SQ_C = 0.19;
+    const SQ_K = 0.05;
+    const SQ_C = 0.13;
     /** how much of the impact speed turns into squash (deg of flattening per px/frame) */
-    const SQ_GAIN = 0.011;
+    const SQ_GAIN = 0.013;
     /** below this impact speed there is nothing to squash — resting contacts land here */
-    const SQ_MIN = 1.6;
-    const SQ_MAX = 0.3;
+    const SQ_MIN = 1.2;
+    /** ⚠️ 0.30 -> 0.42 with the softer spring: every real landing hit this cap in its
+     *  first frame, so the CAP (not the impact) was setting how flat a fruit got. */
+    const SQ_MAX = 0.42;
     const WALL_REST = 0.4;
     const GROUND_FRICTION = 0.34;
     const CONTACT_FRICTION = 0.3;
-    const CONTACT_REST = 0.72;
+    /** ⚠️ 0.72 -> 0.78 with GROUND_BOUNCE: fruit-on-fruit carries a little of the same
+     *  liveliness, or a bouncing toy lands in a pile that reads as sand. */
+    const CONTACT_REST = 0.78;
+    /**
+     * ⚠️ What the SECOND and later contacts of a frame bleed off the normal component.
+     * Not 1 (no bleed at all): a body squeezed between two neighbours then keeps its
+     * normal velocity for ever and the pile never reaches the sleep threshold - measured
+     * as `vpile-tail.mjs` plateauing at ~25px per toy instead of decaying. Not 0.78
+     * either: that compounds per contact and ate the rebound (see CONTACT_BOUNCE). 0.92
+     * is the measured middle - both checks pass with it.
+     */
+    const CONTACT_REST_EXTRA = 0.92;
+    /**
+     * ⚠️ **A REAL IMPACT BETWEEN TWO FRUITS BOUNCES TOO** (2026-09-30). The visitor
+     * found the asymmetry from the outside: 「手动拖动水果到空中后松开，下落碰到底部就
+     * 会有弹跳；但按催更按钮掉下来的水果没有弹跳」. The floor reverses the normal
+     * velocity; a fruit hit another fruit and only LOST 22% of it, so the pile acted
+     * as a sandbag - and the button drops its fruits straight onto the pile it has
+     * been building, so the one case the visitor kept looking at was the one case that
+     * did not bounce.
+     * ⚠️ It is THRESHOLDED, exactly like GROUND_BOUNCE_MIN, and for the same reason:
+     * a resting stack is full of contacts whose normal speed is a fraction of a
+     * pixel, and reversing those would make every pile buzz forever. Below the
+     * threshold the old dissipation applies and stacks still go to sleep.
+     */
+    const CONTACT_BOUNCE = 0.4;
+    /*
+     * ⚠️ **The bar is HIGH on purpose, and it was measured up from 6.** At 6 the pile
+     * never slept: `vpile.mjs` read 102px of travel per toy over 1.8s against its 60px
+     * limit (a resting stack churns at a few px/frame, and every one of those contacts
+     * was over the bar). At 14 the same pile reads like it did before this change while
+     * a landing still clears it by 2x - a fruit dropped from the top of the viewport
+     * arrives at ~35px/frame. It is a CONTACT threshold, not a floor one: the floor can
+     * afford a low bar because it clamps in a single frame, while two fruits resolve
+     * over several frames through CORRECTION_CAP.
+     */
+    const CONTACT_BOUNCE_MIN = 14;
     /**
      * ⚠️ A resting contact overlaps by a fraction of a pixel EVERY frame, so
      * `asleep = 0` on any contact meant nothing ever slept and the solver kept
@@ -1349,6 +1461,8 @@ const artHref = getLocalizedPath("/art", language);
       grabY: number;
       /** true while this toy touches the floor or another toy */
       contact: boolean;
+      /** set by the first REAL impact of a frame - see CONTACT_BOUNCE */
+      bounced: boolean;
       /** squash amount (0 = round, + = flattened, − = stretched) and its velocity */
       sq: number;
       sqv: number;
@@ -1367,8 +1481,36 @@ const artHref = getLocalizedPath("/art", language);
       const vn = vx * nx + vy * ny;
       const vtx = vx - vn * nx;
       const vty = vy - vn * ny;
-      const nvx = vn * nx * CONTACT_REST + vtx * (1 - CONTACT_FRICTION);
-      const nvy = vn * ny * CONTACT_REST + vty * (1 - CONTACT_FRICTION);
+      /* ⚠️ The sign is the whole difference: `+` keeps the approach and reads as
+         sand, `-` reverses it and reads as a bounce. Only a real impact reverses -
+         see CONTACT_BOUNCE. */
+      /* ⚠️ ONCE PER BODY PER FRAME, and this is not an optimisation.
+         A fruit sinking into a pile touches TWO OR THREE neighbours in the same
+         pass; reversing on each of them flips the velocity back and forth (the
+         second contact sees the body moving AWAY - still above the bar - and
+         reverses it again, straight back into the pile). Measured with the naive
+         version: a fruit landing on six others rose 14px, against 124px off the
+         empty floor, i.e. the bounce was cancelled and the pile read as sand.
+         The first real impact of the frame is the one that stops the body, so that
+         is the only one allowed to bounce it; the rest damp as before. */
+      const hit = !t.bounced && Math.abs(vn) > CONTACT_BOUNCE_MIN;
+      /* ⚠️ THE NORMAL RESPONSE HAPPENS ONCE PER BODY PER FRAME; the rest of the
+         contacts only rub (tangential). A fruit sinking into a pile touches two or
+         three neighbours, and applying a normal loss to each of them compounded to
+         ~0.78^3 per frame - which ate the rebound in two frames and is why a landing
+         on the pile measured 14px against 124px off the empty floor. Whatever the
+         first contact of the frame decides (bounce or damp) is the body's normal
+         response; the others only bleed a little (CONTACT_REST_EXTRA). */
+      const normal = hit ? -CONTACT_BOUNCE : t.bounced ? CONTACT_REST_EXTRA : CONTACT_REST;
+      t.bounced = true;
+      /* ⚠️ A landing ON A FRUIT has to squash too, or the pile reads as a different
+         material from the floor - the floor branch is the only other place that feeds
+         the squash spring. Same gain and cap, driven by the same impact speed. */
+      if (hit && t.sq !== undefined && t.sqv !== undefined && Math.abs(vn) > SQ_MIN) {
+        t.sqv += Math.min(Math.abs(vn) * SQ_GAIN, SQ_MAX);
+      }
+      const nvx = vn * nx * normal + vtx * (1 - CONTACT_FRICTION);
+      const nvy = vn * ny * normal + vty * (1 - CONTACT_FRICTION);
       t.px = t.x - nvx;
       t.py = t.y - nvy;
     };
@@ -1509,6 +1651,11 @@ const artHref = getLocalizedPath("/art", language);
     ];
 
     const sheep: Sheep[] = [];
+    /* ⚠️ A probe handle, like `window.__fanRows` / `window.__fanIntro`: the element
+       can only ever show the COMPOSED transform, so a question about the solver's own
+       state (`rot` vs the angle the eye reads, `sq` vs the residual matrix) cannot be
+       answered from the DOM. Nothing in the page reads this. */
+    (window as typeof window & { __fanSheep?: unknown }).__fanSheep = sheep;
     let sheepRaf = 0;
     let lastT = 0;
 
@@ -1565,6 +1712,7 @@ const artHref = getLocalizedPath("/art", language);
         grabX: 0,
         grabY: 0,
         contact: false,
+        bounced: false,
         sq: 0,
         sqv: 0,
       };
@@ -1614,7 +1762,12 @@ const artHref = getLocalizedPath("/art", language);
         awake++;
         // ⚠️ Contacts are found at the END of the frame, so this flag is one frame
         // old. That is fine for damping, and it keeps the solver to a single pass.
-        if (t.contact) {
+        /* ⚠️ `!t.bounced` matters: the frame after a real impact is the frame the
+           rebound is travelling in, and damping it there is what made a landing on the
+           pile collapse to a 14px jiggle while the same landing on the floor bounced
+           124px. A floor-only contact never damps at all (its flag is cleared before the
+           separation pass), so this makes the two consistent. */
+        if (t.contact && !t.bounced) {
           t.px = t.x - (t.x - t.px) * CONTACT_DAMP;
           t.py = t.y - (t.y - t.py) * CONTACT_DAMP;
         }
@@ -1638,6 +1791,12 @@ const artHref = getLocalizedPath("/art", language);
           // ⚠️ `+`, not `-`: the previous position goes UP past the floor so the
           // implied velocity reverses. See GROUND_BOUNCE.
           if (vn > 0) {
+            /* ⚠️ The floor is the FIRST normal response of the frame, so it claims
+               the body's one bounce: without this flag a fruit that touches the floor
+               AND a neighbour in the same frame got its velocity reversed twice - once
+               by each - and the two cancelled (measured: a 124px floor rebound came
+               out as 21px). See CONTACT_BOUNCE. */
+            t.bounced = true;
             if (vn > GROUND_BOUNCE_MIN) {
               // a real landing: reverse it, and squash on the way
               t.py = t.y + vn * GROUND_BOUNCE;
@@ -1668,7 +1827,16 @@ const artHref = getLocalizedPath("/art", language);
         if (Math.abs(t.x - t.px) < 0.02 && Math.abs(t.y - t.py) < 0.02 && t.y >= FLOOR - 0.5) {
           t.px = t.x;
           t.py = t.y;
-          t.rot += (Math.round(t.rot / 90) * 90 - t.rot) * 0.2;
+          /* ⚠️ THE ANGLE IS NO LONGER TOUCHED HERE, and that line was the visitor's
+             「水果会奇怪的进行回正角度，而不是维持应有的随机角度」. It read
+             `t.rot += (Math.round(t.rot / 90) * 90 - t.rot) * 0.2` - once a toy settled
+             it eased its rotation to the nearest multiple of 90° at 20% a frame, so a
+             fruit that landed at 25° visibly righted itself over ~200ms and every toy
+             on the floor ended up at 0 / 90 / 180. Measured before removing it: a fruit
+             landing at -12.1° was sitting at -0.001° two seconds later, every run.
+             A toy keeps the angle it landed on; that is the look the page is after, and
+             tidiness was never asked for. (`t.rot` is still only ever written by
+             `t.rot += t.vrot * dt`, so nothing else can rotate a resting toy either.) */
           t.asleep++;
         } else {
           t.asleep = 0;
@@ -1692,7 +1860,10 @@ const artHref = getLocalizedPath("/art", language);
          Two iterations, because one pass leaves a three-deep stack overlapping and the
          leftover correction is what shows up as the next frame's jitter. */
       // clear last frame's flags, so a body that left a contact stops damping
-      for (const t of sheep) t.contact = false;
+      for (const t of sheep) {
+        t.contact = false;
+        t.bounced = false;
+      }
 
       for (let pass = 0; pass < SOLVER_PASSES; pass++) {
         const order = sheep.slice().sort((a, b) => a.x - b.x);
@@ -1750,21 +1921,27 @@ const artHref = getLocalizedPath("/art", language);
           if (t.el.style.getPropertyValue("--sq")) t.el.style.removeProperty("--sq");
           continue;
         }
-        /* ⚠️ The squash is in SCREEN axes, not in the toy's own. Writing it as a
-           plain `scale()` after the rotate would squash along the toy's rotated
-           axis, so a fruit lying at 90° would squash sideways. The matrix below is
-           exactly `R(−θ) · diag(sx, sy) · R(θ)` — the same squash expressed in the
-           rotated frame — and it costs four multiplies. */
+        /* ── THE SQUASH IS IN THE TOY'S OWN FRAME, AND THAT IS A FIX (2026-09-30) ──
+           It used to be written in SCREEN axes — `R(−θ) · diag(sx, sy) · R(θ)` applied
+           after the rotate, four multiplies to keep a fruit lying at 90° from
+           squashing "sideways". The visitor saw what that costs: 「水果落地后并没有
+           看到回弹，相反他们会奇怪的进行回正角度，而不是维持应有的随机角度」.
+           ⚠️ **A screen-axis squash ROTATES a rotated shape.** The composed matrix is
+           `diag(sx, sy) · R(θ)`, so the angle the eye reads is `atan2(sy·sinθ, sx·cosθ)`
+           — measured, at the old SQ_MAX 0.42 a fruit drawn at 45° reads as 25°, and one
+           at 20° reads as 10°: a 10-20° swing toward upright for the whole ~300ms
+           squash-and-stretch cycle. Every landing looked like the fruit righting
+           itself, and the vertical hop (124px, measured) was lost inside it.
+           With the diagonal matrix INSIDE the rotate the shape squashes along its OWN
+           axes and the drawn angle stays exactly `t.rot` — verified against the solver
+           state published on `window.__fanSheep`: implied angle == `rot` to 0.01°
+           through the whole bounce, where the old form drifted by up to 20°.
+           ⚠️ It is cheaper too: the composed transform is `R(θ) · diag(sx, sy)`, so one
+           matrix() literal replaces four multiplies and a cos/sin pair. */
         const s = Math.max(-SQ_MAX, Math.min(SQ_MAX, t.sq));
         const sx = 1 + s * 0.55;
         const sy = 1 - s;
-        const th = (t.rot * Math.PI) / 180;
-        const co = Math.cos(th);
-        const si = Math.sin(th);
-        const m11 = co * co * sx + si * si * sy;
-        const m12 = co * si * (sx - sy);
-        const m22 = si * si * sx + co * co * sy;
-        t.el.style.transform = `${at} matrix(${m11.toFixed(4)},${m12.toFixed(4)},${m12.toFixed(4)},${m22.toFixed(4)},0,0)`;
+        t.el.style.transform = `${at} matrix(${sx.toFixed(4)},0,0,${sy.toFixed(4)},0,0)`;
         // published for probes: a squashed toy's AABB also changes with its ROTATION,
         // so the rect cannot tell squash from spin. `--sq` can.
         t.el.style.setProperty("--sq", s.toFixed(3));
@@ -2012,6 +2189,18 @@ const artHref = getLocalizedPath("/art", language);
     --border-strong: rgba(27, 37, 216, 0.3);
     --border-divider: rgba(245, 48, 138, 0.3);
 
+    /* ── NO TEXT SELECTION ANYWHERE ON THIS PAGE ──
+       The visitor: 「给整个界面加一个防止复制，这样和水果互动的时候不会误点变成左键
+       拖动选择文本」. Dragging a fruit starts with a left-button press on a page full of
+       paragraphs, so the browser also begins a selection and the toy is dragged through a
+       blue smear. This is the switch that stops it; the gallery rows already carried their
+       own copy of it.
+       ⚠️ `user-select: none` only — the `-webkit-` twin lives in its OWN rule further down,
+       because this build's minifier collapses a prefixed/unprefixed pair in one rule and
+       keeps the last one (CLAUDE.md).
+       ⚠️ One thing stays selectable on purpose: `.contact-handle` (see the exception next
+       to that rule) is a handle with no URL — the only text here that exists to be copied. */
+    user-select: none;
     position: relative;
     min-height: 100vh;
     /* ⚠️ LOAD-BEARING for the animated background, not tidiness. `.fan-mosaic`
@@ -2162,96 +2351,22 @@ const artHref = getLocalizedPath("/art", language);
     z-index: 1;
   }
 
-  /* ══ LANGUAGE SWITCH: A CROSS-FADE, NOT A CUT ══
-     The two languages are two documents (`/fan/` and `/zh/fan/`), so the change is a
-     navigation. Fading the page out before it and back in on arrival is what makes it
-     read as a text swap (「平滑切换文本而不是闪现刷新」) — and it is the only honest way
-     to do it in a static multi-page build. `is-lang-out` is added by the script below,
-     `is-lang-in` for the arrival (a frame later, so the transition has a `from`). */
-  /* ⚠️ TEXT ONLY. The first version faded `.fan-root`, i.e. the background with it,
-     which the visitor read as the background flashing. The fixed layers
-     (`.fan-mosaic`, `.fan-sky`), the rail, the plates and the language pill are all
-     left alone; only the copy that actually differs between the two languages moves. */
-  html.is-lang-out .fan-hero > .fan-title,
-  html.is-lang-out .fan-hero > .fan-title-cn,
-  html.is-lang-out .fan-hero > .fan-sub,
-  html.is-lang-out .fan-hero > .fan-stamp,
-  html.is-lang-out .block-tag,
-  html.is-lang-out .block-title,
-  html.is-lang-out .block-sub,
-  html.is-lang-out .about-para,
-  html.is-lang-out .fact dt,
-  html.is-lang-out .fact dd,
-  html.is-lang-out .plate-title,
-  html.is-lang-out .plate-cat,
-  html.is-lang-out .commission-note,
-  html.is-lang-out .contact-list,
-  html.is-lang-out .fan-footer {
-    opacity: 0;
-  }
+  /* ══ LANGUAGE SWITCH ══
+     There is NO transition here any more, and that is the design. `/fan/` and
+     `/zh/fan/` are two documents, so the switch is a navigation; it is played by the
+     page's own cloud-burst arrival on the ARRIVING document, which the visitor asked
+     for in as many words (「切换语言时，我需要直接播放运动入场动画，然后结束后是另一个
+     语言」). Everything that used to live in this block - the text cross-fade, and
+     before it a `@view-transition` opt-in in `global.css` - was an attempt to animate
+     a handover between two documents from THIS side, which cannot know when the other
+     one is ready. What replaced it is a hold on the incoming document (see the
+     `is-fi-hold` rules in `Layout.astro` and the switch in `FanIntro.astro`).
 
-  html.is-lang-in .fan-hero > .fan-title,
-  html.is-lang-in .fan-hero > .fan-title-cn,
-  html.is-lang-in .fan-hero > .fan-sub,
-  html.is-lang-in .fan-hero > .fan-stamp,
-  html.is-lang-in .block-tag,
-  html.is-lang-in .block-title,
-  html.is-lang-in .block-sub,
-  html.is-lang-in .about-para,
-  html.is-lang-in .fact dt,
-  html.is-lang-in .fact dd,
-  html.is-lang-in .plate-title,
-  html.is-lang-in .plate-cat,
-  html.is-lang-in .commission-note,
-  html.is-lang-in .contact-list,
-  html.is-lang-in .fan-footer {
-    opacity: 0;
-  }
-
-  /* the outgoing copy goes first and fast, the arriving copy eases in behind it */
-  html.is-lang-out .fan-hero > .fan-title,
-  html.is-lang-out .fan-hero > .fan-title-cn,
-  html.is-lang-out .fan-hero > .fan-sub,
-  html.is-lang-out .fan-hero > .fan-stamp,
-  html.is-lang-out .block-tag,
-  html.is-lang-out .block-title,
-  html.is-lang-out .block-sub,
-  html.is-lang-out .about-para,
-  html.is-lang-out .fact dt,
-  html.is-lang-out .fact dd,
-  html.is-lang-out .plate-title,
-  html.is-lang-out .plate-cat,
-  html.is-lang-out .commission-note,
-  html.is-lang-out .contact-list,
-  html.is-lang-out .fan-footer {
-    transition: opacity 0.18s linear;
-  }
-
-  html.is-lang-in .fan-hero > .fan-title,
-  html.is-lang-in .fan-hero > .fan-title-cn,
-  html.is-lang-in .fan-hero > .fan-sub,
-  html.is-lang-in .fan-hero > .fan-stamp,
-  html.is-lang-in .block-tag,
-  html.is-lang-in .block-title,
-  html.is-lang-in .block-sub,
-  html.is-lang-in .about-para,
-  html.is-lang-in .fact dt,
-  html.is-lang-in .fact dd,
-  html.is-lang-in .plate-title,
-  html.is-lang-in .plate-cat,
-  html.is-lang-in .commission-note,
-  html.is-lang-in .contact-list,
-  html.is-lang-in .fan-footer {
-    transition: opacity 0.3s var(--ease-out);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    html.is-lang-out .fan-root,
-    html.is-lang-in .fan-root {
-      opacity: 1;
-      transition: none;
-    }
-  }
+     ⚠️ Two earlier versions of this block are worth remembering before one is written
+     again: fading `.fan-root` faded the BACKGROUND with it (the visitor read that as
+     the background flashing), and fading only the copy still left the incoming
+     document painting its own bare frames for as long as it took to parse `.fan-root`.
+     Text-level animation can never cover a document-level gap. */
 
   /* ══ NO SITE CHROME ══
      The header and the footer are the studio's own dark surfaces, and the
@@ -2301,11 +2416,12 @@ const artHref = getLocalizedPath("/art", language);
 
   .fan-langs {
     position: relative;
-    /* ⚠️ On the GROUP, not on the pill. Naming only the pill animated the blue box
-       while both labels were cut over with the rest of the document, so the arriving
-       language's text popped in mid-slide (「蓝色条移动到文本上时，文本会突然闪现
-       出现」). Naming the group cross-fades the labels together with the pill. */
-    view-transition-name: fan-langs;
+    /* ⚠️ This group carried a `view-transition-name` while the switch was a browser
+       cross-document view transition. Both are gone: the switch is the page's own
+       arrival now, and a named element would be carried in the TOP LAYER - above the
+       arrival cover, floating over the cloud burst. Nothing on this page is named for
+       a view transition any more, which is also why `@view-transition` was dropped
+       from `global.css`. */
     display: inline-flex;
     gap: 0;
     padding: 3px;
@@ -2328,11 +2444,8 @@ const artHref = getLocalizedPath("/art", language);
     background: var(--fan-blue);
     pointer-events: none;
     transition: transform 0.34s var(--ease-out);
-    /* ⚠️ The same name in BOTH documents is what lets the browser carry this element
-       across the navigation instead of snapping it: with `@view-transition
-       { navigation: auto }` (global.css §14) the blue box is animated from where it
-       was to where it lands, which is exactly the effect that was asked for. */
-    /* (the name lives on the GROUP, see .fan-langs) */
+    /* the slide is driven by the group's `data-active`, which is SERVER-RENDERED: on
+       the new document the pill is already in its final place before the first paint */
   }
 
   .fan-langs[data-active="zh"] .fan-lang-pill {
@@ -2428,7 +2541,33 @@ const artHref = getLocalizedPath("/art", language);
   .fan-title {
     position: relative;
     z-index: 1;
-    display: inline-block;
+    /* ── WHY THIS IS `block` + `max-content` + `left/translate`, AND NOT `inline-block` ──
+       With `TITLE_GAPS` baked in, the wordmark is 1171px wide at the 108px cap: 39px
+       WIDER than the 1132px the hero offers. Every way of centring an over-wide box
+       was tried on the real page and measured, and exactly one of them centres it:
+         · `inline-block` + the parent's `text-align: center` - a line box that
+           overflows is aligned to the START, not centred: ink measured 154..1325 (a
+           box centre 19.5px right of the cloud, `Fluffy World` and the sub line).
+         · `display: block` + `text-align: center` - the same, and the ink still
+           starts at the content edge.
+         · `display: block` + `width: max-content` + `margin-inline: auto` - CSS 2.1
+           §10.3.3 zeroes BOTH auto margins when the box is over-constrained, so it
+           is left-aligned too (the "auto margins centre it" belief is only true
+           while it fits).
+         · **this** - a block that starts at the content edge, shifted by half the
+           containing block and back by half of itself. Correct for every width: it
+           is an identity when the wordmark fits, and 19.5px of symmetric overhang
+           when it does not.
+       ⚠️ `translate`, NOT `transform`. `FanIntro` animates this element's `transform`
+       for the hero reveal (`translateY(28px) scale(.96)` -> none); a `transform` here
+       would be REPLACED by that rule for the whole arrival and the wordmark would
+       jump half its own width sideways at the reveal. `translate` is a separate
+       property and composes with it (translate -> rotate -> scale -> transform).
+       Measured after: ink centred on the viewport at 1280, 1440 and 1600. */
+    display: block;
+    width: max-content;
+    left: 50%;
+    translate: -50% 0;
     /* The cloud is in flow now, so this is only the print gap under it — it no
        longer has to reserve the cloud's height as well. */
     margin: clamp(22px, 2.4vw, 30px) 0 0;
@@ -2440,16 +2579,19 @@ const artHref = getLocalizedPath("/art", language);
        at would have run ~1600px wide, off both edges. The 108px cap also covers
        wide screens, where `vw` alone would keep growing while the hero stops at
        1180px. Measured after: 1107px wide at 1440. */
-    /* TWO LINES, and that is what buys the size back. Pacifico sets the whole string
-       at 10.26x its font-size, so a single line was capped near 110px by the 1132px
-       the hero offers (the 156px of the condensed face it replaced would have run
-       1600px wide and off both edges). Split at the space, only RRSUIKA has to fit,
-       so the same box takes much more — and it is the two-line lockup the reference
-       sheet itself uses. Sized by measurement: 输入/_scratch/hero-geom.mjs prints the
-       rendered width. */
-    font-size: clamp(40px, 13.6vw, 205px);
+    /* ⚠️ ONE LINE, and this pair of numbers is the 9b9a074 lockup — the visitor
+       asked for it back by name: 「我需要 commit 版本 9b9a074 的标题尺寸和大小，那个
+       版本的 RRSUIKA STUDIO 标题是最好看的」. The TWO-LINE version that followed
+       (3960e54, font-size up to 205px) was reverted for a reason that is visible on
+       any window: the markup went back to one line while the size stayed at the
+       two-line value, so `RRSUIKA STUDIO` — which Pacifico sets at 10.26x its
+       font-size — ran ~2100px wide in a 1132px hero and off the right edge. The two
+       numbers below only work as a PAIR: 108px is the cap that keeps ONE line inside
+       the hero, and 1.1 is the leading that goes with it. Change one, re-measure the
+       rendered width (输入/_scratch/hero-geom.mjs prints it). */
+    font-size: clamp(26px, 7.6vw, 108px);
     font-weight: 400;
-    line-height: 1.04;
+    line-height: 1.1;
     letter-spacing: 0;
     color: var(--art-face, var(--fan-magenta));
     -webkit-text-stroke: 0.075em var(--art-edge, var(--fan-white));
@@ -2504,9 +2646,10 @@ const artHref = getLocalizedPath("/art", language);
     user-select: none;
   }
 
-  .title-line {
-    display: block;
-  }
+  /* ⚠️ `.title-line` was here: one block wrapper per WORD, for the two-line lockup.
+     The markup is back to a single run of `.tl` spans, so the rule went with it — a
+     `display: block` on a class that no longer exists is dead CSS that reads like a
+     live layout rule. */
 
   .fan-title-cn {
     position: relative;
@@ -3690,6 +3833,24 @@ const artHref = getLocalizedPath("/art", language);
 
   :global(.fan-root .row-view) {
     -webkit-user-select: none;
+  }
+
+  /* ⚠️ THE PAGE-WIDE SELECTION BLOCK LIVES ON `.fan-root` ITSELF (see that rule).
+     Its WebKit twin has to be a SEPARATE rule: the build's minifier treats the
+     prefixed and unprefixed properties as aliases, collapses a pair in one rule and
+     keeps the LAST one (CLAUDE.md) - which is exactly how the frosted cards once
+     shipped WebKit-only frost. Same shape as the `.row-view` pair above. */
+  :global(.fan-root) {
+    -webkit-user-select: none;
+  }
+
+  /* ⚠️ ONE EXCEPTION, and it is deliberate: a handle with no public URL is the only
+     text on this page that exists TO BE COPIED (`data-nolink` - Discord, QQ). The
+     selection block is about not smearing the hero while dragging a fruit, not about
+     hiding a handle from the visitor. */
+  :global(.fan-root .contact-handle) {
+    user-select: text;
+    -webkit-user-select: text;
   }
 
   .row-track {

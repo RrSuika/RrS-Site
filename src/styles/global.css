@@ -2518,38 +2518,18 @@ html.is-intro {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   CROSS-DOCUMENT VIEW TRANSITIONS (2026-09-30)
+   CROSS-DOCUMENT VIEW TRANSITIONS — REMOVED (2026-09-30)
 
-   Ship-wide opt-in, because this is a multi-page build with no client router: the
-   only way a language switch (`/fan/` ⇄ `/zh/fan/`) can cross-fade instead of
-   flashing is for the BROWSER to hold the old page's snapshot until the new one has
-   painted. Chrome/Edge 126+ and Safari 18.2+ do it; anything else navigates exactly
-   as before, which is why this is safe to switch on globally.
+   `@view-transition { navigation: auto }` was switched on site-wide so that a
+   language switch (`/fan/` ⇄ `/zh/fan/`) could be animated by the BROWSER, holding the
+   old page's snapshot until the new document had painted, with the fan page's
+   language group carrying a `view-transition-name` so the blue pill slid across.
 
-   ⚠️ The durations are deliberately shorter than the default 250ms and match the
-   page's own `--ease-out`: the outgoing snapshot fades a touch faster than the
-   incoming one so the switch reads as one movement rather than two.
-   ⚠️ `view-transition-name: fan-lang-pill` lives in `FanPage.astro` (on both
-   documents' pill), which is what makes the blue box SLIDE from one label to the
-   other across the navigation instead of being re-drawn.
+   ⚠️ It is gone, and the switch it was written for is played by the page's own
+   arrival instead (「切换语言时，我需要直接播放运动入场动画，然后结束后是另一个语言」).
+   A named element is carried in the TOP LAYER, so the pill would have floated over
+   that arrival cover; and the snapshot the browser animates TO is still the new
+   document's first paint, which is the frame the incoming document now refuses to
+   show until its cover is up (`is-fi-hold`, `Layout.astro`). Two mechanisms for one
+   handover, one of them unable to see the other: the arrival won.
    ═══════════════════════════════════════════════════════════════ */
-@view-transition {
-  navigation: auto;
-}
-
-/* ⚠️ The ROOT is deliberately NOT animated: cross-fading the whole document also
-   cross-fades the background, and the visitor read that as the background flashing
-   (「切换语言时背景也闪了一下，但我需要背景不闪」). The two documents share the same
-   fixed background, so an instant swap is invisible — only elements carrying their
-   own `view-transition-name` move. */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none;
-  }
-}

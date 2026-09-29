@@ -144,9 +144,26 @@ interface Props {
     transition-delay: 0.39s;
   }
 
-  /* while the arrival plays the page behind it must not scroll */
-  html.is-fi {
-    overflow: hidden;
+  /* ── THE SCROLL LOCK, AND WHY IT IS NOT `overflow: hidden` ANY MORE ──
+     ⚠️ `html.is-fi { overflow: hidden }` was here, and it MOVED THE WHOLE PAGE 7.5px
+     to the right the moment the arrival ended (「云朵动画播放完后，整体画面又稍微向右侧
+     移动了一次」). Measured: any overflow other than `visible` on the ROOT makes
+     Chrome reserve a 15px scrollbar gutter for the BODY - `body.clientWidth` reads
+     1425 instead of 1440 while the class is on, so every centred block in the page
+     (the hero at 122.5, and with it the cloud, the wordmark, `Fluffy World` and the
+     top bar) sits 7.5px left of where it lands when the class comes off. The site
+     hides the scrollbar, so nothing is visible to explain it; `overflow: clip` on
+     either axis and `scrollbar-gutter: stable` were measured too - all 1425.
+     Taking the BODY out of flow locks the scroll just as well and keeps its width
+     exactly (measured 1440 -> hero stays at 130 through the whole arrival). It is the
+     same trick the lightbox uses to lock the page, and the arrival only ever plays at
+     scroll 0 (first visit of the session, a jump from /art, or a language switch - in
+     all three this is a fresh document), so there is no scroll position to preserve. */
+  html.is-fi body {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
   }
 </style>
 
@@ -210,12 +227,53 @@ interface Props {
   (() => {
     const el = document.getElementById("fan-intro");
     const canvas = document.querySelector("[data-fi-canvas]");
-    if (!el || !canvas) return;
+    /**
+     * ⚠️ These two bail-outs have to drop the paint hold themselves. Everything below
+     * releases it (or is covered by the guard's 3s net), but a browser that cannot give
+     * this canvas a 2d context would otherwise sit on a blank page until that net
+     * fired. `held` / `releaseHold` are declared FURTHER DOWN, so they cannot be called
+     * from here (they would be in their TDZ) - and a bare class removal is the whole
+     * release anyway.
+     */
+    const dropHold = () => document.documentElement.classList.remove("is-fi-hold");
+    if (!el || !canvas) {
+      dropHold();
+      return;
+    }
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) {
+      dropHold();
+      return;
+    }
 
     const root = document.documentElement;
     const KEY = "rrsuika-fan-intro-seen";
+    /* the flag `FanPage` leaves behind when the visitor clicks the language switch */
+    const KEY_SWITCHED = "rrsuika-fan-arrive";
+
+    /* ── THE PAINT HOLD ──
+       The <head> guard in `Layout.astro` puts `is-fi-hold` on <html>, which keeps the
+       whole document unpainted: that is what stops the incoming document's first
+       frames (the site's dark <html> background with the site navbar on it) from ever
+       being seen. Only this component may release it, because only this component
+       knows whether a cover is coming at all.
+
+       ⚠️ Released when the cover CAN COVER, not when the element exists. `.fi`'s rules
+       ship in a stylesheet of their own, and in `astro dev` that stylesheet is
+       injected by a module script - so for the first frames the element is in the
+       document while being neither fixed nor full-viewport, and a release there would
+       show the page underneath it, which is the whole bug this exists to prevent.
+       ⚠️ The arrival's CLOCK waits for the same condition, so the shot the visitor
+       sees always starts at 0.12s rather than wherever a slow stylesheet dropped it. */
+    let held = true;
+    function releaseHold() {
+      if (!held) return;
+      held = false;
+      root.classList.remove("is-fi-hold");
+    }
+    function coverCanCover() {
+      return getComputedStyle(el).position === "fixed" && canvas.width > 1 && canvas.height > 1;
+    }
 
     /** the mosaic's own handle (`FanMosaic.astro` publishes it for A/B probes) */
     /* ⚠️ `FanMosaic` is rendered INSIDE `.fan-root`, i.e. AFTER this component, and
@@ -566,6 +624,16 @@ interface Props {
          without this guard that frame renders the LIVE clock over the frozen one and,
          past 3.5s, tears the whole arrival down under the probe. */
       if (finished) return;
+      /* ⚠️ While the document is held the shot has not started yet: the canvas already
+         holds frame 0 (rendered synchronously above), but nothing of it is on screen,
+         so the clock must not run - see the hold block at the top of this script. */
+      if (held) {
+        if (!coverCanCover()) {
+          rafId = requestAnimationFrame(frame);
+          return;
+        }
+        releaseHold();
+      }
       if (!startTime) startTime = now;
       const t = (now - startTime) / 1000;
       render(t);
@@ -590,6 +658,9 @@ interface Props {
       /* ⚠️ `is-fi` goes at the same moment as the overlay: it is what holds the
          hero's children at opacity 0, so leaving it behind would hide the page. */
       root.classList.remove("is-fi", "is-fi-revealed");
+      /* the document may never have been released if the stylesheet arrived late and
+         the loop was torn down early (the 8s net, or a debug `step()`) */
+      releaseHold();
       releaseMosaic();
       /* ⚠️ NOT `el.remove()` in this frame. Deleting a full-screen layer in one go
          makes the compositor show the freshly exposed page before it has been
@@ -623,7 +694,26 @@ interface Props {
       fromArt = /\/art(\/|\?|$)/.test(document.referrer);
     } catch (_) {}
 
-    if (reduceMotion || type === "back_forward" || (!fromArt && seen)) {
+    /* ── THE LANGUAGE SWITCH ──
+       `/fan/` and `/zh/fan/` are two documents, so switching language is a
+       navigation, and the visitor asked for the arrival to BE that switch:
+       「切换语言时，我需要直接播放运动入场动画，然后结束后是另一个语言」. `FanPage`
+       leaves this flag on the click; it is read here, ONCE, and cleared immediately
+       so it cannot leak into a later navigation (a reload of the page it just
+       arrived on included). The switch is therefore a third reason to play, next to
+       "first visit of the session" and "arriving from the art pages" — and the
+       reduced-motion and back/forward rules still win over it. */
+    let switched = false;
+    try {
+      switched = sessionStorage.getItem(KEY_SWITCHED) === "1";
+      if (switched) sessionStorage.removeItem(KEY_SWITCHED);
+    } catch (_) {}
+
+    if (reduceMotion || type === "back_forward" || (!switched && !fromArt && seen)) {
+      /* ⚠️ EVERY exit from this branch has to release the hold (Layout.astro's head
+         guard): a page with no arrival still has to be readable, and this is the
+         path a plain navigation to /fan/ takes inside the same session. */
+      releaseHold();
       el.remove();
       return;
     }
@@ -646,6 +736,7 @@ interface Props {
     /* the safety net: a canvas that never ran must not leave a cover — or a hidden
        hero — behind it */
     window.setTimeout(() => {
+      releaseHold();
       if (!document.getElementById("fan-intro")) return;
       canvas.style.display = "none";
       finish();
@@ -663,6 +754,9 @@ interface Props {
       step(seconds) {
         finished = true;
         cancelAnimationFrame(rafId);
+        /* ⚠️ The hold has to go too, or the probe photographs an invisible document:
+           the arrival is frozen, so nothing else would ever release it. */
+        if (coverCanCover()) releaseHold();
         render(seconds);
       },
       resume() {

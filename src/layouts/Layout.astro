@@ -204,6 +204,46 @@ const websiteSchema = {
     </script>
     <style is:global>
       html:not([data-theme]) body { visibility: hidden; }
+
+      /* ⚠️ THE FAN PAGE'S FIRST FRAME IS DECIDED HERE, in the document instead of in
+         a stylesheet. A page that brings its own arrival (the ownIntro prop, i.e.
+         /fan/) is not painted like the rest of the site, and both rules below exist
+         because the visitor saw what the other order looks like: 「点击右上角按钮切换
+         语言时背景会闪一下黑色，并且能看到 navbar」.
+
+         The cause was timing, not styling. The fan page hides the site bar with
+         body:has([data-fan]) .site-content > header, and that selector cannot match
+         until the parser has created .fan-root - hundreds of kilobytes into this
+         document. Until then the incoming document paints the site's own dark <html>
+         background WITH the navbar on top of it, and the browser swaps to that frame
+         the moment it exists. Both halves are answered before a single byte of the
+         body is parsed: the background is the colour the frame has to be anyway (see
+         below), and the site bar was never part of this page to begin with. */
+      html[data-own-intro] {
+        /* The one frame nobody can choreograph: the browser shows the incoming
+           document as soon as it can paint ANYTHING, which is this background and
+           nothing else. It is set to the pink that frame has to be - measured, the
+           page being left has a top band of rgb(247,212,217) and the arrival cover's
+           own first frame is rgb(250,218,222), so a flat #f9d6db sits inside both and
+           the swap is invisible. The theme's dark <html> background is what used to
+           show here instead. */
+        background-color: #f9d6db;
+      }
+
+      /* ⚠️ .site-content > header, NOT a bare header: this page's own hero is a
+         <header> too (the same trap FanPage.astro documents). */
+      html[data-own-intro] .site-content > header {
+        display: none;
+      }
+
+      /* Nothing is painted until the arrival cover can actually cover. visibility
+         and not display: the cover measures its own box and the mosaic measures the
+         viewport while this is on, and neither survives display: none. FanIntro
+         releases it - and releases it on every path where the arrival does not play;
+         the safety net in the guard below is the backstop. */
+      html.is-fi-hold body {
+        visibility: hidden;
+      }
     </style>
 
     <!--
@@ -231,25 +271,26 @@ const websiteSchema = {
         var skip = false;
         var resolveGate = () => {};
 
-        /* ⚠️ THE LANGUAGE CROSS-FADE HAS TO BE DECIDED HERE, before the first paint.
-           `FanPage` switches languages by navigating to the other document, and the
-           incoming page used to arm its own fade from a deferred module — i.e. after
-           it had already painted, so what the visitor saw was the bare paper for a
-           frame (「闪一下白色的方格背景，然后刷新出另一个语言」). This runs in
-           <head>, so `is-lang-in` is on the element before anything is drawn.
-           Browsers with CROSS-DOCUMENT view transitions do this themselves
-           (`@view-transition` in global.css), so the flag is simply dropped there. */
-        try {
-          if (sessionStorage.getItem("rrsuika-lang-fade") === "1") {
-            sessionStorage.removeItem("rrsuika-lang-fade");
-            if (!("onpagereveal" in window)) root.classList.add("is-lang-in");
-          }
-        } catch (_) {}
-
         /* ⚠️ A page with its own arrival opts out of the site cover. Read from the
            markup (not from a script) so the decision cannot race the guard. */
         if (root.hasAttribute("data-own-intro")) {
           root.classList.add("is-intro-skip");
+          /* ── HOLD THE PAINT UNTIL THE ARRIVAL COVER IS ON SCREEN ──
+             ⚠️ This is what the language switch needed. `/fan/` and `/zh/fan/` are
+             two documents, so switching language is a navigation, and the incoming
+             document used to paint its own early frames before anything could cover
+             them: the site's dark `<html>` background with the site navbar on it.
+             The visitor reported exactly those two things (「背景会闪一下黑色，并且
+             能看到 navbar」). The class is read by the <style> above (which is what
+             makes the held document paint the right pink) and released by
+             `FanIntro.astro` once its cover can actually cover - which is also the
+             component that knows whether the arrival is going to play at all.
+
+             The timeout is the backstop: a document whose arrival never runs must
+             not stay invisible. It is deliberately longer than the arrival's own
+             boot (one frame) and shorter than anything a visitor would sit through. */
+          root.classList.add("is-fi-hold");
+          window.setTimeout(() => root.classList.remove("is-fi-hold"), 3000);
           window.__rrsIntroGate = Promise.resolve();
           window.__rrsIntroOpened = true;
           document.addEventListener(
