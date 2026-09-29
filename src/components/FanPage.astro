@@ -931,22 +931,34 @@ const artHref = getLocalizedPath("/art", language);
 
   const nudgeBtn = document.querySelector<HTMLButtonElement>("[data-nudge]");
   if (nudgeBtn) {
-    const countEl = nudgeBtn.parentElement?.querySelector<HTMLElement>("[data-nudge-count]");
-    const backEl = nudgeBtn.parentElement?.querySelector<HTMLElement>("[data-nudge-back]");
-    let nudges = 0;
+    const countEl =
+      nudgeBtn.parentElement?.querySelector<HTMLElement>("[data-nudge-count]");
+
+    const backEl =
+      nudgeBtn.parentElement?.querySelector<HTMLElement>("[data-nudge-back]");
+
     /**
-     * The reply pool, read from the paragraph's own `data-` attribute (see the
-     * markup). ⚠️ Index-aligned between en and zh (`utils/fan.ts`), so switching
-     * language mid-session shows the same joke in the other language.
-     * Falls back to whatever text was server-rendered if the attribute is
-     * missing or malformed — a broken pool must not take the whole page down.
+     * Local copy of the server count.
+     *
+     * IMPORTANT:
+     * This is no longer the source of truth.
+     * The real count lives in Cloudflare D1.
+     */
+    let nudges = 0;
+
+    /**
+     * The reply pool, read from the paragraph's own data attribute.
      */
     const replies = (() => {
       try {
-        const list = JSON.parse(backEl?.dataset.nudgeReplies ?? "[]") as string[];
-        if (Array.isArray(list) && list.length) return list;
+        const list = JSON.parse(
+          backEl?.dataset.nudgeReplies ?? "[]",
+        ) as string[];
+        if (Array.isArray(list) && list.length) {
+          return list;
+        }
       } catch {
-        /* fall through to the rendered line */
+        /* fall through */
       }
       return [backEl?.textContent ?? ""];
     })();
@@ -957,49 +969,135 @@ const artHref = getLocalizedPath("/art", language);
       el.classList.add(cls);
     };
     /**
-     * The avatar, restarted from frame 0 on every press — "按一次就播放一次，按的越快
-     * 跳的越快".
+     * Only ever move the visible counter FORWARD.
      *
-     * ⚠️ **Assigning the same `src` again does NOT restart a GIF** (no attribute
-     * change, no reload), and the frame can only be rewound by making the browser
-     * decode the file again. Dropping the attribute, forcing a reflow and putting it
-     * back does exactly that, and the second load comes out of the HTTP cache — so
-     * a fast presser restarts it with no network at all.
-     * ⚠️ The GIF itself has no NETSCAPE loop block any more, so it plays ONCE and
-     * parks on its last frame. A looping GIF would ignore the restart entirely.
+     * Multiple clicks can be in flight simultaneously. If responses return
+     * in a different order, an older response must not visually overwrite
+     * a newer count.
      */
-    const pfpEl = nudgeBtn.parentElement?.querySelector<HTMLImageElement>("[data-nudge-pfp]");
-    const pfpSrc = pfpEl?.getAttribute("src") ?? "";
-    const jump = () => {
-      if (!pfpEl || !pfpSrc) return;
-      pfpEl.removeAttribute("src");
-      void pfpEl.offsetWidth; // ⚠️ the reflow IS the mechanism; without it the browser coalesces the two writes
-      pfpEl.setAttribute("src", pfpSrc);
-    };
-    nudgeBtn.addEventListener("click", () => {
-      nudges += 1;
+    const applyServerCount = (value: unknown) => {
+      const next = Number(value);
+
+      if (!Number.isFinite(next)) return;
+
+      if (next < nudges) return;
+
+      nudges = next;
+
       if (countEl) {
         countEl.textContent = String(nudges);
         replay(countEl, "is-bump");
       }
-      replay(nudgeBtn, "is-hit");
-      jump();
-      if (backEl) {
-        if (backEl.hidden) backEl.hidden = false;
-        /* ⚠️ NEVER the same line twice in a row. `Math.random()` alone repeats
-           about 1 press in 103, and a repeat reads as the button being broken
-           rather than as a joke — the whole point of a pool is that consecutive
-           presses differ. */
-        if (replies.length > 1) {
-          const next = Math.floor(Math.random() * (replies.length - 1));
-          replyAt = next >= replyAt ? next + 1 : next;
+    };
+
+    /**
+     * Load the real total when the page opens.
+     */
+    const loadNudgeCount = async () => {
+      try {
+        const response = await fetch("/api/nudge", {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Nudge GET failed: ${response.status}`);
         }
-        backEl.textContent = replies[replyAt];
-        // the entrance animation is on `.is-pop`, so it can be replayed per press
-        replay(backEl, "is-pop");
+
+        const data = await response.json();
+
+        if (data.success) {
+          applyServerCount(data.count);
+        }
+      } catch (error) {
+        console.error("Failed to load nudge count:", error);
       }
-      nudgeSpawn?.(nudgeBtn);
+    };
+
+    /**
+     * The avatar, restarted from frame 0 on every press.
+     */
+    const pfpEl =
+      nudgeBtn.parentElement?.querySelector<HTMLImageElement>("[data-nudge-pfp]");
+
+    const pfpSrc = pfpEl?.getAttribute("src") ?? "";
+
+    const jump = () => {
+      if (!pfpEl || !pfpSrc) return;
+
+      pfpEl.removeAttribute("src");
+
+      void pfpEl.offsetWidth;
+
+      pfpEl.setAttribute("src", pfpSrc);
+    };
+
+    /**
+     * One real press = one POST request.
+     *
+     * We deliberately DO NOT disable the button while waiting for the server.
+     * Fast presses should still count independently.
+     */
+    nudgeBtn.addEventListener("click", async () => {
+      try {
+        const response = await fetch("/api/nudge", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Nudge POST failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error ?? "Unknown nudge error");
+        }
+
+        /**
+         * Update the counter from D1.
+         */
+        applyServerCount(data.count);
+
+        /**
+         * Existing visual feedback.
+         */
+        replay(nudgeBtn, "is-hit");
+        jump();
+
+        if (backEl) {
+          if (backEl.hidden) {
+            backEl.hidden = false;
+          }
+
+          if (replies.length > 1) {
+            const next = Math.floor(Math.random() * (replies.length - 1));
+            replyAt = next >= replyAt ? next + 1 : next;
+          }
+
+          backEl.textContent = replies[replyAt];
+          replay(backEl, "is-pop");
+        }
+
+        nudgeSpawn?.(nudgeBtn);
+      } catch (error) {
+        /**
+         * Don't fake a successful nudge when the database request failed.
+         * The server count is the source of truth.
+         */
+        console.error("Nudge failed:", error);
+      }
     });
+
+    /**
+     * Fetch the global count once the page has loaded.
+     */
+    void loadNudgeCount();
   }
   const sheepLayer = document.querySelector<HTMLElement>(".sheep-layer");
   /**
