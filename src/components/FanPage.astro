@@ -1786,8 +1786,21 @@ const artHref = getLocalizedPath("/art", language);
         // velocity at all; the small loss of the normal component is what makes a
         // landing settle instead of bounce.
         if (t.y > FLOOR) {
-          t.y = FLOOR;
+          /* ⚠️ **THE IMPACT SPEED IS MEASURED BEFORE THE CLAMP, AND THAT IS THE WHOLE
+             FIX.** It used to be `t.y = FLOOR; const vn = t.y - t.py;` - which reads the
+             PENETRATION of that one frame, not the speed the fruit arrived at. A fruit
+             falling 29px a frame with 10.65px left above the floor got `vn = 10.65`, so
+             the restitution acted on 37% of the impact and the rebound came out at 6.6px
+             a frame instead of 18. Which fruit bounced and which one landed with a thud
+             was decided by where it happened to be the frame before - a random phase, and
+             the reason the visitor saw 「第一次落地会弹跳」 come and go while nothing in the
+             code changed: measured across runs, the same drop rebounded anywhere from 0 to
+             250px, and the deeper the penetration (slow frame, big dt) the WEAKER the
+             bounce, because the step is larger and the leftover smaller.
+             Reading the step BEFORE the clamp gives the real approach speed, so the same
+             drop now bounces the same amount every time. */
           const vn = t.y - t.py;
+          t.y = FLOOR;
           // ⚠️ `+`, not `-`: the previous position goes UP past the floor so the
           // implied velocity reverses. See GROUND_BOUNCE.
           if (vn > 0) {
