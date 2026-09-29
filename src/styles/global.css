@@ -2537,24 +2537,14 @@ html.is-intro {
   navigation: auto;
 }
 
-::view-transition-old(root) {
-  animation: rrsVtOut 0.22s var(--ease-out) both;
-}
-
+/* ⚠️ The ROOT is deliberately NOT animated: cross-fading the whole document also
+   cross-fades the background, and the visitor read that as the background flashing
+   (「切换语言时背景也闪了一下，但我需要背景不闪」). The two documents share the same
+   fixed background, so an instant swap is invisible — only elements carrying their
+   own `view-transition-name` move. */
+::view-transition-old(root),
 ::view-transition-new(root) {
-  animation: rrsVtIn 0.3s var(--ease-out) both;
-}
-
-@keyframes rrsVtOut {
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes rrsVtIn {
-  from {
-    opacity: 0;
-  }
+  animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

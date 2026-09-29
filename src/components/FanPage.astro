@@ -2168,16 +2168,80 @@ const artHref = getLocalizedPath("/art", language);
      read as a text swap (「平滑切换文本而不是闪现刷新」) — and it is the only honest way
      to do it in a static multi-page build. `is-lang-out` is added by the script below,
      `is-lang-in` for the arrival (a frame later, so the transition has a `from`). */
-  html.is-lang-out .fan-root,
-  html.is-lang-in .fan-root {
+  /* ⚠️ TEXT ONLY. The first version faded `.fan-root`, i.e. the background with it,
+     which the visitor read as the background flashing. The fixed layers
+     (`.fan-mosaic`, `.fan-sky`), the rail, the plates and the language pill are all
+     left alone; only the copy that actually differs between the two languages moves. */
+  html.is-lang-out .fan-hero > .fan-title,
+  html.is-lang-out .fan-hero > .fan-title-cn,
+  html.is-lang-out .fan-hero > .fan-sub,
+  html.is-lang-out .fan-hero > .fan-stamp,
+  html.is-lang-out .block-tag,
+  html.is-lang-out .block-title,
+  html.is-lang-out .block-sub,
+  html.is-lang-out .about-para,
+  html.is-lang-out .fact dt,
+  html.is-lang-out .fact dd,
+  html.is-lang-out .plate-title,
+  html.is-lang-out .plate-cat,
+  html.is-lang-out .commission-note,
+  html.is-lang-out .contact-list,
+  html.is-lang-out .fan-footer {
     opacity: 0;
   }
 
-  html.is-lang-out .fan-root {
+  html.is-lang-in .fan-hero > .fan-title,
+  html.is-lang-in .fan-hero > .fan-title-cn,
+  html.is-lang-in .fan-hero > .fan-sub,
+  html.is-lang-in .fan-hero > .fan-stamp,
+  html.is-lang-in .block-tag,
+  html.is-lang-in .block-title,
+  html.is-lang-in .block-sub,
+  html.is-lang-in .about-para,
+  html.is-lang-in .fact dt,
+  html.is-lang-in .fact dd,
+  html.is-lang-in .plate-title,
+  html.is-lang-in .plate-cat,
+  html.is-lang-in .commission-note,
+  html.is-lang-in .contact-list,
+  html.is-lang-in .fan-footer {
+    opacity: 0;
+  }
+
+  /* the outgoing copy goes first and fast, the arriving copy eases in behind it */
+  html.is-lang-out .fan-hero > .fan-title,
+  html.is-lang-out .fan-hero > .fan-title-cn,
+  html.is-lang-out .fan-hero > .fan-sub,
+  html.is-lang-out .fan-hero > .fan-stamp,
+  html.is-lang-out .block-tag,
+  html.is-lang-out .block-title,
+  html.is-lang-out .block-sub,
+  html.is-lang-out .about-para,
+  html.is-lang-out .fact dt,
+  html.is-lang-out .fact dd,
+  html.is-lang-out .plate-title,
+  html.is-lang-out .plate-cat,
+  html.is-lang-out .commission-note,
+  html.is-lang-out .contact-list,
+  html.is-lang-out .fan-footer {
     transition: opacity 0.18s linear;
   }
 
-  html.is-lang-in .fan-root {
+  html.is-lang-in .fan-hero > .fan-title,
+  html.is-lang-in .fan-hero > .fan-title-cn,
+  html.is-lang-in .fan-hero > .fan-sub,
+  html.is-lang-in .fan-hero > .fan-stamp,
+  html.is-lang-in .block-tag,
+  html.is-lang-in .block-title,
+  html.is-lang-in .block-sub,
+  html.is-lang-in .about-para,
+  html.is-lang-in .fact dt,
+  html.is-lang-in .fact dd,
+  html.is-lang-in .plate-title,
+  html.is-lang-in .plate-cat,
+  html.is-lang-in .commission-note,
+  html.is-lang-in .contact-list,
+  html.is-lang-in .fan-footer {
     transition: opacity 0.3s var(--ease-out);
   }
 
@@ -2237,6 +2301,11 @@ const artHref = getLocalizedPath("/art", language);
 
   .fan-langs {
     position: relative;
+    /* ⚠️ On the GROUP, not on the pill. Naming only the pill animated the blue box
+       while both labels were cut over with the rest of the document, so the arriving
+       language's text popped in mid-slide (「蓝色条移动到文本上时，文本会突然闪现
+       出现」). Naming the group cross-fades the labels together with the pill. */
+    view-transition-name: fan-langs;
     display: inline-flex;
     gap: 0;
     padding: 3px;
@@ -2263,7 +2332,7 @@ const artHref = getLocalizedPath("/art", language);
        across the navigation instead of snapping it: with `@view-transition
        { navigation: auto }` (global.css §14) the blue box is animated from where it
        was to where it lands, which is exactly the effect that was asked for. */
-    view-transition-name: fan-lang-pill;
+    /* (the name lives on the GROUP, see .fan-langs) */
   }
 
   .fan-langs[data-active="zh"] .fan-lang-pill {
