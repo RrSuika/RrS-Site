@@ -1653,6 +1653,7 @@ const websiteSchema = {
         var KEY = "rrsuika-mobile-notice";
         const notice = document.getElementById("mobile-notice");
         if (!notice) return;
+
         try {
           if (sessionStorage.getItem(KEY) === "dismissed") {
             notice.hidden = true;
@@ -1661,20 +1662,50 @@ const websiteSchema = {
         } catch (_) {}
 
         var dismissed = false;
+
         function dismissNotice() {
           if (dismissed) return;
+
           dismissed = true;
-          // 淡出动画结束后再移除
+
           notice?.classList.add("notice-leave");
+
           setTimeout(() => {
             if (notice) notice.hidden = true;
           }, 450);
-          try { sessionStorage.setItem(KEY, "dismissed"); } catch (_) {}
+
+          try {
+            sessionStorage.setItem(KEY, "dismissed");
+          } catch (_) {}
         }
 
         var close = notice.querySelector(".notice-close");
         close?.addEventListener("click", dismissNotice);
       })();
     </script>
+
+    <!-- ── PAGE VIEW TRACKING ── -->
+    <script>
+      (() => {
+        const path =
+          window.location.pathname === "/"
+            ? "/"
+            : window.location.pathname.replace(/\/+$/, "");
+
+        fetch("/api/visit", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            path,
+          }),
+          keepalive: true,
+        }).catch((error) => {
+          console.error("Page view tracking failed:", error);
+        });
+      })();
+    </script>
+
   </body>
 </html>
