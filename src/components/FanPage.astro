@@ -409,7 +409,11 @@ const artHref = getLocalizedPath("/art", language);
           margins, and the tuning would live only in the tuner. The space becomes a
           non-breaking space so the per-letter margin applies to it too. */}
       <h1 class="fan-title">
-        {c.hero.title.split("").map((ch) => <span class="tl">{ch === " " ? "\u00A0" : ch}</span>)}
+        {c.hero.title.split(" ").map((word) => (
+          <span class="title-line">
+            {word.split("").map((ch) => <span class="tl">{ch}</span>)}
+          </span>
+        ))}
       </h1>
       <p class="fan-title-cn">{c.hero.cn}</p>
       <p class="fan-sub">{c.hero.sub}</p>
@@ -2440,9 +2444,16 @@ const artHref = getLocalizedPath("/art", language);
        at would have run ~1600px wide, off both edges. The 108px cap also covers
        wide screens, where `vw` alone would keep growing while the hero stops at
        1180px. Measured after: 1107px wide at 1440. */
-    font-size: clamp(26px, 7.6vw, 108px);
+    /* TWO LINES, and that is what buys the size back. Pacifico sets the whole string
+       at 10.26x its font-size, so a single line was capped near 110px by the 1132px
+       the hero offers (the 156px of the condensed face it replaced would have run
+       1600px wide and off both edges). Split at the space, only RRSUIKA has to fit,
+       so the same box takes much more — and it is the two-line lockup the reference
+       sheet itself uses. Sized by measurement: 输入/_scratch/hero-geom.mjs prints the
+       rendered width. */
+    font-size: clamp(40px, 13.6vw, 205px);
     font-weight: 400;
-    line-height: 1.1;
+    line-height: 1.04;
     letter-spacing: 0;
     color: var(--art-face, var(--fan-magenta));
     -webkit-text-stroke: 0.075em var(--art-edge, var(--fan-white));
@@ -2495,6 +2506,10 @@ const artHref = getLocalizedPath("/art", language);
     transform: translateX(-50%);
     pointer-events: none;
     user-select: none;
+  }
+
+  .title-line {
+    display: block;
   }
 
   .fan-title-cn {
@@ -3132,7 +3147,7 @@ const artHref = getLocalizedPath("/art", language);
   .block-title {
     margin: 8px 0 10px;
     font-family: var(--font-script);
-    font-size: clamp(30px, 4.6vw, 56px);
+    font-size: clamp(34px, 5vw, 62px);
     font-weight: 400;
     line-height: 1.15;
     letter-spacing: 0;
