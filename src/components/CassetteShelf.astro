@@ -4264,9 +4264,9 @@ const coverUrls = items
       return 0.5 - 0.5 * Math.cos(Math.PI * clamp(t));
     }
 
-    const RISE_START = 150;
-    const RISE_STAGGER = 90;
-    const RISE_DUR = 900;
+    const RISE_START = 120;
+    const RISE_STAGGER = 60;
+    const RISE_DUR = 520;
     const PULL_DUR = 1250;
     const CURTAIN_FADE = 260;
 
@@ -4357,10 +4357,36 @@ const coverUrls = items
     // now two beats: the live row rises out through the top of the frame, then the
     // matched row rises in from below — the intro's own ladder, reused, so both
     // directions read as the same motion.
-    /** How long the outgoing row takes to clear the top of the stage. */
-    const FILTER_OUT_MS = 520;
+    /**
+     * ONE tape's own fade on the way out, and the distance between two
+     * neighbours in the wave. Both are the ENTRANCE's own constants.
+     *
+     * ⚠️ **They are shared on purpose, and that is the whole point of this
+     * pair.** The visitor's report: 「退场的速度太快了，而进场速度太慢，我需要你
+     * 调到他们两速度差不多一致」. Before this, one outgoing tape faded in ~140ms
+     * while one incoming tape climbed for 900ms — a 6x difference — so the two
+     * halves could never read as one gesture however well the ORDER matched.
+     * Binding the exit to `RISE_DUR` / `RISE_STAGGER` means tuning the ladder
+     * tunes both halves, and they cannot drift apart again.
+     */
+    const FILTER_OUT_TAPE_MS = RISE_DUR;
+    const FILTER_OUT_STAGGER_MS = RISE_STAGGER;
     /** World units the outgoing row climbs — comfortably past the frame. */
     const FILTER_OUT_Y = 9.5;
+    /**
+     * The outgoing row's phase length: one tape's fade PLUS the whole wave's
+     * stagger, so the last rung finishes on the phase's last frame.
+     *
+     * ⚠️ **The last rung must finish exactly at `filterOut = 1`** — that is the
+     * frame `stepFilterSwap` rebuilds the ring on, and the rebuild depends on
+     * EVERY tape being out of frame, or the new row is painted whole for one
+     * frame (the flash fixed in 「之六」).
+     *
+     * It is derived rather than written down because the wave's length depends
+     * on `span`, which measure() sets from the viewport — a constant here
+     * would be right at one window width and wrong at every other.
+     */
+    const filterOutMs = () => FILTER_OUT_TAPE_MS + 2 * span * FILTER_OUT_STAGGER_MS;
     /** Beat between the old row leaving and the new one starting to rise. */
     const FILTER_GAP_MS = 260;
 
@@ -5245,8 +5271,14 @@ const coverUrls = items
       }
       if (!filterOutPending && filterOut <= 0) return;
 
-      const t = clamp((now - filterOutStart) / FILTER_OUT_MS);
-      filterOut = springOut(t);
+      const t = clamp((now - filterOutStart) / filterOutMs());
+      // ⚠️ LINEAR here, and the ease moved PER TAPE into the exit itself.
+      // Easing globally and then staggering the eased value gives every tape a
+      // different fade: the first rung was gone in 88ms and the last took
+      // 366ms, because it spent its whole window in the flat tail of the curve.
+      // With the phase linear, each rung gets the same `springOut` shape and the
+      // only difference between rungs is WHEN it starts — which is the point.
+      filterOut = t;
       if (t < 1) return;
 
       // The old row is out of frame: re-seat the matched tapes while nothing is
@@ -5566,8 +5598,21 @@ const coverUrls = items
         // would be overwritten on the next frame. The fade rides `opacity`, which
         // the faces consume through `--cas-o`.
         if (filterOut > 0) {
-          y += filterOut * FILTER_OUT_Y;
-          opacity *= 1 - filterOut;
+          // ⚠️ PER TAPE, and in the entrance's own rung order. The global
+          // `filterOut` is remapped into a window that starts later the further
+          // right the tape is: the leftmost leaves the instant the phase opens and
+          // the rightmost finishes on its last frame. `pos + span` is the same
+          // expression `introAt` is keyed on, so left-to-right means the same
+          // thing in both halves of the swap.
+          const order = pos + span;
+          // `filterOut >= 1` is the settled end of the phase and it must mean FULLY
+          // out, not 98.5% out: `stepFilterSwap` rebuilds the ring on that frame and
+          // a tape at 1.5% opacity paints the rebuilt row for one frame.
+          const out = filterOut >= 1
+            ? 1
+            : springOut(clamp((filterOut * filterOutMs() - order * FILTER_OUT_STAGGER_MS) / FILTER_OUT_TAPE_MS));
+          y += out * FILTER_OUT_Y;
+          opacity *= 1 - out;
         }
 
         // ⚠️ No per-tape alpha, and no cover crossfade. An earlier revision
@@ -5788,7 +5833,16 @@ const coverUrls = items
     /** The selected tape's element. The selection is always a real tape —        `buildRing` and `recycle` both refuse to land on a blank. */
     const centreEl = () => (list.length ? list[current % list.length].el : null);
 
-    function updateUI(force = false) {
+    /**
+     * @param force     re-run even when the selection's key has not changed
+     * @param crossfade run the 170ms blur-swap on the panel's text. FALSE is for the
+     *   one caller that swaps the text while the panel is OFF-SCREEN (a tag swap,
+     *   see startRiseIn): there the blur is not a transition, it is a defect — the
+     *   panel slid back in with blurred text for the first ~190ms and then snapped
+     *   sharp. Measured: is-changing true at 1419ms, the same frame the panel's own
+     *   slide-in began.
+     */
+    function updateUI(force = false, crossfade = true) {
       const el = centreEl();
       if (!el) return;
 
@@ -5842,39 +5896,53 @@ const coverUrls = items
       const dateEl = document.getElementById("shelf-panel-date");
       const tagsEl = document.getElementById("shelf-panel-tags");
 
+      /* ⚠️ The writes are a closure so the SAME content can be applied either
+         behind the crossfade (a step, where the panel is on screen) or straight
+         out (a tag swap, where it is off screen). See the `crossfade` param. */
+      const write = () => {
+        if (titleEl) titleEl.textContent = el.dataset.title ?? "";
+        if (descEl) descEl.textContent = el.dataset.desc ?? "";
+        if (catEl) catEl.textContent = el.dataset.category || el.dataset.type || "";
+        if (statusEl) statusEl.textContent = el.dataset.status ?? "";
+        if (dateEl) dateEl.textContent = el.dataset.date ?? "";
+
+        if (tagsEl) {
+          let tags: string[] = [];
+          try {
+            tags = JSON.parse(el.dataset.tags || "[]");
+          } catch {
+            tags = [];
+          }
+          tagsEl.replaceChildren(
+            ...tags.slice(0, 6).map((tag) => {
+              const span = document.createElement("span");
+              // ⚠️ The `#` is added HERE, not in the content: the tags are plain
+              // data (`Industrial Design`) and are reused as filter values by
+              // exact string match, so the decoration must not reach them.
+              span.textContent = `#${tag}`;
+              return span;
+            }),
+          );
+        }
+
+        panel?.classList.remove("is-changing");
+      };
+
+      // ⚠️ NO crossfade: the panel is off screen, so a blur-swap is not a
+      // transition, it is a defect — the panel slid back in with blurred text
+      // and snapped sharp ~190ms later.
+      if (!crossfade) {
+        write();
+        return;
+      }
+
       panel?.classList.add("is-changing");
       const token = ++uiToken;
 
       window.setTimeout(
         () => {
           if (token !== uiToken) return;
-
-          if (titleEl) titleEl.textContent = el.dataset.title ?? "";
-          if (descEl) descEl.textContent = el.dataset.desc ?? "";
-          if (catEl) catEl.textContent = el.dataset.category || el.dataset.type || "";
-          if (statusEl) statusEl.textContent = el.dataset.status ?? "";
-          if (dateEl) dateEl.textContent = el.dataset.date ?? "";
-
-          if (tagsEl) {
-            let tags: string[] = [];
-            try {
-              tags = JSON.parse(el.dataset.tags || "[]");
-            } catch {
-              tags = [];
-            }
-            tagsEl.replaceChildren(
-              ...tags.slice(0, 6).map((tag) => {
-                const span = document.createElement("span");
-                // ⚠️ The `#` is added HERE, not in the content: the tags are plain
-                // data (`Industrial Design`) and are reused as filter values by
-                // exact string match, so the decoration must not reach them.
-                span.textContent = `#${tag}`;
-                return span;
-              }),
-            );
-          }
-
-          panel?.classList.remove("is-changing");
+          write();
         },
         reduceMotion ? 0 : 170,
       );
@@ -5971,7 +6039,14 @@ const coverUrls = items
       swapRising = true;
       // the rise takes the beat over from the exit fade (see `stepFilterSwap`)
       filterOut = 0;
-      root.classList.remove("is-ready");
+      // ⚠️ ADDS it, where it used to remove it. The panel left with the OLD row (see
+      // the tag-chip handler) and has to come back with the NEW one, so the slide-in
+      // starts on the FIRST frame of the ladder rather than on its last.
+      root.classList.add("is-ready");
+      // and its TEXT is swapped while it is still out, so what slides in is the new
+      // record instead of a crossfade of the old one. `updateUI` is idempotent
+      // (`lastUiKey`), so the call in `finishIntro` stays a no-op after this.
+      updateUI(true, false);
       introT0 = performance.now();
       introDuration = riseMs();
       introEl?.classList.add("is-done");
@@ -6005,7 +6080,11 @@ const coverUrls = items
       } catch {
         /* storage disabled */
       }
-      updateUI(true);
+      // ⚠️ NOT forced any more. It was, and that is the SECOND blur+flash the visitor
+      // reported at the end of the swap: the swap already wrote the panel's text in
+      // startRiseIn, so a forced call here re-ran the whole crossfade on a panel that
+      // was by then fully visible. Without force the key check makes it a no-op.
+      updateUI();
     }
 
     function skipIntro() {
@@ -6332,6 +6411,17 @@ const coverUrls = items
         filterOut = 0;
         filterGap = 0;
         filterHold = false;
+        // ⚠️ **The exit takes the PANEL with it.** `is-ready` is what holds the
+        // right-hand record panel out at translate(46px) with opacity 0, and it used
+        // to be dropped in `startRiseIn` instead — i.e. AFTER the exit and the
+        // gap, so the panel sat still while the row flew out and only then slid away
+        // as the NEW row was already rising. Measured before this: the row was gone at
+        // 1007ms, the panel did not start moving until 1431ms, and it came back at
+        // 2897ms, long after the arrival. The visitor asked for one gesture:
+        // 「磁带盒进行入场退场动画时，右侧的项目介绍同时往右侧消失/拉入」. Clearing it
+        // here makes the panel leave ON the same beat as the tapes; `startRiseIn`
+        // puts it back so it arrives WITH them.
+        root.classList.remove("is-ready");
         // `lock` blocks a second gesture for the length of the blend; `finishIntro`
         // releases it through `recycle`/`updateUI` on the new ring.
       });

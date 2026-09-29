@@ -221,7 +221,7 @@ export const translations = {
 
     /* The ART page's link out to the standalone fan page (/fan/). */
     fan: {
-      cta: "OPEN THE PINK ARCHIVE",
+      cta: "COME VISIT THE PINK STUDIO",
     },
 
     aboutPreview: {
@@ -805,9 +805,12 @@ export const translations = {
       updated: "已更新",
     },
 
-    /* ART 页跳去独立粉丝页（/fan/）的按钮文案。 */
+    /* ART 页跳去独立粉丝页（/fan/）的按钮文案。
+       ⚠️ 语气是**亲切**的邀请，不是「打开某个库」。访客的原话：「打开粉色档案库听起来太
+       陌生了，你想想有没有比较亲切的？」——「档案库」是机构的说法，而这个链接去的是一个人
+       的小屋。三语都按同一个意思写（en/nl 也一起改了，否则三个语言的按钮说的不是一件事）。 */
     fan: {
-      cta: "打开粉色档案库",
+      cta: "来粉色小屋坐坐",
     },
 
     aboutPreview: {
@@ -1368,7 +1371,7 @@ export const translations = {
 
     /* De link op de ART-pagina naar de losse fanpagina (/fan/). */
     fan: {
-      cta: "OPEN HET ROZE ARCHIEF",
+      cta: "KOM LANGS IN HET ROZE STUDIO",
     },
 
     aboutPreview: {

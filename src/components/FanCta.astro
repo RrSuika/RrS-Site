@@ -8,10 +8,16 @@
  * pages are the one area of this repo where a silent drift between the three
  * languages is hardest to notice.
  *
+ * ⚠️ **It is an EASTER EGG, not a call to action** (visitor: 「把整个方框和里面
+ * 内容做的很小很小，几乎难以看见，因为他是一个彩蛋按钮」). It used to be a full
+ * 11px bordered pill with a dot, a glow and an ↗; it is now a speck at 6px and
+ * 14% opacity in the corner of the hero, and it only becomes legible under the
+ * pointer or the keyboard's focus ring. The hit area is genuinely small, which is
+ * the point — but `:focus-visible` still brings it back to full opacity, so it
+ * stays reachable without a mouse.
+ *
  * ⚠️ Deliberately NOT the site's amber accent: this is the only control on the
- * page that leaves the site, and it wears the destination's own pink. The hover
- * is the site's usual gesture (an accent panel travelling up under the text),
- * so it still belongs here even though its colour comes from elsewhere.
+ * page that leaves the site, and it wears the destination's own pink.
  */
 import { getLanguageFromPath, getLocalizedPath } from "../utils/i18n";
 import { getTranslations } from "../utils/translations";
@@ -28,7 +34,6 @@ const t = getTranslations(language);
 >
   <span class="fan-cta-dot" aria-hidden="true"></span>
   <span class="fan-cta-text">{t.fan.cta}</span>
-  <span class="fan-cta-arrow" aria-hidden="true">↗</span>
 </a>
 
 <style>
@@ -40,26 +45,29 @@ const t = getTranslations(language);
     overflow: hidden;
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    margin-top: 22px;
-    padding: 11px 18px;
+    gap: 4px;
+    margin-top: 10px;
+    padding: 2px 5px;
 
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 6px;
     font-weight: 700;
-    letter-spacing: 1.6px;
+    letter-spacing: 0.7px;
     text-transform: uppercase;
     text-decoration: none;
 
     color: #ff6fa8;
-    border: 1.5px solid rgba(255, 111, 168, 0.55);
+    border: 1px solid rgba(255, 111, 168, 0.35);
     border-radius: 2px;
-    background: rgba(255, 111, 168, 0.07);
+    background: rgba(255, 111, 168, 0.06);
+
+    /* the easter egg itself: faint enough to miss, present enough to find */
+    opacity: 0.14;
 
     transition:
+      opacity 0.35s var(--ease-out),
       color 0.4s var(--ease-out),
-      border-color 0.4s var(--ease-out),
-      transform 0.3s var(--spring-snappy);
+      border-color 0.4s var(--ease-out);
   }
 
   .fan-cta::before {
@@ -75,9 +83,9 @@ const t = getTranslations(language);
 
   .fan-cta:hover,
   .fan-cta:focus-visible {
+    opacity: 1;
     color: #fff;
     border-color: #f5308a;
-    transform: translateY(-2px);
   }
 
   .fan-cta:hover::before,
@@ -86,20 +94,9 @@ const t = getTranslations(language);
   }
 
   .fan-cta-dot {
-    width: 6px;
-    height: 6px;
+    width: 2px;
+    height: 2px;
     border-radius: 50%;
     background: currentColor;
-    box-shadow: 0 0 8px currentColor;
-  }
-
-  .fan-cta-arrow {
-    font-size: 13px;
-    line-height: 1;
-    transition: transform 0.35s var(--spring-gentle);
-  }
-
-  .fan-cta:hover .fan-cta-arrow {
-    transform: translate(2px, -2px);
   }
 </style>

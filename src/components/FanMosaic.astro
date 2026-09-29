@@ -94,8 +94,13 @@
        0.54 stays the default so the shader is still the visitor's. */
     const GAIN = 0.54;
     const TIERS = 4;
-    /* The print grain's pitch in CSS px. Mirrors `background-size` on
-       `.fan-root::before`. */
+    /* The print grain's pitch in CSS px. The default mirrors `background-size` on
+       `.fan-root::before`, and it is OVERRIDABLE because THE DOT'S SHAPE IS A
+       FUNCTION OF IT: a dot on a 7px pitch is about 3px across, which cannot be
+       round however it is drawn — it rasterises as a small plus (the CSS fallback
+       layer, which is accepted, does exactly the same). Raising this gives bigger,
+       visibly round dots and a coarser screen; the dot's radius is a fraction of
+       the pitch, so both grow together. */
     const DOT_PITCH = 7;
 
     const NAME = "fan-mosaic";
@@ -189,6 +194,12 @@ uniform vec3 uDotCol;
 
 float ign(vec2 p, float f) { p += 5.588238 * mod(f, 64.0); return fract(52.9829189 * fract(0.06711056 * p.x + 0.00583715 * p.y)); }
 
+/* ⚠️ NOT ign() — that one is a LINEAR function of its argument, so fed a grid
+   of integers it returns BANDS rather than noise. Measured on the grain: dots
+   dented in the same direction along diagonal lines, because their offsets were
+   correlated. This is the usual hash for a lattice. */
+float cellHash(vec2 c) { return fract(sin(dot(c, vec2(127.1, 311.7))) * 43758.5453123); }
+
 vec3 scene(vec2 uv) { return texture(uField, clamp(uv, 0.0, 1.0)).rgb; }
 
 /* ── FROSTED GLASS ───────────────────────────────────────────────────────
@@ -230,14 +241,39 @@ vec3 frost(vec2 frag, float radius, vec2 j) {
 
 /* The page's print grain, which used to be a separate CSS layer sitting ON TOP
    of the glass. Drawing it here is the whole point of "make the texture and the
-   effect blend": it is looked up THROUGH the same per-pixel refraction, so the
-   dots belong to the glass — they scatter where it is frosted and snap back to
-   a crisp grid where the lens clears it.
+   effect blend" — but the FIRST version did it wrong and the visitor caught it:
+   "他不是全部都是圆点，有的是很混乱的".
+   ⚠️ **The hash has to be of the CELL, never of the pixel.** That version
+   displaced the lookup with the pixel's own refraction ('dots(frag + j * 2.0)'),
+   and a per-PIXEL displacement of a 7px grid does not scatter the dots — it
+   SHEARS each one. Measured at 4x: every dot came out as a little chevron, all
+   leaning the same way. A per-cell offset keeps every dot a dot; what makes it
+   read as printed grain rather than as a screen door is per-dot POSITION (a
+   fraction of a cell) and per-dot STRENGTH.
    '.fan-root[data-mosaic="on"]::before' switches the CSS copy off: two dot
    grids at slightly different phases moiré, which looks far worse than either. */
 float dots(vec2 p) {
-  vec2 g = abs(fract(p / uDotPitch) - 0.5);
-  return 1.0 - smoothstep(0.10, 0.26, length(g));
+  /* ⚠️ NO half-cell shift. gl_FragCoord already samples pixel CENTRES (i+0.5),
+     so fract(p / pitch) == 0.5 lands on a pixel centre — adding half a cell
+     moves it onto a pixel CORNER instead, which makes a 2x2 full-value block
+     with corner spill: a cross. Measured at 4x both ways. */
+  vec2 cell = floor(p / uDotPitch);
+  vec2 g = fract(p / uDotPitch) - 0.5;
+  /* ⚠️ NO position offset per dot. A dot here is ~3 device px across, so shifting
+     it by even 0.6px rasterises it lopsided — that (on top of the per-pixel
+     shear) is what the visitor saw as "有的很混乱". Every dot is now the same
+     circle; the variation that keeps the grid from looking mechanical is
+     STRENGTH, 0.85x to 1.15x — and at 0.11 of the paper colour rather than
+     0.26, so it reads as the same fine grain the CSS fallback layer has rather
+     than as a dot screen. */
+  /* ⚠️ A SOFT ramp from the centre, not a hard core with a shoulder. A dot on a
+     7px pitch is only ~3px across, and with a flat core the centre pixel takes
+     the whole value while its four edge neighbours take most of the rest and the
+     diagonals take nothing — measured at 4x as a little PLUS. Ramping from the
+     centre gives the diagonal neighbours their share and the same dot rasterises
+     as a round blob. */
+  float d = 1.0 - smoothstep(0.02, 0.3, length(g));
+  return d * (0.85 + 0.3 * cellHash(cell));
 }
 
 void main() {
@@ -277,7 +313,7 @@ void main() {
   vec3 paper = uBg * (1.0 - strength) + L * 0.96;
   vec3 col = mix(dark, paper, uPaper);
 
-  col = mix(col, uDotCol, dots(frag + j * 2.0) * uDot);
+  col = mix(col, uDotCol, clamp(dots(frag), 0.0, 1.0) * uDot);
   col += (ign(frag, floor(uTime * 24.0)) - 0.5) / 255.0;
   o = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
@@ -371,6 +407,7 @@ void main() {
         frost: clampN(numOf("--fan-mosaic-frost", 1.1), 0, 4),
         grain: clampN(numOf("--fan-mosaic-grain", 0.7), 0, 8),
         dot: clampN(numOf("--fan-mosaic-dot", 0.18), 0, 1),
+        dotPitch: clampN(numOf("--fan-mosaic-dot-pitch", DOT_PITCH), 4, 24),
         dotCol: strOf("--fan-dot", FALLBACK.dot),
         reach: clampN(numOf("--fan-mosaic-reach", 300), 10, 800),
       };
@@ -604,7 +641,7 @@ void main() {
            (`.fan-root::before`). It is copied, not shared — if that layer is ever
            re-pitched, this has to move with it, or the two grain patterns stop
            being the same texture. */
-        gl.uniform1f(un.uDotPitch, DOT_PITCH * dpr);
+        gl.uniform1f(un.uDotPitch, cfg.dotPitch * dpr);
         gl.uniform3f(un.uDotCol, dotCol[0], dotCol[1], dotCol[2]);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
       };

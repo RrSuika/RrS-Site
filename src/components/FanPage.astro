@@ -524,6 +524,23 @@ const artHref = getLocalizedPath("/art", language);
 
         {/* ── the 催更 button ── */}
         <div class="nudge">
+          {/* The visitor's own avatar: one jump per press.
+               ⚠️ `Pfp Transparent.gif` in 输入/ is 1700x1700, 28 frames at 25fps and
+               4.4 MB. It was transcoded once with ffmpeg to 240px / 183 KB into
+               `public/fan/avatar.gif` (see `docs/fan-page.md` §十六), and its
+               NETSCAPE loop block was STRIPPED (`输入/_scratch/gif-once.mjs`) so it
+               plays once and stops — a looping GIF cannot be "played once per
+               press", which is exactly what was asked for. */}
+          <img
+            class="nudge-pfp"
+            data-nudge-pfp
+            src="/fan/avatar.gif"
+            alt=""
+            aria-hidden="true"
+            draggable="false"
+            width="240"
+            height="240"
+          />
           <button class="nudge-btn" type="button" data-nudge>
             <span class="nudge-ring" aria-hidden="true"></span>
             <span class="nudge-burst" aria-hidden="true">
@@ -541,7 +558,15 @@ const artHref = getLocalizedPath("/art", language);
             <span class="nudge-count" data-nudge-count>0</span>
             <span>{c.commissions.nudgeUnit}</span>
           </p>
-          <p class="nudge-back" data-nudge-back hidden>{c.commissions.nudgeThanks}</p>
+          <!-- ⚠️ The POOL travels to the client script as a data attribute.
+               The script used to need no copy at all (it only un-hid this
+               paragraph), and `define:vars` is not an option here: it implies
+               `is:inline`, which would de-bundle the whole 800-line module. -->
+          <p
+            class="nudge-back"
+            data-nudge-back
+            data-nudge-replies={JSON.stringify(c.commissions.nudgeThanks)}
+            hidden>{c.commissions.nudgeThanks[0]}</p>
         </div>
       </div>
     </section>
@@ -909,10 +934,47 @@ const artHref = getLocalizedPath("/art", language);
     const countEl = nudgeBtn.parentElement?.querySelector<HTMLElement>("[data-nudge-count]");
     const backEl = nudgeBtn.parentElement?.querySelector<HTMLElement>("[data-nudge-back]");
     let nudges = 0;
+    /**
+     * The reply pool, read from the paragraph's own `data-` attribute (see the
+     * markup). ⚠️ Index-aligned between en and zh (`utils/fan.ts`), so switching
+     * language mid-session shows the same joke in the other language.
+     * Falls back to whatever text was server-rendered if the attribute is
+     * missing or malformed — a broken pool must not take the whole page down.
+     */
+    const replies = (() => {
+      try {
+        const list = JSON.parse(backEl?.dataset.nudgeReplies ?? "[]") as string[];
+        if (Array.isArray(list) && list.length) return list;
+      } catch {
+        /* fall through to the rendered line */
+      }
+      return [backEl?.textContent ?? ""];
+    })();
+    let replyAt = 0;
     const replay = (el: HTMLElement, cls: string) => {
       el.classList.remove(cls);
       void el.offsetWidth;
       el.classList.add(cls);
+    };
+    /**
+     * The avatar, restarted from frame 0 on every press — "按一次就播放一次，按的越快
+     * 跳的越快".
+     *
+     * ⚠️ **Assigning the same `src` again does NOT restart a GIF** (no attribute
+     * change, no reload), and the frame can only be rewound by making the browser
+     * decode the file again. Dropping the attribute, forcing a reflow and putting it
+     * back does exactly that, and the second load comes out of the HTTP cache — so
+     * a fast presser restarts it with no network at all.
+     * ⚠️ The GIF itself has no NETSCAPE loop block any more, so it plays ONCE and
+     * parks on its last frame. A looping GIF would ignore the restart entirely.
+     */
+    const pfpEl = nudgeBtn.parentElement?.querySelector<HTMLImageElement>("[data-nudge-pfp]");
+    const pfpSrc = pfpEl?.getAttribute("src") ?? "";
+    const jump = () => {
+      if (!pfpEl || !pfpSrc) return;
+      pfpEl.removeAttribute("src");
+      void pfpEl.offsetWidth; // ⚠️ the reflow IS the mechanism; without it the browser coalesces the two writes
+      pfpEl.setAttribute("src", pfpSrc);
     };
     nudgeBtn.addEventListener("click", () => {
       nudges += 1;
@@ -921,7 +983,21 @@ const artHref = getLocalizedPath("/art", language);
         replay(countEl, "is-bump");
       }
       replay(nudgeBtn, "is-hit");
-      if (backEl && backEl.hidden) backEl.hidden = false;
+      jump();
+      if (backEl) {
+        if (backEl.hidden) backEl.hidden = false;
+        /* ⚠️ NEVER the same line twice in a row. `Math.random()` alone repeats
+           about 1 press in 103, and a repeat reads as the button being broken
+           rather than as a joke — the whole point of a pool is that consecutive
+           presses differ. */
+        if (replies.length > 1) {
+          const next = Math.floor(Math.random() * (replies.length - 1));
+          replyAt = next >= replyAt ? next + 1 : next;
+        }
+        backEl.textContent = replies[replyAt];
+        // the entrance animation is on `.is-pop`, so it can be replayed per press
+        replay(backEl, "is-pop");
+      }
       nudgeSpawn?.(nudgeBtn);
     });
   }
@@ -942,7 +1018,50 @@ const artHref = getLocalizedPath("/art", language);
      *     purpose: at 0.4 the fruits stop dead against each other and read as glued.
      */
     const SOLVER_PASSES = 2;
+    /**
+     * ⚠️ THE FLOOR BOUNCES, and the SIGN is the whole story. This used to be
+     * `t.py = t.y - vn * 0.2` — which keeps 20% of the DOWNWARD speed, so a
+     * landing clamps, creeps down again, clamps again: a heavy thud with no
+     * rebound at all. The visitor: 「水果做的 Q 弹一点，比如落地会弹一下，现在
+     * 感觉太重了。参考捏捏乐那种 Q 弹的感觉」. A restitution needs the previous
+     * position moved UP past the floor (`t.y + vn * B`) so the implied velocity
+     * reverses. 0.42 keeps 42% of the impact speed, i.e. about a sixth of the
+     * height, so a drop gives one clear bounce and a small second one.
+     */
+    const GROUND_BOUNCE = 0.42;
+    /**
+     * ⚠️ **THE BOUNCE NEEDS A FLOOR OF ITS OWN, or gravity bounces for ever.** A
+     * body at rest on the floor penetrates by one frame of gravity every frame
+     * (0.72px), and a restitution of 0.42 turns that into a 0.3px rebound, then a
+     * 0.3px fall, then again — a permanent buzz. Measured with no threshold: 134.6px
+     * of travel per toy over 1.8s on a settled pile (it was 19.7px). Below this
+     * impact speed there is no rebound at all and the old dissipation applies,
+     * which is what lets a pile sleep.
+     */
+    const GROUND_BOUNCE_MIN = 4.5;
+    /** the sub-threshold dissipation: this is the pre-bounce behaviour, kept for rests */
     const GROUND_REST = 0.2;
+    /**
+     * The 捏捏乐 part: a squash-and-stretch spring, driven by the impact speed and
+     * UNDERDAMPED on purpose — it overshoots into a stretch on the way back, which
+     * is what reads as squishy rather than as a jelly that only flattens.
+     * ⚠️ **PER-FRAME UNITS, like everything else in this solver** (`G = 0.72` is px per
+     * frame²). The first version used 260 / 12 — i.e. per SECOND — and integrated
+     * them with dt in frames: ω·dt was 16, far past the stability limit, so the
+     * discrete spring oscillated for ever at ±11px and the fruit looked like it was
+     * still bouncing 9s after it had landed (measured: 61 direction changes).
+     * 0.07 / 0.19 is ω≈0.26 rad/frame (≈2.5Hz) with ζ≈0.37: two visible wobbles
+     * and a stop.
+     * ⚠️ VISUAL ONLY — it never touches x/y/px/py, so the
+     * collision radius and everything measured about the pile are unchanged.
+     */
+    const SQ_K = 0.07;
+    const SQ_C = 0.19;
+    /** how much of the impact speed turns into squash (deg of flattening per px/frame) */
+    const SQ_GAIN = 0.011;
+    /** below this impact speed there is nothing to squash — resting contacts land here */
+    const SQ_MIN = 1.6;
+    const SQ_MAX = 0.3;
     const WALL_REST = 0.4;
     const GROUND_FRICTION = 0.34;
     const CONTACT_FRICTION = 0.3;
@@ -1003,6 +1122,9 @@ const artHref = getLocalizedPath("/art", language);
       grabY: number;
       /** true while this toy touches the floor or another toy */
       contact: boolean;
+      /** squash amount (0 = round, + = flattened, − = stretched) and its velocity */
+      sq: number;
+      sqv: number;
     };
     /* ── the fruit ──
        ONE ENTRY PER FRUIT, each with its parts.
@@ -1191,6 +1313,8 @@ const artHref = getLocalizedPath("/art", language);
         grabX: 0,
         grabY: 0,
         contact: false,
+        sq: 0,
+        sqv: 0,
       };
       sheep.push(t);
       startSheep();
@@ -1220,7 +1344,21 @@ const artHref = getLocalizedPath("/art", language);
           awake++;
           continue;
         }
-        if (t.asleep > 40) continue;
+        /* ── the squish ──
+           ⚠️ Ticked BEFORE the sleep test and counted as awake, or a toy that lands
+           and falls asleep on the same frame freezes half-flattened. Underdamped, so
+           it springs back through round into a slight stretch before it stops. */
+        if (t.sq !== 0 || t.sqv !== 0) {
+          t.sqv += (-SQ_K * t.sq - SQ_C * t.sqv) * dt;
+          t.sq += t.sqv * dt;
+          if (Math.abs(t.sq) < 0.002 && Math.abs(t.sqv) < 0.02) {
+            t.sq = 0;
+            t.sqv = 0;
+          } else {
+            awake++;
+          }
+        }
+        if (t.asleep > 40 && t.sq === 0) continue;
         awake++;
         // ⚠️ Contacts are found at the END of the frame, so this flag is one frame
         // old. That is fine for damping, and it keeps the solver to a single pass.
@@ -1245,7 +1383,18 @@ const artHref = getLocalizedPath("/art", language);
         if (t.y > FLOOR) {
           t.y = FLOOR;
           const vn = t.y - t.py;
-          if (vn > 0) t.py = t.y - vn * GROUND_REST;
+          // ⚠️ `+`, not `-`: the previous position goes UP past the floor so the
+          // implied velocity reverses. See GROUND_BOUNCE.
+          if (vn > 0) {
+            if (vn > GROUND_BOUNCE_MIN) {
+              // a real landing: reverse it, and squash on the way
+              t.py = t.y + vn * GROUND_BOUNCE;
+              if (vn > SQ_MIN) t.sqv += Math.min(vn * SQ_GAIN, SQ_MAX);
+            } else {
+              // resting (or nearly): eat the normal component instead of returning it
+              t.py = t.y - vn * GROUND_REST;
+            }
+          }
           // friction along the floor
           const vt = t.x - t.px;
           t.px = t.x - vt * (1 - GROUND_FRICTION);
@@ -1343,7 +1492,30 @@ const artHref = getLocalizedPath("/art", language);
         }
       }
       for (const t of sheep) {
-        t.el.style.transform = `translate3d(${(t.x - 50).toFixed(2)}px,${(t.y - 32).toFixed(2)}px,0) rotate(${t.rot.toFixed(2)}deg)`;
+        const at = `translate3d(${(t.x - 50).toFixed(2)}px,${(t.y - 32).toFixed(2)}px,0) rotate(${t.rot.toFixed(2)}deg)`;
+        if (t.sq === 0) {
+          t.el.style.transform = at;
+          if (t.el.style.getPropertyValue("--sq")) t.el.style.removeProperty("--sq");
+          continue;
+        }
+        /* ⚠️ The squash is in SCREEN axes, not in the toy's own. Writing it as a
+           plain `scale()` after the rotate would squash along the toy's rotated
+           axis, so a fruit lying at 90° would squash sideways. The matrix below is
+           exactly `R(−θ) · diag(sx, sy) · R(θ)` — the same squash expressed in the
+           rotated frame — and it costs four multiplies. */
+        const s = Math.max(-SQ_MAX, Math.min(SQ_MAX, t.sq));
+        const sx = 1 + s * 0.55;
+        const sy = 1 - s;
+        const th = (t.rot * Math.PI) / 180;
+        const co = Math.cos(th);
+        const si = Math.sin(th);
+        const m11 = co * co * sx + si * si * sy;
+        const m12 = co * si * (sx - sy);
+        const m22 = si * si * sx + co * co * sy;
+        t.el.style.transform = `${at} matrix(${m11.toFixed(4)},${m12.toFixed(4)},${m12.toFixed(4)},${m22.toFixed(4)},0,0)`;
+        // published for probes: a squashed toy's AABB also changes with its ROTATION,
+        // so the rect cannot tell squash from spin. `--sq` can.
+        t.el.style.setProperty("--sq", s.toFixed(3));
       }
       if (awake > 0) startSheep();
       else lastT = 0;
@@ -1563,7 +1735,9 @@ const artHref = getLocalizedPath("/art", language);
     --fan-mosaic-contrast: 0.6;
     --fan-mosaic-frost: 2;
     --fan-mosaic-grain: 1.4;
-    --fan-mosaic-dot: 0.26;
+    --fan-mosaic-dot: 0.16;
+    /* print-grain pitch in CSS px; raise it for bigger, rounder dots */
+    --fan-mosaic-dot-pitch: 7;
     --fan-mosaic-reach: 300;
     --fan-mosaic-size: 70;
     --fan-mosaic-angle: 0;
@@ -2717,6 +2891,30 @@ const artHref = getLocalizedPath("/art", language);
     margin-top: 22px;
   }
 
+  /* ── the avatar above the button ──
+     ⚠️ `image-rendering` is left alone and the art is 2x the box, so it stays
+     crisp on a retina screen. The GIF's own transparent background is what keeps
+     it sitting on the paper rather than in a white square. */
+  .nudge-pfp {
+    display: block;
+    /* ⚠️ 120, not 96. The GIF's frame has headroom above the animal — that is
+       where the jump goes — so the animal itself is only ~55% of the box. At 96px
+       it read as a speck; at 120 the animal is ~66px and the hop still fits. */
+    width: 120px;
+    height: 120px;
+    margin-bottom: -6px;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  @media (max-width: 860px) {
+    .nudge-pfp {
+      width: 96px;
+      height: 96px;
+    }
+  }
+
   .nudge-btn {
     position: relative;
     isolation: isolate;
@@ -2879,6 +3077,15 @@ const artHref = getLocalizedPath("/art", language);
     font-size: 12px;
     letter-spacing: 1.2px;
     color: var(--fan-blue);
+  }
+
+  /* ⚠️ The entrance animation lives on a CLASS, not on `.nudge-back` itself.
+     The reply is now drawn from a pool and rewritten on every press, so the
+     0.32s fade has to be replayed per press — and re-adding a class is the only
+     reliable restart. Removing and re-adding the same class does NOT restart an
+     animation declared on the base rule, because the computed value never
+     changes. */
+  .nudge-back.is-pop {
     animation: nudgeFade 0.32s var(--ease-out);
   }
 
@@ -2908,7 +3115,7 @@ const artHref = getLocalizedPath("/art", language);
     .nudge-btn.is-hit .nudge-ring,
     .nudge-btn.is-hit .nudge-spark,
     .nudge-count.is-bump,
-    .nudge-back {
+    .nudge-back.is-pop {
       animation: none;
     }
   }
@@ -3080,9 +3287,10 @@ const artHref = getLocalizedPath("/art", language);
     border: 0;
     border-radius: 10px;
     background: var(--fan-white);
-    box-shadow:
-      0 0 0 2px var(--fan-pink),
-      var(--fan-shadow-pink);
+    /* ⚠️ The RING stays, the DROP SHADOW does not. Visitor: 「画廊的图片不要有阴影」. A
+        `0 0 0 2px` spread is a printed edge, not a shadow — it is what makes a plate
+       read as a card, and the blue version of it is the hover state. */
+    box-shadow: 0 0 0 2px var(--fan-pink);
     cursor: pointer;
     font: inherit;
     text-align: left;
@@ -3093,9 +3301,7 @@ const artHref = getLocalizedPath("/art", language);
 
   .plate:hover {
     transform: translateY(-8px);
-    box-shadow:
-      0 0 0 2px var(--fan-blue),
-      var(--fan-shadow);
+    box-shadow: 0 0 0 2px var(--fan-blue);
   }
 
 
