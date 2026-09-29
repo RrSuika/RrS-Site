@@ -3,5 +3,6 @@
   // （防止 Prettier 在 Ctrl+S 时重排整个文件——2026-09-07 曾误触发一次）
   "[astro]": {
     "editor.formatOnSave": false
-  }
+  },
+  "js/ts.tsserver.experimental.enableProjectDiagnostics": true
 }
