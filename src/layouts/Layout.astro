@@ -24,6 +24,22 @@ interface Props {
   noIndex?: boolean;
   /** black-hole video background layer (homepage only, dark mode only) */
   blackhole?: boolean;
+  /**
+   * The page brings its OWN arrival animation, so the site cover must not play.
+   * It renders an attribute on <html> that the guard below reads BEFORE it decides
+   * (the attribute is in the server-rendered markup, so it exists before any
+   * script runs). Used by /fan/, whose cloud-burst intro replaces the black/orange
+   * cover entirely.
+   */
+  ownIntro?: boolean;
+  /**
+   * Pull in Pacifico, the script face `--font-script` names.
+   *
+   * ⚠️ It is NOT in the base font URL on purpose. Pacifico is used by the fan
+   * page alone (wordmark, section titles, its arrival poster) and every other
+   * page would pay for the download without drawing a glyph of it. Opt in.
+   */
+  scriptFont?: boolean;
 }
 
 const {
@@ -33,6 +49,8 @@ const {
   alternateHrefs,
   noIndex = false,
   blackhole = false,
+  ownIntro = false,
+  scriptFont = false,
 } = Astro.props;
 
 const language = getLanguageFromPath(Astro.url.pathname);
@@ -91,7 +109,7 @@ const websiteSchema = {
 ---
 
 <!doctype html>
-<html lang={getLanguageFromPath(Astro.url.pathname) || "en"}>
+<html lang={getLanguageFromPath(Astro.url.pathname) || "en"} data-own-intro={ownIntro ? "" : undefined}>
   <head>
     <!--
       THEME GUARD — must be the first thing in <head>.
@@ -213,6 +231,22 @@ const websiteSchema = {
         var skip = false;
         var resolveGate = () => {};
 
+        /* ⚠️ A page with its own arrival opts out of the site cover. Read from the
+           markup (not from a script) so the decision cannot race the guard. */
+        if (root.hasAttribute("data-own-intro")) {
+          root.classList.add("is-intro-skip");
+          window.__rrsIntroGate = Promise.resolve();
+          window.__rrsIntroOpened = true;
+          document.addEventListener(
+            "DOMContentLoaded",
+            () => {
+              document.getElementById("site-intro")?.remove();
+            },
+            { once: true },
+          );
+          return;
+        }
+
         try {
           skip = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         } catch (_) {}
@@ -301,7 +335,7 @@ const websiteSchema = {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800;900&family=Saira+Condensed:wght@500;600;700;800;900&family=VT323&display=swap"
+      href={`https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800;900&family=${scriptFont ? "Pacifico&family=" : ""}Saira+Condensed:wght@500;600;700;800;900&family=VT323&display=swap`}
       rel="stylesheet"
     />
 
@@ -1684,9 +1718,19 @@ const websiteSchema = {
       })();
     </script>
 
-    <!-- ── PAGE VIEW TRACKING ── -->
+    <!-- ── PAGE VIEW TRACKING ──
+         ⚠️ Skips the dev server on purpose: `functions/` is a Cloudflare Pages
+         feature, so `/api/visit` DOES NOT EXIST under `astro dev` — every page
+         load there would be a 404 in the console and in the network panel, for a
+         request that can never succeed. There is no D1 in dev either, so nothing
+         is lost by not sending it. (Counts are real only on the deployed site;
+         check them with `GET /api/visit`.) -->
     <script>
       (() => {
+        const host = window.location.hostname;
+
+        if (host === "localhost" || host === "127.0.0.1") return;
+
         const path =
           window.location.pathname === "/"
             ? "/"
@@ -1702,7 +1746,9 @@ const websiteSchema = {
           }),
           keepalive: true,
         }).catch((error) => {
-          console.error("Page view tracking failed:", error);
+          // network failure only — a 4xx/5xx resolves and is ignored, which is
+          // what keeps a misconfigured binding from spamming the console
+          console.warn("Page view not recorded:", error);
         });
       })();
     </script>

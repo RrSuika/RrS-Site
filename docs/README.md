@@ -5,6 +5,7 @@
 | 文件 | 什么时候读 |
 | --- | --- |
 | `cassette-shelf.md` | 改 `src/components/CassetteShelf.astro`、`src/scripts/shelf-tuner.ts`、或 `/projects` `/lab` 六页的任何视觉/交互/拖动之前——**必读** |
+| `cloudflare-d1.md` | 动 `/api/nudge`、`/api/visit`、D1 绑定，或者计数器数字看起来不对的时候——表结构、绑定名、路径归一化、以及「接口挂了页面该怎么表现」都在里面 |
 | `fan-page.md` | 改粉丝页 `/fan/`（`FanPage.astro`、`FanMosaic.astro`、`FanCta.astro`、`utils/fan.ts`）之前——它**故意不跟主站设计系统**，色板与两色分工、只有一套主题、云是 SVG 画出来的、档案排循环的两处算法，以及 **§十二 动态背景的两趟 WebGL2 与它的调参表**都在里面 |
 | `hero-title.md` | 改首页 hero 标题的字距/字位之前（`home/Hero.astro` 的 20 条逐字偏移规则 + `src/scripts/hero-tuner.ts` 这个**默认关闭**的调音面板/量测网格） |
 | `site-intro.md` | 改站点开场（`Layout.astro` 的 SITE INTRO GUARD、`src/scripts/site-intro.ts`、global.css §16）之前 |

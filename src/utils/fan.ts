@@ -22,6 +22,8 @@ export interface FanCopy {
   docTitle: string;
   metaDescription: string;
   back: string;
+  /** aria-label for the EN / 中文 switch group in the top bar. */
+  langSwitchLabel: string;
   hero: {
     title: string;
     cn: string;
@@ -29,7 +31,6 @@ export interface FanCopy {
     ctaPrimary: string;
     ctaSecondary: string;
     stamp: string;
-    scroll: string;
   };
   intro: {
     tag: string;
@@ -82,10 +83,11 @@ const en: FanCopy = {
   metaDescription:
     "A single page for RrSuika Studio: an introduction, the gallery, commission status and how to get in touch.",
   back: "← Work with me",
+  langSwitchLabel: "Language",
   hero: {
     title: "RRSUIKA STUDIO",
     cn: "Fluffy World",
-    sub: "EAT, SLEEP, DRAW, REPEAT.",
+    sub: "EAT, SLEEP, DRAW, REPEAT",
     ctaPrimary: "SEE THE DRAWINGS",
     ctaSecondary: "FIND ME",
     // ⚠️ The stamp names the DESIGN REFERENCE, not the page's own origin.
@@ -101,9 +103,9 @@ const en: FanCopy = {
     // thinking") and the visitor asked for it to be rewritten as something a fan
     // would actually enjoy reading. Same published facts, warmer voice.
     paras: [
-      "Hi there! I’m RrSuika (毛毛). I love drawing, food and sleeping. I enjoy boundless imagination and a youthful mindset.",
-      "By day I am an industrial designer; by night I am someone who draws. One desk, drawings on the left and half-taken-apart electronics on the right — and I am the bit in between.",
-      "What I want to dig into is drawing and aesthetics as a discipline, and I like teaching beginners. There is a particular satisfaction in finding that something abstract can be pinned down by a concrete rule.",
+      "Hi there! I’m RrSuika (毛毛). I love drawing, food and sleeping. I enjoy boundless imagination and a youthful mindset",
+      "By day I am an industrial designer; by night I am someone who draws. One desk, drawings on the left and half-taken-apart electronics on the right — and I am the bit in between",
+      "I like digging into drawing and aesthetics, and I teach beginners in my spare time. There is a particular satisfaction in finding that something abstract can be pinned down by a concrete rule",
     ],
     facts: [
       { label: "Location", value: "Rotterdam // NL" },
@@ -130,9 +132,9 @@ const en: FanCopy = {
     title: "Commissions",
     status: "TEMPORARILY CLOSED",
     body: [
-      "I am not taking new commission work at the moment. Current projects and personal pieces have the drawing time.",
+      "I am not taking new commission work at the moment. Current projects and personal pieces have the drawing time",
     ],
-    note: "Feel free to chat — questions about drawing are welcome too.",
+    note: "Feel free to chat — questions about drawing are welcome too",
     nudge: "Update When?",
     nudgeUnit: "nudges logged",
     // ⚠️ NOT a literal rendering of 「大王饶命，小的已经在画了」. The joke is an
@@ -250,7 +252,7 @@ const en: FanCopy = {
   contact: {
     tag: "MODULE_04 · CONTACT",
     title: "Get in touch",
-    sub: "You can find me below.",
+    sub: "You can find me below",
     /**
      * ⚠️ `href` is OPTIONAL and stays undefined where no public URL exists. Discord
      * and QQ are published in the site footer as plain text, so those two rows
@@ -287,10 +289,11 @@ const zh: FanCopy = {
   metaDescription:
     "为 RrSuika（毛毛）做的粉丝向单页：自我介绍、画廊、约稿状态，以及怎么联系。",
   back: "← 与我合作",
+  langSwitchLabel: "语言",
   hero: {
     title: "RRSUIKA STUDIO",
     cn: "毛绒绒世界",
-    sub: "吃饭，睡觉，画画，重复。",
+    sub: "吃饭，睡觉，画画，重复",
     ctaPrimary: "看画",
     ctaSecondary: "找到我",
     // ⚠️ 印章写的是**风格参考来源**,不是「这是粉丝做的」。原来那句读起来像免责声明。
@@ -303,9 +306,9 @@ const zh: FanCopy = {
     // ⚠️ 粉丝向的口气,不是求职简历。事实不变(鹿特丹、工业设计兼 maker、那张摆满
     // 画稿和电子零件的桌子),换掉的是说话的方式。破折号按写作规范不用于正文。
     paras: [
-      "你好呀，我是 RrSuika（毛毛），喜欢画画，美食和睡觉。我喜欢天马行空的想象和年轻的心态。",
-      "白天我是工业设计师，晚上我是画画爱好者。一张桌子上左边摊着画稿，右边摊着拆了一半的电子零件，而我在两者之间。",
-      "我希望钻研绘画和美学理论，同时喜欢教新手画画。当发现抽象逻辑能被具象规则所定义时，那种成就感是无与伦比的。",
+      "你好呀，我是 RrSuika（毛毛），喜欢画画，美食和睡觉。我喜欢天马行空的想象和年轻的心态",
+      "白天我是工业设计师，晚上我是画画爱好者。一张桌子上左边摊着画稿，右边摊着拆了一半的电子零件，而我在两者之间",
+      "我喜欢钻研绘画和美学理论，闲时教新手画画。当发现抽象逻辑能被具象规则所定义时，那种成就感是无与伦比的",
     ],
     facts: [
       { label: "坐标", value: "鹿特丹 // 荷兰" },
@@ -332,7 +335,7 @@ const zh: FanCopy = {
     title: "约稿",
     status: "暂时关闭",
     body: [
-      "现在暂时不接新的约稿。手上的项目和个人创作已经占掉了画画的时间。",
+      "现在暂时不接新的约稿。手上的项目和个人创作已经占掉了画画的时间",
     ],
     note: "欢迎沟通，绘画上有问题也可以问~",
     nudge: "催更",
@@ -449,7 +452,7 @@ const zh: FanCopy = {
   contact: {
     tag: "模块_04 · 联系方式",
     title: "你可以在下面找到我",
-    sub: "你可以在下面找到我。",
+    sub: "你可以在下面找到我",
     links: [
       {
         label: "Pixiv",

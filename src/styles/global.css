@@ -84,6 +84,12 @@
   --font-display: "Saira Condensed", "Smiley Sans Oblique", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   --font-zh-display: "Smiley Sans Oblique", "Saira Condensed", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   --font-pixel: "VT323", "JetBrains Mono", "Courier New", monospace;
+  /* ⚠️ Pacifico ships ONE weight (400). Anything that sets a heavier weight on
+     this face gets a SYNTHESISED bold from the browser — wider and blurrier than
+     the real thing, and different in every engine. Always pair it with
+     `font-weight: 400`. It carries no CJK either, so the fan page's Chinese
+     titles fall through to `--font-zh-display` on their own. */
+  --font-script: "Pacifico", "Brush Script MT", "Segoe Script", cursive;
 
   /* TYPE SCALE — exact original values */
   --text-scale-hero: clamp(80px, 10vw, 110px);

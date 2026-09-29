@@ -176,3 +176,68 @@ Windows 文件系统**大小写不敏感**，所以 `rrs-*` 会连 `RRS-*.log` �
 2. 用脚本回写之后，除了数 `U+FFFD`，再扫一遍**控制字节**：
    `[System.IO.File]::ReadAllBytes($p) | Where-Object { $_ -lt 0x20 -and $_ -notin 0x09,0x0A,0x0D }`
 3. 文件工具报 "binary file" 时，先按上面扫 —— 几乎一定是某个转义写坏了，而不是工具出问题。
+### 5.1 注释不能写在 JSX 的属性表里
+
+`.astro` 里给一个元素写注释，位置只有两个：**子元素位置**（`<div>{/* … */}</div>`）或者**标签外**。写进属性表就出事：
+
+```astro
+<img src={x} alt="" {/* ⚠️ 这样写 */} loading={lazy()} />
+<img src={x} alt=""  /* ⚠️ 这样也一样 */  loading={lazy()} />
+```
+
+`astro check` 的第一种报 **"Unterminated string literal" + "':' expected"**，位置指向注释下面两行；第二种报 **`boolean` 不能赋给 `string`**，附注说「所需类型来自属性 `is`」—— 两条都指不到真正的位置，因为属性流被注释切断了。
+
+⚠️ **构建和页面都正常**，所以这个坑只会以「Problems 面板里有两条看不懂的错」的形式存在。判据是：报错位置落在一段**注释**里，就去属性表里找。
+
+（老仓库里两处都是这么写的，2026-09-29 一起修掉，`astro check` 从 11 errors 到 0。）
+---
+
+## 12. 作用域外的 `var()`、快动画的取证、以及会迟到的 `setTimeout`（2026-09-30）
+
+### 12.1 拿不到的自定义属性在 SVG 里**不是「没颜色」，是黑色**
+
+`FanIntro.astro`（`/fan/` 的入场覆盖层）是 `.fan-root` 的**兄弟**，而粉丝页那套 `--fan-*` token 是定义在 `.fan-root` 上的。于是 `fill: var(--fan-white)` 里的变量**没有定义**——CSS 里这不是「回退到默认」，而是 *invalid at computed-value time*：属性变成它的**初始值**，`fill` 的初始值是 **black**。
+
+结果：粉底上浮着一排**黑描边**的云。构建通过、`astro check` 通过、页面能渲染，只有截图看得出来。
+
+- 判据：`var()` 的 fallback 只在写 `var(--x, fallback)` 时才存在；**跨组件的 token 作用域没有隐式继承**，元素不在那个作用域里就是没有。
+- 修法：新根上**重新声明**用到的 token（值 1:1 抄自 `FanPage.astro`），并在注释里写明为什么。
+- 这条对 `background` 同样成立（初始值是 `transparent`），所以症状会分成「黑」和「透明」两种，别只记住一个。
+
+### 12.2 拍一个 600ms 的动画，不要跟它赛跑：**先冻住时钟**
+
+`Page.captureScreenshot` 在这个页面上要 **300-600ms**（要回读一块 WebGL 表面）。破口只有 620ms，于是连续三次「按时」拍到的都是**已经结束**的画面——看起来像动画坏了，其实是取证方法坏了。
+
+`输入/_scratch/fi-look.mjs` 的做法：等相位类名出现 → **冻住** → 再慢慢拍。
+
+- ⚠️ **只冻你要看的那几个关键帧。** 第一版对 `document.getAnimations()` 全量设 `currentTime`，把还没结束的 `fiRise`（`fill: both`）一起倒回 140ms，十四朵云全被打回屏幕外，破口帧里一朵云都没有，看上去又像另一个 bug。正确的写法是：起云 `finish()`，只对 `fiFly`/`fiPuff`/`fiBloom` 设时间并 `pause()`。
+- ⚠️ **JS 驱动的值冻不住。** 那个洞是 `requestAnimationFrame` 每帧写 `--fi-hole`，不是 CSS 动画，暂停所有动画也拦不住它。做法是把元素自己的 `style.setProperty` 换成忽略这一个属性的壳，再用保存下来的原函数写死想要的值。
+- ⚠️ **覆盖层会自己删自己**（1s 计时器），第一轮拍到第二张时 `document.querySelector('.fi')` 已经是 `null`。给这个元素挂一个空的 `remove` 即可。
+- 模板字符串里**不要写反引号**：注入的注释里写了 `` `currentTime` ``，直接把探针自己的模板字面量截断了（`SyntaxError: missing ) after argument list`）。
+
+### 12.3 `setTimeout` 会迟到 300-600ms，绝对截止时间会切掉动画
+
+入场里 `BURST_AT = 2100` 的破口计时器，在这页的渲染压力下实测落在 **~2400-2700ms**；它迟到的同时**所有跟着它起的 CSS 动画也一起迟**。第一版把删除写成一个绝对时刻（3000ms），于是碎片还在飞就被抹掉了。
+
+- 规则：**后续相位的截止时间从「上一个相位真的发生」那一刻起算**，绝对时间只留给兜底（这里另有一个 5s 的防火墙）。
+- 同一个坑的另一面：写探针时也别用绝对时刻断言相位（本仓库的探针已经因此误报过两次），要么读状态、要么读类名。
+
+### 12.4 内联脚本的错误只有「页面异常探针」看得见
+
+`CassetteShelf.astro` 里那段预热封面的内联脚本，读完了 `seen`、解析了 `urls`，然后调用一个**从来没定义过**的 `warmCovers`：每次打开 `/projects/` 和 `/lab/` 都在控制台抛 `ReferenceError`，预热也从来没生效过。`astro check` 看不见（内联脚本不在它的类型检查里）、构建通过、页面照常渲染。
+
+- 规则：跑页面级探针时，**把 `Runtime.exceptionThrown` 和 `console.error` 收进断言**（`输入/_scratch/fan-intro.mjs` 里已是标准做法），并把 `astro dev` 下必然失败的 `/api/*` 请求白名单掉。
+### 12.5 canvas 动画取证：给组件一个 `step(t)`，并给无头浏览器「焦点」
+
+`FanIntro` 换成 canvas 版之后，上一节的 `getAnimations()` 办法整条失效——画面不再由 CSS 动画驱动，而是 rAF 里 `clearRect + drawImage` 画出来的。那一段留着的教训（截图比动画慢、要冻住时钟）仍然成立，换的是冻法：
+
+- **组件暴露 `window.__fanIntro.step(t)`**：取消 rAF，只用第 t 秒画一帧（演示自己也有 `__cloudIntro`）。探针用它出图，一帧一次截图，随便每张多慢。
+- ⚠️ **`frame()` 开头必须 `if (finished) return;`**：`step()` 取消 rAF 时可能已经有一帧在飞，那一帧会拿**实时时钟**盖掉冻结帧；超过 3.5s 时它还会顺手把整个入场拆掉，于是「拍到的是页面」看起来像动画坏了。
+- ⚠️ **无头浏览器里后台标签的 rAF 会被节流**：同一轮里 `Target.createTarget` 开出来的标签不一定是活动标签，被节流时一次 rAF 都不跑——入场停在第一帧、`is-fi` 一直挂着、最后只剩 8s 兜底把它拆掉。症状是「同一份代码，上一次全绿、这一次三条时间断言全 null」。每个探针开完标签后加一句 `Emulation.setFocusEmulationEnabled({ enabled: true })` 即可。
+
+### 12.6 页内时间戳，别用探针的墙钟
+
+这一页截图要 0.3-1.7s，比破口(1.6s)还长。用墙钟在 2.9s 读状态，实际读到的是 ~4.1s 的状态（入场已经拆完了），于是「揭幕没发生」。正确做法是用 `Page.addScriptToEvaluateOnNewDocument` 在**文档开始**装一个 `MutationObserver`，把 `is-fi-revealed` 出现和 `.fi` 消失各自打一个时间戳，再读回来断言范围（实测 2374ms / 3533ms，与源码里的 2.35s / 3.5s 对得上）。
+
+- ⚠️ 观察对象用 `document` 而不是 `document.documentElement`：文档开始那一刻 `<html>` 还不存在。
+- ⚠️ 「消失」这一类时间戳要加「先见过才算」的守卫，否则文档开始时的空 DOM 会被记成一次移除（实测记成 12ms）。

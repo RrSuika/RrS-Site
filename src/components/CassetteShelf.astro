@@ -271,22 +271,29 @@ const coverUrls = items
               <div class="cas-f cas-front">
                 <div class="cas-label">
                   {item.image ? (
-                    <img
-                      src={item.image}
-                      alt=""
-                      width={item.width}
-                      height={item.height}
-                      /* ⚠️ Only the tapes that are ON STAGE at rest load
-                         eagerly. Every cover used to be eager, so a shelf page
-                         fetched thirteen 960px webp covers (~1.2 MB) at full
-                         priority before it could settle — the other side of the
-                         "要等好几秒" report. Everything past the first five is
-                         off-stage, and by the time a visitor steps to it the
-                         file is there. */
-                      loading={index < MAX_SLOT_COUNT + 1 ? "eager" : "lazy"}
-                      decoding="async"
-                      draggable="false"
-                    />
+                    <>
+                      {/* ⚠️ Only the tapes that are ON STAGE at rest load
+                          eagerly. Every cover used to be eager, so a shelf page
+                          fetched thirteen 960px webp covers (~1.2 MB) at full
+                          priority before it could settle — the other side of the
+                          "要等好几秒" report. Everything past the first five is
+                          off-stage, and by the time a visitor steps to it the
+                          file is there.
+                          ⚠️ A plain comment inside an ATTRIBUTE LIST is not valid
+                          JSX either — `astro check` reported it as
+                          "boolean is not assignable to string" on an attribute it
+                          could not name, pointing into this comment. Comments go
+                          in a child position, which is why this is a fragment. */}
+                      <img
+                        src={item.image}
+                        alt=""
+                        width={item.width}
+                        height={item.height}
+                        loading={index < MAX_SLOT_COUNT + 1 ? "eager" : "lazy"}
+                        decoding="async"
+                        draggable="false"
+                      />
+                    </>
                   ) : (
                     <div class="cas-label-fallback" aria-hidden="true" />
                   )}
@@ -609,12 +616,26 @@ const coverUrls = items
       urls = [];
     }
 
+    /* ⚠️ This function was MISSING when the warm-up shipped: the script read the
+       flag, parsed `urls` and then called a `warmCovers` that was never defined,
+       so every load of /projects/ and /lab/ threw `ReferenceError: warmCovers is
+       not defined` in the console and warmed nothing. Neither `astro check` nor the
+       build can see it — it is an inline script — and the page still renders, so
+       only a probe that listens for page exceptions catches it. */
+    const warmCovers = () => {
+      if (seen || !urls.length) return;
+      for (const url of urls) {
+        const img = new Image();
+        img.decoding = "async";
+        img.src = url;
+      }
+    };
+
     /* The covers are for THIS page, so they only have to wait for the cover
        itself — never for the first paint. */
     const g = window.__rrsIntroGate;
     if (g) Promise.resolve(g).then(warmCovers, warmCovers);
     else warmCovers();
-
   })();
 </script>
 

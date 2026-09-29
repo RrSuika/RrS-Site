@@ -1,0 +1,700 @@
+---
+/**
+ * FanIntro.astro — the cloud-burst arrival for `/fan/`.
+ *
+ * ⚠️ **2026-09-30: this is a port of a standalone canvas demo the visitor supplied
+ * ("云上旅梦 · Opening Animation"), replacing the CSS-keyframe version.** The demo's
+ * technique is kept 1:1 — a low-resolution offscreen canvas of ~200 blurred puffs,
+ * composited with `ctx.filter = blur()`, then a hole punched through it with
+ * `globalCompositeOperation = "destination-out"` plus sixteen rotating "petals" so
+ * the rim is torn rather than circular — and so are its clock and its reveal
+ * choreography:
+ *
+ *   0.12 s   the puffs start rising from below the fold (0.95-1.4 s each, staggered)
+ *   1.90 s   the hole starts to open (1.60 s, ease-in-out)
+ *   2.35 s   the page's hero starts to arrive: opacity 0 → 1 and a 28px rise, 0.95 s
+ *            each, staggered 0 / 0.09 / 0.19 / 0.29 / 0.39 / 0.49 s
+ *   3.50 s   the canvas is dropped and the overlay is removed
+ *
+ * ⚠️ Three adaptations, each for a reason the demo did not have to solve:
+ *
+ *  1. **The canvas IS the cover, background included.** In the demo the pink field is
+ *     a DOM layer UNDER the canvas, because what it covered was the demo's own pink
+ *     page. Here the overlay sits on top of the real page, so anything left in the
+ *     DOM under the canvas would still be in front of the page after the hole opens.
+ *     The field (one linear gradient + three elliptical radials + the masked white
+ *     dot texture) is therefore painted INTO the canvas — once, on resize — and the
+ *     hole erases the whole thing in a single operation.
+ *  2. **The reveal target is the page's own hero, not a duplicated title card.** The
+ *     demo's `.content > *` block IS its page. Copying that block's copy into this
+ *     overlay would have put two wordmarks on screen a few pixels apart for the
+ *     whole second half of the shot; instead the page's hero children start hidden
+ *     while `html.is-fi` is set and are released by `html.is-fi-revealed` with the
+ *     demo's own stagger. Same choreography, no second copy of anything.
+ *  3. **The demo's buttons and chips are not ported.** They are a landing page's CTAs
+ *     (「开始探索」/「了解更多」/「治愈系 · 插画集 · 云朵旅」); this hero has no CTAs by
+ *     the visitor's own call, and the hero's stamp pill and scroll hint already fill
+ *     those two slots.
+ *
+ * ⚠️ WHEN it plays is a runtime decision made in the script at the bottom: first
+ * `/fan/` of the session, or an arrival from any `/art` page. Back/forward never
+ * replays it, and reduced motion never gets it at all.
+ *
+ * ⚠️ The overlay ships VISIBLE in the markup and is taken away when it must not
+ * play. The other order — hidden until a script arms it — shows the page first,
+ * which is the flash this component exists to avoid.
+ *
+ * ⚠️ It is a SIBLING of `.fan-root` and the FIRST thing in the page's slot. As a
+ * child, `.fan-root > *:not(...)` would force `position: relative` on it; as the
+ * first node, the cover is parsed and painted before the page behind it.
+ *
+ * ⚠️ `html[data-own-intro]` comes from `Layout.astro`'s `ownIntro` prop and makes the
+ * site's inline guard stand down. Two consequences relied on: the site cover is never
+ * shown here, and `main`'s `pageIn` entrance is switched off below.
+ */
+import type { Language } from "../utils/i18n";
+
+interface Props {
+  /** the route's own language; `/nl/fan/` is served from the same component */
+  language?: Language;
+}
+
+/* ⚠️ The prop is declared so FanPage can pass it, and deliberately unused: this
+   component draws no text of its own any more. The reveal lands on the page's own
+   hero, so the copy still comes from src/utils/fan.ts through FanPage. */
+---
+
+<div class="fi" id="fan-intro" aria-hidden="true">
+  <canvas class="fi-canvas" data-fi-canvas></canvas>
+</div>
+
+<noscript>
+  <style is:global>
+    /* No script, no arrival: the cover would otherwise stay up forever. */
+    .fi {
+      display: none !important;
+    }
+  </style>
+</noscript>
+
+<style is:global>
+  /* ⚠️ `global.css` animates `main` in (`pageIn`: opacity 0 → 1 with a 10px rise).
+     On this page the arrival IS the entrance, and pageIn would do two bad things:
+     fade the cover in from nothing, and — for the length of the animation — give
+     `main` a transform, which turns every `position: fixed` descendant into an
+     absolutely positioned one. The cover has to be there on the first painted frame,
+     so the site's page entrance stands down here. */
+  html[data-own-intro] main {
+    animation: none;
+  }
+
+  /* ⚠️ Belt and braces: if the arrival's script never runs, the cover must not be
+     able to trap a visitor. */
+  html:not([data-own-intro]) .fi {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fi {
+      display: none !important;
+    }
+  }
+
+  /* ══════════ THE REVEAL ══════════
+     The demo's `.content > *` rules, pointed at the page's real hero. `is-fi` is set
+     by the arrival's script, which runs before the hero is parsed — so the hero is
+     never painted in its "arrived" state and then snapped away. */
+  html.is-fi:not(.is-fi-revealed) .fan-hero > .hero-blob,
+  html.is-fi:not(.is-fi-revealed) .fan-hero > .fan-title,
+  html.is-fi:not(.is-fi-revealed) .fan-hero > .fan-title-cn,
+  html.is-fi:not(.is-fi-revealed) .fan-hero > .fan-sub,
+  html.is-fi:not(.is-fi-revealed) .fan-hero > .fan-stamp {
+    opacity: 0;
+    transform: translateY(28px) scale(0.96);
+  }
+
+  /* ⚠️ Armed on the PAGE, not on `is-fi`: the classes are dropped at 3.5s while the
+     last staggered item (delay 0.49s + 0.95s) is still moving, and a transition
+     declared under `html.is-fi` disappears with it — the hero's stamp and scroll hint
+     snapped instead of arriving. */
+  html[data-own-intro] .fan-hero > .hero-blob,
+  html[data-own-intro] .fan-hero > .fan-title,
+  html[data-own-intro] .fan-hero > .fan-title-cn,
+  html[data-own-intro] .fan-hero > .fan-sub,
+  html[data-own-intro] .fan-hero > .fan-stamp {
+    transition:
+      opacity 0.95s var(--ease-out),
+      transform 0.95s var(--ease-out);
+  }
+
+  /* the demo's stagger, in the hero's own reading order */
+  html.is-fi-revealed .fan-hero > .hero-blob {
+    transition-delay: 0s;
+  }
+  html.is-fi-revealed .fan-hero > .fan-title {
+    transition-delay: 0.09s;
+  }
+  html.is-fi-revealed .fan-hero > .fan-title-cn {
+    transition-delay: 0.19s;
+  }
+  html.is-fi-revealed .fan-hero > .fan-sub {
+    transition-delay: 0.29s;
+  }
+  html.is-fi-revealed .fan-hero > .fan-stamp {
+    transition-delay: 0.39s;
+  }
+
+  /* while the arrival plays the page behind it must not scroll */
+  html.is-fi {
+    overflow: hidden;
+  }
+</style>
+
+<style>
+  /* ⚠️ No background on the overlay itself: the CANVAS is the cover, and anything
+     painted here would stay in front of the page once the hole has opened. The one
+     exception is the field colour as a first-paint fallback, which the first canvas
+     frame replaces within a frame or two. */
+  .fi {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100svh;
+    /* above the page's own rail and lightbox (9000 / 9500) */
+    z-index: 9999;
+    overflow: hidden;
+    pointer-events: auto;
+    /* ⚠️ NO background here, not even as a first-paint fallback — that fallback was
+       the bug in the first port of this: the hole erases the CANVAS, so a colour on
+       this element stayed behind as a pink wall exactly where the page should have
+       been showing. The canvas is painted once synchronously before the first frame
+       (`render(0)` below), so there is nothing to cover. */
+  }
+
+  /* the last 0.3s: the cover is already fully erased, this only keeps a layer over
+     the page while the compositor catches up (see the teardown comment) */
+  .fi.is-out {
+    opacity: 0;
+    transition: opacity 0.3s linear;
+  }
+
+  /* ⚠️ `inset: 0` would not do: during `pageIn` a fixed child resolves against
+     `main`, which is the height of the whole page. */
+  .fi-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    pointer-events: none;
+  }
+</style>
+
+<script is:inline>
+  /* ⚠️ is:inline, and it has to be. The FIRST thing this script does is put is-fi
+     on html, which is what holds the hero's children at opacity 0 — and an Astro
+     module script is deferred, i.e. it runs after the document has been parsed,
+     which is late enough for the hero to be painted in full and then snapped away.
+     Inline means it runs here, before the hero markup exists. Nothing in this block
+     is TypeScript, for the same reason. */
+  /**
+   * The arrival. The canvas work (field, puffs, blur, hole, petals) is ported from
+   * the visitor's demo; the trigger rules, the mosaic pause and the teardown are this
+   * repo's.
+   *
+   * ⚠️ The reveal and the teardown ride the LOOP's clock, not `setTimeout` deadlines:
+   * the hero has to arrive on the same second as the hole, and a timer that fires
+   * 400ms late under load would open the hole ahead of the page.
+   */
+  (() => {
+    const el = document.getElementById("fan-intro");
+    const canvas = document.querySelector("[data-fi-canvas]");
+    if (!el || !canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const root = document.documentElement;
+    const KEY = "rrsuika-fan-intro-seen";
+
+    /** the mosaic's own handle (`FanMosaic.astro` publishes it for A/B probes) */
+    /* ⚠️ `FanMosaic` is rendered INSIDE `.fan-root`, i.e. AFTER this component, and
+       its script is a deferred module — so at this point its handle does not exist
+       yet and a single `pause()` here would silently do nothing (measured: the
+       background kept running through the whole arrival). The loop below picks it up
+       on the first frame after it appears, which is still behind an opaque cover. */
+    let mosaicHeld = false;
+    let mosaicBack = false;
+    function holdMosaic() {
+      if (mosaicHeld || mosaicBack) return;
+      const m = window.__fanMosaic;
+      if (!m) return;
+      m.pause();
+      mosaicHeld = true;
+    }
+    function releaseMosaic() {
+      if (mosaicBack) return;
+      const m = window.__fanMosaic;
+      if (!m) return;
+      m.resume();
+      mosaicBack = true;
+    }
+
+    const TAU = Math.PI * 2;
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+    const easeInOutCubic = (t) =>
+      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+    /* ── the demo's clock, unchanged ── */
+    const T_RISE = 0.12;
+    const T_CRACK_START = 1.9;
+    const T_CRACK_DUR = 1.6;
+    const T_REVEAL = 2.35;
+    const T_TOTAL = T_CRACK_START + T_CRACK_DUR;
+    /* ⚠️ The background has to be running again BEFORE the hole exposes it. A paused
+       WebGL canvas has no valid drawing buffer left to hand the compositor
+       (`preserveDrawingBuffer` is false), so the first frame the visitor sees of it
+       after a pause can composite as BLACK — measured with `输入/_scratch/fi-black.mjs`,
+       which screencasts the whole arrival and averages every frame. It goes back up
+       0.1s before the crack. */
+    const T_MOSAIC_BACK = T_CRACK_START - 0.1;
+
+    /* ── the demo's palette ── */
+    const C_FIELD_A = "#FFEAF6";
+    const C_FIELD_B = "#FFCBE4";
+    const C_FIELD_C = "#FFAFD5";
+    const C_PUFF_TOP = "#FFFFFF";
+    const C_PUFF_BOTTOM = "#FFD1E9";
+
+    /* one puff: {x, y, r, yStart, delay, dur, color, phase}
+       one petal: {ang, dist, rad, spin} */
+
+    let W = 0;
+    let H = 0;
+    let DPR = 1;
+    let SCALE = 0.6;
+    let blurPx = 14;
+    let puffs = [];
+    let petals = [];
+    let startTime = 0;
+    let rafId = 0;
+    let revealed = false;
+    let finished = false;
+
+    /* the low-resolution puff buffer: one blur per frame, not one per puff */
+    const tmp = document.createElement("canvas");
+    const tctx = tmp.getContext("2d");
+    /* the static cover (field + dots), repainted only on resize */
+    const field = document.createElement("canvas");
+    const fctx = field.getContext("2d");
+
+    /* Safari < 16.4 has no `ctx.filter`; the demo's radial-gradient fallback stays */
+    const supportsFilter = (() => {
+      try {
+        const c = document.createElement("canvas").getContext("2d");
+        if (!c) return false;
+        c.filter = "blur(2px)";
+        return c.filter === "blur(2px)";
+      } catch (_) {
+        return false;
+      }
+    })();
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function mixHex(a, b, t) {
+      const pa = [
+        parseInt(a.slice(1, 3), 16),
+        parseInt(a.slice(3, 5), 16),
+        parseInt(a.slice(5, 7), 16),
+      ];
+      const pb = [
+        parseInt(b.slice(1, 3), 16),
+        parseInt(b.slice(3, 5), 16),
+        parseInt(b.slice(5, 7), 16),
+      ];
+      return `rgb(${Math.round(lerp(pa[0], pb[0], t))},${Math.round(
+        lerp(pa[1], pb[1], t),
+      )},${Math.round(lerp(pa[2], pb[2], t))})`;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       THE COVER (the demo's `.bg`, painted instead of styled)
+
+       ⚠️ Canvas radial gradients are CIRCLES; the demo's are ellipses. Each one is
+       drawn inside `translate + scale`, which is the standard way to get an
+       elliptical gradient out of the 2D context; the fill rect is expressed in the
+       scaled space so it covers the whole ellipse.
+       ══════════════════════════════════════════════════════════ */
+    function paintField() {
+      if (!fctx) return;
+      const w = Math.max(1, Math.round(W * DPR));
+      const h = Math.max(1, Math.round(H * DPR));
+      field.width = w;
+      field.height = h;
+      fctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+      /* linear-gradient(168deg, #FFEAF6 0%, #FFCBE4 48%, #FFAFD5 100%) */
+      const ang = ((168 - 90) * Math.PI) / 180;
+      const dx = Math.cos(ang);
+      const dy = Math.sin(ang);
+      const len = Math.abs(W * dx) + Math.abs(H * dy);
+      const g = fctx.createLinearGradient(
+        W / 2 - (dx * len) / 2,
+        H / 2 - (dy * len) / 2,
+        W / 2 + (dx * len) / 2,
+        H / 2 + (dy * len) / 2,
+      );
+      g.addColorStop(0, C_FIELD_A);
+      g.addColorStop(0.48, C_FIELD_B);
+      g.addColorStop(1, C_FIELD_C);
+      fctx.fillStyle = g;
+      fctx.fillRect(0, 0, W, H);
+
+      const ellipse = (cx, cy, rx, ry, color, stop) => {
+        fctx.save();
+        fctx.translate(cx, cy);
+        fctx.scale(rx, ry);
+        const rg = fctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+        rg.addColorStop(0, color);
+        rg.addColorStop(stop, "rgba(255,255,255,0)");
+        fctx.fillStyle = rg;
+        fctx.fillRect(-2, -2, 4, 4);
+        fctx.restore();
+      };
+
+      /* the three radials, bottom layer first (CSS paints that list in reverse) */
+      ellipse(W * 0.92, H * 0.22, W * 0.75, H * 0.65, "#FFE2F1", 0.62);
+      ellipse(W * 0.12, H * 0.08, W * 0.85, H * 0.75, "#FFFFFF", 0.58);
+      ellipse(W * 0.5, H * 1.12, W * 1.2, H * 0.95, "#FF9BC6", 0.62);
+
+      /* ── the dot texture, on its own layer so its mask cannot erase the field ──
+         `.bg::after`: 1.5px white dots on a 36px pitch at 0.32, faded out in the
+         middle by `radial-gradient(circle at 50% 45%, transparent 18%, #000 78%)`. */
+      const dots = document.createElement("canvas");
+      dots.width = w;
+      dots.height = h;
+      const dctx = dots.getContext("2d");
+      if (!dctx) return;
+      dctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      dctx.fillStyle = "#FFFFFF";
+      for (let y = 18; y < H; y += 36) {
+        for (let x = 18; x < W; x += 36) {
+          dctx.beginPath();
+          dctx.arc(x, y, 1.5, 0, TAU);
+          dctx.fill();
+        }
+      }
+      dctx.globalCompositeOperation = "destination-in";
+      const far = Math.hypot(W * 0.5, H * 0.55);
+      const mk = dctx.createRadialGradient(W * 0.5, H * 0.45, 0, W * 0.5, H * 0.45, far);
+      mk.addColorStop(0, "rgba(0,0,0,0)");
+      mk.addColorStop(0.18, "rgba(0,0,0,0)");
+      mk.addColorStop(0.78, "rgba(0,0,0,1)");
+      dctx.fillStyle = mk;
+      dctx.fillRect(0, 0, W, H);
+      fctx.globalAlpha = 0.32;
+      fctx.drawImage(dots, 0, 0, W, H);
+      fctx.globalAlpha = 1;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       CLOUDS
+       ══════════════════════════════════════════════════════════ */
+    function buildClouds() {
+      puffs = [];
+      const base = Math.min(W, H);
+      const spacing = clamp(base * 0.135, 56, 130);
+      const cols = Math.ceil(W / spacing) + 5;
+      const rows = Math.ceil(H / spacing) + 5;
+      const offX = -spacing * 2.5;
+      const offY = -spacing * 2.5;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const jx = (Math.random() - 0.5) * spacing * 0.72;
+          const jy = (Math.random() - 0.5) * spacing * 0.72;
+          const x = offX + c * spacing + jx;
+          const y = offY + r * spacing + jy;
+          const rad = spacing * (0.86 + Math.random() * 0.46);
+          /* lower puffs are pinker: that gradient is what reads as volume */
+          const k = clamp(y / H, 0, 1);
+          puffs.push({
+            x,
+            y,
+            r: rad,
+            yStart: H + rad + 40 + Math.random() * H * 0.45,
+            delay: T_RISE + Math.random() * 0.34,
+            dur: 0.95 + Math.random() * 0.45,
+            color: mixHex(C_PUFF_TOP, C_PUFF_BOTTOM, k * 0.9),
+            phase: Math.random() * TAU,
+          });
+        }
+      }
+    }
+
+    function buildPetals() {
+      petals = [];
+      const N = 16;
+      for (let i = 0; i < N; i++) {
+        petals.push({
+          ang: (i / N) * TAU + (Math.random() - 0.5) * 0.38,
+          dist: 0.62 + Math.random() * 0.44,
+          rad: 0.34 + Math.random() * 0.3,
+          spin: (Math.random() - 0.5) * 1.7,
+        });
+      }
+    }
+
+    function resize() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(W * DPR);
+      canvas.height = Math.round(H * DPR);
+      canvas.style.width = W + "px";
+      canvas.style.height = H + "px";
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+      /* a fixed pixel budget for the puff buffer, so the blur costs the same on a
+         phone and on a 4K monitor */
+      SCALE = clamp(Math.sqrt(850000 / Math.max(W * H, 1)), 0.34, 0.66);
+      tmp.width = Math.max(1, Math.round(W * SCALE));
+      tmp.height = Math.max(1, Math.round(H * SCALE));
+      blurPx = clamp(Math.min(W, H) * 0.028, 8, 26);
+
+      paintField();
+      buildClouds();
+      buildPetals();
+    }
+
+    function drawCloudLayer(t) {
+      if (!tctx) return;
+      const tw = tmp.width;
+      const th = tmp.height;
+      tctx.setTransform(1, 0, 0, 1, 0, 0);
+      tctx.clearRect(0, 0, tw, th);
+      tctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+
+      for (let i = 0; i < puffs.length; i++) {
+        const p = puffs[i];
+        const prog = clamp((t - p.delay) / p.dur, 0, 1);
+        if (prog <= 0) continue;
+        const e = easeOutCubic(prog);
+        const y = lerp(p.yStart, p.y, e);
+        if (y - p.r > H + 80) continue;
+        if (y + p.r < -80) continue;
+        const x = p.x + Math.sin(t * 1.1 + p.phase) * 5 * e;
+
+        if (supportsFilter) {
+          tctx.fillStyle = p.color;
+          tctx.beginPath();
+          tctx.arc(x, y, p.r, 0, TAU);
+          tctx.fill();
+        } else {
+          const rg = tctx.createRadialGradient(x, y, p.r * 0.15, x, y, p.r * 1.1);
+          rg.addColorStop(0, p.color);
+          rg.addColorStop(0.6, p.color);
+          rg.addColorStop(1, "rgba(255,255,255,0)");
+          tctx.fillStyle = rg;
+          tctx.beginPath();
+          tctx.arc(x, y, p.r * 1.1, 0, TAU);
+          tctx.fill();
+        }
+      }
+      ctx.save();
+      if (supportsFilter) ctx.filter = "blur(" + blurPx + "px)";
+      ctx.drawImage(tmp, 0, 0, tw, th, 0, 0, W, H);
+      ctx.restore();
+    }
+
+    /** the hole: a soft disc plus sixteen rotating petals, so the rim is torn */
+    function punchHole(p, t) {
+      if (p <= 0) return;
+      const cx = W * 0.5;
+      const cy = H * 0.5;
+      const maxR = Math.hypot(W, H) * 0.63;
+      const R = easeInOutCubic(p) * maxR;
+      if (R < 0.5) return;
+
+      ctx.save();
+      ctx.globalCompositeOperation = "destination-out";
+
+      const g = ctx.createRadialGradient(cx, cy, R * 0.42, cx, cy, R * 1.03);
+      g.addColorStop(0, "rgba(0,0,0,1)");
+      g.addColorStop(0.6, "rgba(0,0,0,1)");
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R * 1.03, 0, TAU);
+      ctx.fill();
+
+      for (let i = 0; i < petals.length; i++) {
+        const pt = petals[i];
+        const ang = pt.ang + t * 0.28 * pt.spin;
+        const d = R * pt.dist;
+        const px = cx + Math.cos(ang) * d;
+        const py = cy + Math.sin(ang) * d;
+        const pr = R * pt.rad;
+        if (pr < 2) continue;
+        const pg = ctx.createRadialGradient(px, py, pr * 0.22, px, py, pr);
+        pg.addColorStop(0, "rgba(0,0,0,1)");
+        pg.addColorStop(0.52, "rgba(0,0,0,1)");
+        pg.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = pg;
+        ctx.beginPath();
+        ctx.arc(px, py, pr, 0, TAU);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function render(t) {
+      ctx.clearRect(0, 0, W, H);
+      ctx.drawImage(field, 0, 0, W, H);
+      drawCloudLayer(t);
+      punchHole(clamp((t - T_CRACK_START) / T_CRACK_DUR, 0, 1), t);
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       THE CLOCK
+       ══════════════════════════════════════════════════════════ */
+    function frame(now) {
+      /* ⚠️ A frame can already be in flight when `__fanIntro.step()` cancels the loop;
+         without this guard that frame renders the LIVE clock over the frozen one and,
+         past 3.5s, tears the whole arrival down under the probe. */
+      if (finished) return;
+      if (!startTime) startTime = now;
+      const t = (now - startTime) / 1000;
+      render(t);
+
+      holdMosaic();
+      if (mosaicHeld && t >= T_MOSAIC_BACK) releaseMosaic();
+      if (!revealed && t >= T_REVEAL) {
+        revealed = true;
+        root.classList.add("is-fi-revealed");
+      }
+      if (t >= T_TOTAL) {
+        finish();
+        return;
+      }
+      rafId = requestAnimationFrame(frame);
+    }
+
+    function finish() {
+      if (finished) return;
+      finished = true;
+      cancelAnimationFrame(rafId);
+      /* ⚠️ `is-fi` goes at the same moment as the overlay: it is what holds the
+         hero's children at opacity 0, so leaving it behind would hide the page. */
+      root.classList.remove("is-fi", "is-fi-revealed");
+      releaseMosaic();
+      /* ⚠️ NOT `el.remove()` in this frame. Deleting a full-screen layer in one go
+         makes the compositor show the freshly exposed page before it has been
+         rasterised, and the visitor sees a black frame between the clouds and the
+         interface (「云朵四散的时候，画面会突然变黑，然后才是亮色的界面」; measured as
+         one frame at mean luminance 43 out of 255). Fading the last of the cover out
+         gives the page underneath those frames. */
+      el.classList.add("is-out");
+      window.setTimeout(() => el.remove(), 320);
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       SHOULD IT PLAY?
+       ══════════════════════════════════════════════════════════ */
+    let seen = false;
+    try {
+      seen = sessionStorage.getItem(KEY) === "1";
+    } catch (_) {}
+
+    let type = "navigate";
+    try {
+      const entry = performance.getEntriesByType("navigation")[0];
+      type = (entry && entry.type) || "navigate";
+    } catch (_) {}
+
+    /* Arriving from the art pages is an explicit "show me the fan page" move, so it
+       replays the arrival even inside the same session. Anything else plays once, and
+       a back/forward never does. */
+    let fromArt = false;
+    try {
+      fromArt = /\/art(\/|\?|$)/.test(document.referrer);
+    } catch (_) {}
+
+    if (reduceMotion || type === "back_forward" || (!fromArt && seen)) {
+      el.remove();
+      return;
+    }
+
+    try {
+      sessionStorage.setItem(KEY, "1");
+    } catch (_) {}
+
+    /* ⚠️ Set BEFORE the hero markup is parsed (this script is the first thing in the
+       page's slot), so the hero is never painted and then hidden. */
+    root.classList.add("is-fi");
+    holdMosaic();
+
+    resize();
+    /* ⚠️ One synchronous frame before the loop starts: the canvas has to be opaque on
+       the very first painted frame, or the page shows through it for one frame. */
+    render(0);
+    rafId = requestAnimationFrame(frame);
+
+    /* the safety net: a canvas that never ran must not leave a cover — or a hidden
+       hero — behind it */
+    window.setTimeout(() => {
+      if (!document.getElementById("fan-intro")) return;
+      canvas.style.display = "none";
+      finish();
+    }, 8000);
+
+    /* ⚠️ A debug hook, like the demo's own `window.__cloudIntro`: `step(t)` stops the
+       loop and draws ONE frame at `t` seconds. It exists because a screenshot of this
+       page costs longer than the crack itself (measured 0.3-1.7s), so the only honest
+       way to photograph the middle of it is to hold the clock still — which is what
+       `输入/_scratch/fi-look.mjs` does. `resume()` puts the loop back. */
+    window.__fanIntro = {
+      info() {
+        return { playing: !finished, revealed, t: startTime ? (performance.now() - startTime) / 1000 : 0 };
+      },
+      step(seconds) {
+        finished = true;
+        cancelAnimationFrame(rafId);
+        render(seconds);
+      },
+      resume() {
+        if (!finished) return;
+        finished = false;
+        startTime = 0;
+        root.classList.remove("is-fi-revealed");
+        rafId = requestAnimationFrame(frame);
+      },
+    };
+
+    /* ⚠️ The demo's resize handler, kept as it was: rebuilding the puff field at the
+       start is invisible, rebuilding it mid-rise would snap every cloud back to the
+       floor, so a later resize only re-seats the ones that have already landed. */
+    let resizeTimer = 0;
+    window.addEventListener(
+      "resize",
+      () => {
+        if (finished) return;
+        window.clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(() => {
+          const elapsed = startTime ? (performance.now() - startTime) / 1000 : 0;
+          resize();
+          if (elapsed >= 0.15) {
+            for (let i = 0; i < puffs.length; i++) {
+              const p = puffs[i];
+              if (elapsed > p.delay + p.dur) p.yStart = p.y;
+            }
+          }
+        }, 180);
+      },
+      { passive: true },
+    );
+  })();
+</script>

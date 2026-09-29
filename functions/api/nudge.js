@@ -39,22 +39,22 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
     try {
-        await context.env.DB
-            .prepare(
-                `
-        UPDATE nudge_count
-        SET count = count + 1
-        WHERE id = 1
-        `,
-            )
-            .run();
-
+        /**
+         * ⚠️ UPSERT, not `UPDATE`. The first version ran
+         * `UPDATE nudge_count SET count = count + 1 WHERE id = 1`, which is a
+         * silent no-op when the row does not exist — a fresh database (or one
+         * where the seed row was never inserted) answered `success: true,
+         * count: 0` for ever, and the button looked broken with nothing in the
+         * logs. `visit.js` already upserts; the two endpoints now match. It is
+         * also one statement instead of two.
+         */
         const result = await context.env.DB
             .prepare(
                 `
-        SELECT count
-        FROM nudge_count
-        WHERE id = 1
+        INSERT INTO nudge_count (id, count)
+        VALUES (1, 1)
+        ON CONFLICT(id) DO UPDATE SET count = nudge_count.count + 1
+        RETURNING count
         `,
             )
             .first();

@@ -24,6 +24,7 @@
  */
 import Layout from "../layouts/Layout.astro";
 import FanMosaic from "./FanMosaic.astro";
+import FanIntro from "./FanIntro.astro";
 import {
   getLanguageFromPath,
   getLocalizedPath,
@@ -31,6 +32,7 @@ import {
 } from "../utils/i18n";
 import { getArtImages } from "../utils/artImages";
 import { fanCopy, getFanLanguage } from "../utils/fan";
+import { CLOUD_BODY_D, ORN_PATHS } from "../utils/fanOrnaments";
 
 interface Props {
   /** the route's own language; `/nl/fan/` is served from this component too */
@@ -41,6 +43,20 @@ const urlLanguage = getLanguageFromPath(Astro.url.pathname);
 const language = (Astro.props as Props).language ?? urlLanguage;
 const ui = getFanLanguage(language);
 const c = fanCopy[ui];
+
+/**
+ * ⚠️ A helper instead of an inline `i < n ? "eager" : "lazy"`.
+ *
+ * A `<` inside a JSX **attribute expression** makes `astro check` mis-parse the
+ * generated TSX: it reports "Unterminated string literal" and "':' expected"
+ * pointing INTO the comment above the attribute, plus a boolean-to-string error
+ * on a mangled attribute name. Measured: two errors in this file and two more in
+ * `CassetteShelf.astro`, all from the same shape. The runtime was never affected
+ * (the build and the page were fine) — it was purely diagnostics noise.
+ * Moving the comparison into a function removes the `<` from the attribute.
+ */
+const coverLoading = (total: number, index: number): "eager" | "lazy" =>
+  index < total * 2 ? "eager" : "lazy";
 const isZh = ui === "zh";
 
 /* ── the gallery: the studio's real artwork, discovered the same way the
@@ -142,7 +158,14 @@ const plates: Plate[] = all.map((image, i) => {
     src: image.src,
     title: titleFromFilename(image.folder, image.filename),
     folder: image.folder,
-    category: meta?.[ui] ?? meta?.en ?? image.folder,
+    /* ⚠️ The label comes from the COPY (`c.categories`), not from the folder name.
+       It used to be `meta?.[ui] ?? meta?.en ?? image.folder`, where `meta` is the
+       `{ code }` entry — so both lookups were always undefined and every plate fell
+       back to the raw folder string. On the English page that is invisible
+       ("illustrations" → ILLUSTRATIONS), but the Chinese page printed
+       「ILLUSTRATIONS」 instead of 「插画」 — a real copy bug hidden behind a wrong
+       type annotation, which is why `astro check` was the thing that found it. */
+    category: c.categories[image.folder] ?? image.folder,
     index: String(i + 1).padStart(2, "0"),
     code: `${meta?.code ?? "PLT"}-${String(emitted[image.folder]).padStart(2, "0")}`,
   };
@@ -184,43 +207,11 @@ const rows = Object.keys(CATEGORIES)
     copies: Math.max(3, Math.ceil(ROW_VIEW_W / (row.items.length * ROW_ITEM_W)) + 2),
   }));
 
-/**
- * The decoration set, lifted from the reference deck: a four-point star, a
- * four-point sparkle, a curled flourish, a lightning bolt and a looped wave.
- * Every one is bare path data — no asset to fetch, nothing to block on.
- *
- * ⚠️ These are DECORATION. They never carry text a screen reader needs, they are
- * `aria-hidden` and `pointer-events: none`, and they never use blue as a fill.
- */
-/**
- * The motifs, all inside a `0 0 24 24` box. Each entry is `[path, stroke?]` —
- * `stroke: true` means the path is a line to be drawn, not a shape to be filled.
- *
- * ⚠️ EVERY coordinate must stay inside 0..24. The old `curl` ran to 26 and shipped
- * with one side sliced off, which is exactly the kind of bug a viewBox hides.
- */
-const ORN_PATHS: Record<string, { d: string; stroke?: boolean }> = {
-  // the reference's dominant motif: a four-point sparkle with concave sides
-  sparkle: { d: "M12 1 C13 8 16 11 23 12 C16 13 13 16 12 23 C11 16 8 13 1 12 C8 11 11 8 12 1 Z" },
-  // the chunky star
-  star: { d: "M12 2 L14.6 9.4 L22 12 L14.6 14.6 L12 22 L9.4 14.6 L2 12 L9.4 9.4 Z" },
-  // a small round dot, which is what the reference scatters between the sparkles
-  dot: { d: "M12 4 a8 8 0 1 1 0 16 a8 8 0 1 1 0 -16 z" },
-  // heart
-  heart: { d: "M12 21 C4 15 2 11 4 7.5 A5 5 0 0 1 12 5.5 A5 5 0 0 1 20 7.5 C22 11 20 15 12 21 Z" },
-  // sun: a disc with eight rays
-  sun: { d: "M12 7 a5 5 0 1 1 0 10 a5 5 0 1 1 0 -10 z M12 1 v3 M12 20 v3 M1 12 h3 M20 12 h3 M4.2 4.2 l2.1 2.1 M17.7 17.7 l2.1 2.1 M19.8 4.2 l-2.1 2.1 M6.3 17.7 l-2.1 2.1" },
-  // cloud
-  cloud: { d: "M6 18 a4 4 0 0 1 0 -8 a5 5 0 0 1 9.5 -1.5 a4.5 4.5 0 0 1 2.5 9.5 z" },
-  // rainbow: three nested arcs, drawn as strokes
-  rainbow: { d: "M3 19 a9 9 0 0 1 18 0 M6.5 19 a5.5 5.5 0 0 1 11 0 M10 19 a2 2 0 0 1 4 0", stroke: true },
-  // bubble: a ring with a highlight
-  bubble: { d: "M12 3 a9 9 0 1 1 0 18 a9 9 0 1 1 0 -18 z M8.5 8.5 a5 5 0 0 1 5 -2", stroke: true },
-  // the squiggle, kept inside the box this time
-  squiggle: { d: "M2 15 C5 8 8 8 11 15 C14 22 17 22 22 12", stroke: true },
-  // a curled ribbon, also inside the box
-  curl: { d: "M4 19 C4 10 14 10 14 17 C14 21 9 21 9 17.5 C9 15 14 15 17 12 C19 10 21 7 22 5", stroke: true },
-};
+/* The decoration set: `ORN_PATHS` and the cloud silhouette now live in
+   `src/utils/fanOrnaments.ts`, because the arrival animation
+   (`FanIntro.astro`) draws from the same sheet. Same paths, one copy.
+   ⚠️ These are DECORATION. They never carry text a screen reader needs, they are
+   `aria-hidden` and `pointer-events: none`, and they never use blue as a fill. */
 
 /**
  * Where the loose ornaments sit in the hero, and in what colour. Hand-placed:
@@ -276,7 +267,15 @@ const artHref = getLocalizedPath("/art", language);
     { lang: "zh-CN", href: zhHref },
   ]}
   noIndex
+  ownIntro
+  scriptFont
 >
+  {/* ⚠️ FIRST in the page, and a SIBLING of `.fan-root` rather than a child:
+      `.fan-root > *:not(...)` forces `position: relative` on everything it does
+      not name, which would turn the fixed overlay into a page-tall block, and
+      being first is what gets the cover painted before the page behind it. */}
+  <FanIntro language={language} />
+
   <div class="fan-root" data-fan>
     <!-- The animated background. It is a direct child of .fan-root and
          `position: fixed` at z-index -1 — which is why `.fan-root` carries
@@ -292,9 +291,19 @@ const artHref = getLocalizedPath("/art", language);
 
     <!-- ══════════ TOP BAR ══════════ -->
     <div class="fan-top">
-      <a class="fan-back" href={artHref}>{c.back}</a>
+      {/* ⚠️ No back link here any more. The footer carries the same one, and the
+          visitor asked for the duplicate to go: 「去掉粉丝页左上角的 与我合作。
+          因为页尾已经重复了一次」. The bar keeps the language switch, and the empty
+          span keeps it pinned right without touching the flex rule. */}
+      <span aria-hidden="true"></span>
 
-      <div class="fan-langs" role="group" aria-label={c.langSwitchLabel}>
+      {/* ⚠️ `data-active` is what moves the pill, and it is SERVER-RENDERED: the
+          slide is a CSS transform off this one attribute, so it is already in the
+          right place on the new page before the first paint, and no script has to
+          measure anything. The visitor asked for it to work like the site's
+          light/dark switch (「中文的蓝色框水平滑到 EN 上面」). */}
+      <div class="fan-langs" role="group" aria-label={c.langSwitchLabel} data-active={ui}>
+        <span class="fan-lang-pill" aria-hidden="true"></span>
         <a
           class:list={["fan-lang", ui === "en" && "is-on"]}
           href={enHref}
@@ -361,7 +370,7 @@ const artHref = getLocalizedPath("/art", language);
         <svg class="cloud" viewBox="0 0 242 242" focusable="false">
           <path
             class="cloud-body"
-            d="M36 152 a28 28 0 0 1 6 -54 a32 32 0 0 1 46 -30 a40 40 0 0 1 66 0 a32 32 0 0 1 46 30 a28 28 0 0 1 6 54 a22 22 0 0 1 -30 6 a26 26 0 0 1 -40 0 a26 26 0 0 1 -40 0 a22 22 0 0 1 -30 -6 z"
+            d={CLOUD_BODY_D}
             fill-rule="evenodd"
           />
         </svg>
@@ -398,7 +407,6 @@ const artHref = getLocalizedPath("/art", language);
           scrolling IS the navigation, and two buttons for four modules was noise. */}
 
       <p class="fan-stamp">{c.hero.stamp}</p>
-      <p class="fan-scroll">{c.hero.scroll}</p>
     </header>
 
     <!-- ══════════ MODULE 01 · INTRODUCTION ══════════ -->
@@ -428,7 +436,14 @@ const artHref = getLocalizedPath("/art", language);
 
     <!-- ══════════ MODULE 02 · GALLERY ══════════ -->
     <section class="fan-bleed fan-field" id="gallery">
-      <span class="orn orn-dots" data-orn aria-hidden="true"></span>
+      {/* ⚠️ The `orn-dots` field was here, and it had to go: it is a HALFTONE
+          GRID at an 11px pitch (`.orn-dots`, radius 1.6px, opacity 0.34) laid
+          over the page's own print grain at a 7px pitch — two dot lattices at
+          different pitches and phases, which beat against each other. The
+          visitor: 「画廊那边的点阵图和其他地方的点阵图不一样，画廊那边看起来有
+          多个点阵图重叠的问题」. Measured at 3x in the gap between two plates:
+          big soft blobs over a fine grid. The page now has ONE texture — the
+          shader's grain, fixed to the viewport — and every section inherits it. */}
       <div class="bleed-head">
         <div class="block-head">
           <span class="block-tag">{c.gallery.tag}</span>
@@ -473,17 +488,32 @@ const artHref = getLocalizedPath("/art", language);
                         aria-label={plate.title}
                       >
                         <span class="plate-media">
+                          {/* ⚠️ EAGER for the first copy, and the rest are
+                              preloaded by the script below. `lazy` past the first
+                              six is what made the row stutter: a repeated copy
+                              scrolls into view before its image has been decoded,
+                              so it arrives a frame late and reads as a sudden
+                              refresh. The /art page has no such gap — every image
+                              is already in the document.
+                              ⚠️ This comment lives in a CHILD position, above the
+                              element, and must never be moved into the attribute
+                              list: the JSX comment form is not valid there, and
+                              check reports an unterminated string two lines below
+                              instead of pointing here. ⚠️ It must also never SPELL
+                              that form out — an inner comment terminator would end
+                              this block early and the rest of the prose would be
+                              rendered as page text (measured 2026-09-29: the tail
+                              of this comment printed inside every gallery card). */}
+                          {/* ⚠️ `decoding="async"` is not decoration: the rows paint
+                              two or three copies of the same set, so ~100 image
+                              elements decode during the first second, and a sync
+                              decode blocks the main thread. Nothing about the
+                              rendered result changes. */}
                           <img
                             src={plate.src}
                             alt={plate.title}
-                            {/* ⚠️ EAGER for the first copy, and the rest are
-                                preloaded by the script below. `lazy` past the
-                                first six is what made the row stutter: a repeated
-                                copy scrolls into view before its image has been
-                                decoded, so it arrives a frame late and reads as a
-                                sudden refresh. The /art page has no such gap —
-                                every image is already in the document. */}
-                            loading={i < row.items.length * 2 ? "eager" : "lazy"}
+                            loading={coverLoading(row.items.length, i)}
+                            decoding="async"
                             draggable="false"
                           />
                         </span>
@@ -527,10 +557,13 @@ const artHref = getLocalizedPath("/art", language);
           {/* The visitor's own avatar: one jump per press.
                ⚠️ `Pfp Transparent.gif` in 输入/ is 1700x1700, 28 frames at 25fps and
                4.4 MB. It was transcoded once with ffmpeg to 240px / 183 KB into
-               `public/fan/avatar.gif` (see `docs/fan-page.md` §十六), and its
-               NETSCAPE loop block was STRIPPED (`输入/_scratch/gif-once.mjs`) so it
-               plays once and stops — a looping GIF cannot be "played once per
-               press", which is exactly what was asked for. */}
+               `public/fan/avatar.gif` (see `docs/fan-page.md` §十六).
+               ⚠️ Its NETSCAPE loop block is PRESENT (`-loop 0`), and that is the
+               SECOND version of this file: stripping the block so the animation
+               could be "played once per press" also froze it on its last frame
+               forever, and the visitor reported exactly that (「gif不再自己跳动」).
+               A GIF carrying a loop block restarts from frame 0 when its `src` is
+               re-assigned, which is how a press still restarts it. */}
           <img
             class="nudge-pfp"
             data-nudge-pfp
@@ -778,25 +811,90 @@ const artHref = getLocalizedPath("/art", language);
     "(prefers-reduced-motion: reduce)",
   ).matches;
 
+  /**
+   * ⚠️ Two reasons this loop can do nothing at all on a frame:
+   *   - `html.is-fi` is set by `FanIntro` while the arrival covers the page. The
+   *     rows are invisible then and the cover is compositing a dozen moving panels:
+   *     a handful of `style.transform` writes per frame is small, but it is not
+   *     free, and none of it can be seen.
+   *   - a hidden tab. The mosaic already stands down on `document.hidden`
+   *     (`FanMosaic.astro`); the marquee kept running, which is pure battery.
+   * The position is not advanced either, so the rows resume exactly where they were
+   * rather than jumping by the length of the pause.
+   */
   function frame() {
-    for (const row of rows) {
-      if (!row.dragging && !row.hovering && !reduceMotion) {
-        row.pos += row.speed * row.dir;
+    const held =
+      document.documentElement.classList.contains("is-fi") || document.hidden;
+    if (!held) {
+      for (const row of rows) {
+        if (!row.dragging && !row.hovering && !reduceMotion) {
+          row.pos += row.speed * row.dir;
+        }
+        // Seamless wrap on the MEASURED period (see `measurePeriod`). Every time the
+        // position crosses it the picture is identical, so the modulo is invisible by
+        // construction — which is the whole requirement for a loop. Written as one
+        // `((x % p) + p) % p` so a drag that overshoots into the negative still lands
+        // on the same pixels.
+        if (row.period > 0) {
+          const wrapped = ((row.pos % row.period) + row.period) % row.period;
+          if (wrapped !== row.pos) row.pos = wrapped;
+        }
+        row.track.style.transform = `translate3d(${-row.pos}px,0,0)`;
       }
-      // Seamless wrap on the MEASURED period (see `measurePeriod`). Every time the
-      // position crosses it the picture is identical, so the modulo is invisible by
-      // construction — which is the whole requirement for a loop. Written as one
-      // `((x % p) + p) % p` so a drag that overshoots into the negative still lands
-      // on the same pixels.
-      if (row.period > 0) {
-        const wrapped = ((row.pos % row.period) + row.period) % row.period;
-        if (wrapped !== row.pos) row.pos = wrapped;
-      }
-      row.track.style.transform = `translate3d(${-row.pos}px,0,0)`;
     }
     requestAnimationFrame(frame);
   }
   if (rows.length > 0) requestAnimationFrame(frame);
+
+  /* ── the language cross-fade ──
+     ⚠️ Three guards, all load-bearing:
+       - a modified click (cmd/ctrl/shift/middle) must keep its normal behaviour;
+       - the ALREADY ACTIVE label is a no-op, not a reload;
+       - the navigation is fired on a timer, never on `transitionend`: a slow page
+         must not be able to leave the visitor looking at a faded-out one.
+     The flag is what tells the ARRIVING page to fade in; without it an ordinary
+     visit (or a back/forward) would fade in for no reason. */
+  (() => {
+    const LANGS = document.querySelector<HTMLElement>(".fan-langs");
+    const KEY = "rrsuika-lang-fade";
+    if (!LANGS) return;
+    const root = document.documentElement;
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    LANGS.addEventListener("click", (event: MouseEvent) => {
+      const link = (event.target as HTMLElement).closest<HTMLAnchorElement>("a.fan-lang");
+      if (!link || link.classList.contains("is-on")) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+        return;
+      }
+      if (!still) {
+        event.preventDefault();
+        root.classList.add("is-lang-out");
+        try {
+          sessionStorage.setItem(KEY, "1");
+        } catch (_) {}
+        window.setTimeout(() => {
+          location.href = link.href;
+        }, 180);
+        return;
+      }
+      try {
+        sessionStorage.setItem(KEY, "1");
+      } catch (_) {}
+    });
+
+    let fadeIn = false;
+    try {
+      fadeIn = sessionStorage.getItem(KEY) === "1";
+      sessionStorage.removeItem(KEY);
+    } catch (_) {}
+    /* ⚠️ Never while the arrival owns the page: `is-fi` is holding the hero at
+       opacity 0 itself, and the two would fight over the same property. */
+    if (fadeIn && !still && !root.classList.contains("is-fi")) {
+      root.classList.add("is-lang-in");
+      requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("is-lang-in")));
+    }
+  })();
 
   /* ── warm every UNIQUE plate so a repeat can never arrive undecoded ──
      The rows paint 2-3 copies of the same set; only the first copy carries an
@@ -1035,18 +1133,71 @@ const artHref = getLocalizedPath("/art", language);
     };
 
     /**
-     * One real press = one POST request.
+     * ── the press ──
      *
-     * We deliberately DO NOT disable the button while waiting for the server.
-     * Fast presses should still count independently.
+     * ⚠️ **THE TOY COMES FIRST, THE COUNTER SECOND.** A first version awaited
+     * `POST /api/nudge` and only then ran the press animation, the avatar jump,
+     * the reply and the fruit — i.e. every visible result of pressing the button
+     * was gated on a network round trip, and skipped entirely when the request
+     * failed (which is the normal case on `astro dev`, where `/api/nudge` does
+     * not exist and returns 404). Measured: with the endpoint unreachable the
+     * button did NOTHING at all, and on a good connection the jump landed
+     * 100-250ms after the click, which is exactly the lag the "press faster, jump
+     * faster" behaviour cannot have.
+     *
+     * So the visuals fire synchronously on the click, and the COUNT is the side
+     * effect: it is incremented locally right away (optimistic), then reconciled
+     * with whatever the server says. `applyServerCount` only ever moves the number
+     * forward, so a slow reply cannot walk it backwards, and a failed request
+     * leaves the optimistic number on screen with a quiet warning instead of an
+     * error.
      */
-    nudgeBtn.addEventListener("click", async () => {
+    nudgeBtn.addEventListener("click", () => {
+      // ── instant, local, never gated on the network ──
+      nudges += 1;
+
+      if (countEl) {
+        countEl.textContent = String(nudges);
+        replay(countEl, "is-bump");
+      }
+
+      replay(nudgeBtn, "is-hit");
+      jump();
+
+      if (backEl) {
+        if (backEl.hidden) {
+          backEl.hidden = false;
+        }
+
+        if (replies.length > 1) {
+          const next = Math.floor(Math.random() * (replies.length - 1));
+          replyAt = next >= replyAt ? next + 1 : next;
+        }
+
+        backEl.textContent = replies[replyAt];
+        replay(backEl, "is-pop");
+      }
+
+      nudgeSpawn?.(nudgeBtn);
+
+      // ── and the shared counter catches up when it can ──
+      void sendNudge();
+    });
+
+    /**
+     * One press = one POST. Fire and forget: the click handler never awaits it,
+     * so a slow or dead endpoint cannot delay the toy.
+     *
+     * ⚠️ `keepalive` so a press immediately before a navigation or a tab close
+     * still reaches the database — without it the request is cancelled with the
+     * document, and the last press of every visit would be lost.
+     */
+    async function sendNudge() {
       try {
         const response = await fetch("/api/nudge", {
           method: "POST",
-          headers: {
-            Accept: "application/json",
-          },
+          headers: { Accept: "application/json" },
+          keepalive: true,
         });
 
         if (!response.ok) {
@@ -1059,44 +1210,19 @@ const artHref = getLocalizedPath("/art", language);
           throw new Error(data.error ?? "Unknown nudge error");
         }
 
-        /**
-         * Update the counter from D1.
-         */
         applyServerCount(data.count);
-
-        /**
-         * Existing visual feedback.
-         */
-        replay(nudgeBtn, "is-hit");
-        jump();
-
-        if (backEl) {
-          if (backEl.hidden) {
-            backEl.hidden = false;
-          }
-
-          if (replies.length > 1) {
-            const next = Math.floor(Math.random() * (replies.length - 1));
-            replyAt = next >= replyAt ? next + 1 : next;
-          }
-
-          backEl.textContent = replies[replyAt];
-          replay(backEl, "is-pop");
-        }
-
-        nudgeSpawn?.(nudgeBtn);
       } catch (error) {
         /**
-         * Don't fake a successful nudge when the database request failed.
-         * The server count is the source of truth.
+         * ⚠️ NOT `console.error`, and NOT a rollback of the local count. This
+         * fires on every press when the endpoint is missing (`astro dev`) or the
+         * visitor is offline, and an error per press is noise that trains people
+         * to ignore the console. The number on screen stays optimistic — the
+         * global total is a nicety, the toy is the product.
          */
-        console.error("Nudge failed:", error);
+        console.warn("Nudge not recorded (count stays local):", error);
       }
-    });
+    }
 
-    /**
-     * Fetch the global count once the page has loaded.
-     */
     void loadNudgeCount();
   }
   const sheepLayer = document.querySelector<HTMLElement>(".sheep-layer");
@@ -1188,23 +1314,11 @@ const artHref = getLocalizedPath("/art", language);
     const CORRECTION_CAP = 2;
 
     /**
-     * Bleed a little TANGENTIAL velocity out of a contact, and a little of the
-     * normal component. ⚠️ It rewrites `px`/`py`, which is the only place that is
-     * allowed — a correction must not create velocity, but DAMPING is a deliberate
-     * velocity change and has to go through `prev` to have any effect at all.
+     * ⚠️ The type is declared OUT HERE, not inside the `if (sheepLayer)` block
+     * below. `applyContactFriction` sits above that block and takes a `Sheep`, so
+     * a block-scoped type is invisible to it — `astro check` reported
+     * "Cannot find name 'Sheep'" and the whole contact model went untyped.
      */
-    const applyContactFriction = (t: Sheep, nx: number, ny: number) => {
-      const vx = t.x - t.px;
-      const vy = t.y - t.py;
-      const vn = vx * nx + vy * ny;
-      const vtx = vx - vn * nx;
-      const vty = vy - vn * ny;
-      const nvx = vn * nx * CONTACT_REST + vtx * (1 - CONTACT_FRICTION);
-      const nvy = vn * ny * CONTACT_REST + vty * (1 - CONTACT_FRICTION);
-      t.px = t.x - nvx;
-      t.py = t.y - nvy;
-    };
-  if (sheepLayer) {
     type Sheep = {
       el: HTMLElement;
       x: number;
@@ -1224,6 +1338,31 @@ const artHref = getLocalizedPath("/art", language);
       sq: number;
       sqv: number;
     };
+
+    /**
+     * Bleed a little TANGENTIAL velocity out of a contact, and a little of the
+     * normal component. ⚠️ It rewrites `px`/`py`, which is the only place that is
+     * allowed — a correction must not create velocity, but DAMPING is a deliberate
+     * velocity change and has to go through `prev` to have any effect at all.
+     */
+    const applyContactFriction = (t: Sheep, nx: number, ny: number) => {
+
+      const vx = t.x - t.px;
+      const vy = t.y - t.py;
+      const vn = vx * nx + vy * ny;
+      const vtx = vx - vn * nx;
+      const vty = vy - vn * ny;
+      const nvx = vn * nx * CONTACT_REST + vtx * (1 - CONTACT_FRICTION);
+      const nvy = vn * ny * CONTACT_REST + vty * (1 - CONTACT_FRICTION);
+      t.px = t.x - nvx;
+      t.py = t.y - nvy;
+    };
+  if (sheepLayer) {
+    /* ⚠️ a NON-NULL binding: `spawn` is a hoisted function declaration, and
+       TypeScript drops the guard's narrowing inside those (it reported
+       "'sheepLayer' is possibly 'null'"). */
+    const layer: HTMLElement = sheepLayer;
+
     /* ── the fruit ──
        ONE ENTRY PER FRUIT, each with its parts.
        ⚠️ The table used to be a flat list of paths, which meant a two-tone fruit was two
@@ -1396,7 +1535,7 @@ const artHref = getLocalizedPath("/art", language);
       const pct = Math.round(sc * 100);
       el.innerHTML = `<svg viewBox="0 0 120 116" focusable="false" style="width:${pct}%;height:${pct}%;margin-left:${(100 - pct) / 2}%;margin-top:${(100 - pct) / 2}%">${body}</svg>`;
       el.style.setProperty("--r", "0");
-      sheepLayer.append(el);
+      layer.append(el);
       const t: Sheep = {
         el,
         x,
@@ -1627,7 +1766,7 @@ const artHref = getLocalizedPath("/art", language);
     /* ── the drag ── */
     let held: Sheep | null = null;
 
-    sheepLayer.addEventListener("pointerdown", (e) => {
+    layer.addEventListener("pointerdown", (e) => {
       const el = (e.target as HTMLElement).closest<HTMLElement>(".sheep");
       if (!el) return;
       const t = sheep.find((x) => x.el === el);
@@ -1839,7 +1978,7 @@ const artHref = getLocalizedPath("/art", language);
     --fan-mosaic-reach: 300;
     --fan-mosaic-size: 70;
     --fan-mosaic-angle: 0;
-    --fan-mosaic-speed: 100;
+    --fan-mosaic-speed: 50;
     --fan-mosaic-hover: 100;
     --fan-sky-opacity: 0.3;
 
@@ -2008,6 +2147,33 @@ const artHref = getLocalizedPath("/art", language);
     z-index: 1;
   }
 
+  /* ══ LANGUAGE SWITCH: A CROSS-FADE, NOT A CUT ══
+     The two languages are two documents (`/fan/` and `/zh/fan/`), so the change is a
+     navigation. Fading the page out before it and back in on arrival is what makes it
+     read as a text swap (「平滑切换文本而不是闪现刷新」) — and it is the only honest way
+     to do it in a static multi-page build. `is-lang-out` is added by the script below,
+     `is-lang-in` for the arrival (a frame later, so the transition has a `from`). */
+  html.is-lang-out .fan-root,
+  html.is-lang-in .fan-root {
+    opacity: 0;
+  }
+
+  html.is-lang-out .fan-root {
+    transition: opacity 0.18s linear;
+  }
+
+  html.is-lang-in .fan-root {
+    transition: opacity 0.3s var(--ease-out);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html.is-lang-out .fan-root,
+    html.is-lang-in .fan-root {
+      opacity: 1;
+      transition: none;
+    }
+  }
+
   /* ══ NO SITE CHROME ══
      The header and the footer are the studio's own dark surfaces, and the
      footer's scoped rules out-specify anything this page can write — so
@@ -2054,30 +2220,43 @@ const artHref = getLocalizedPath("/art", language);
     padding: 22px 24px 0;
   }
 
-  .fan-back {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--fan-ink-soft);
-    text-decoration: none;
-    transition: color 0.25s var(--ease-out);
-  }
-
-  .fan-back:hover {
-    color: var(--fan-magenta);
-  }
-
   .fan-langs {
+    position: relative;
     display: inline-flex;
-    gap: 4px;
+    gap: 0;
     padding: 3px;
     border: 1.5px solid var(--fan-blue);
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.6);
   }
 
+  /* the blue pill itself: one slot wide, slid by the group's `data-active` */
+  .fan-lang-pill {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    /* ⚠️ `50%` of the group's PADDING box is one slot plus the 3px padding either
+       side, hence the subtraction — with two equal `min-width` slots it lands
+       exactly on the second label when translated one slot. */
+    width: calc(50% - 3px);
+    border-radius: 999px;
+    background: var(--fan-blue);
+    pointer-events: none;
+    transition: transform 0.34s var(--ease-out);
+  }
+
+  .fan-langs[data-active="zh"] .fan-lang-pill {
+    transform: translateX(100%);
+  }
+
   .fan-lang {
+    position: relative;
+    z-index: 1;
+    /* equal slots, so the pill (50%) always sits under one label whatever the two
+       strings measure — EN and 中文 are not the same width */
+    min-width: 64px;
+    text-align: center;
     padding: 5px 13px;
     border-radius: 999px;
     font-family: var(--font-mono);
@@ -2086,18 +2265,21 @@ const artHref = getLocalizedPath("/art", language);
     letter-spacing: 1px;
     color: var(--fan-blue);
     text-decoration: none;
-    transition:
-      background 0.2s var(--ease-out),
-      color 0.2s var(--ease-out);
+    transition: color 0.24s var(--ease-out);
   }
 
   .fan-lang:hover {
-    background: rgba(27, 37, 216, 0.1);
+    color: var(--fan-blue-deep);
   }
 
+  /* ⚠️ No background on the active label any more — the pill paints it, and a fill
+     here would show as a second, static blue block under the sliding one. */
   .fan-lang.is-on {
-    background: var(--fan-blue);
     color: var(--fan-white);
+  }
+
+  .fan-lang:active {
+    transform: scale(0.94);
   }
 
   /* ══════════════════════════════════════════════════════════════
@@ -2130,6 +2312,30 @@ const artHref = getLocalizedPath("/art", language);
     color: var(--fan-blue);
   }
 
+  /* ══════════ ART LETTERING (2026-09-29) ══════════
+     The visitor asked for the pink display type to become 艺术字, pointing at a
+     reference frame of a white brush-script wordmark on hot pink. Everything here
+     is one system: a script face (`--font-script`, Pacifico), a MAGENTA face and a
+     WHITE edge.
+
+     ⚠️ The colours are the reference's pair, INVERTED, and that is deliberate.
+     The reference gets its contrast from a saturated pink field; this page's field
+     is pale (`.fan-sky` is `--fan-pink` at 0.3 over a cream mosaic), so white
+     letters would have needed a heavy outline just to exist and the wordmark would
+     have stopped being pink at all. A/B'd both ways on the real page
+     (`输入/_scratch/art-swap.mjs`, `art-swap-1/2-titles.png`): white face + magenta
+     edge reads as hollow outline type on cream, magenta face + white edge reads as
+     solid art lettering and keeps the page's identity colour. The white edge is
+     what separates the letters from the pink sky.
+
+     ⚠️ Three things this treatment needs and will look broken without:
+       1. `font-weight: 400`. Pacifico ships one weight; asking for 900 gets a
+          browser-synthesised bold, which is wider and blurrier.
+       2. `paint-order: stroke fill`. `-webkit-text-stroke` is centred on the
+          outline, so half of it lands INSIDE the glyph and eats the fill. This
+          paints the fill back on top; the edge you see is the outer half.
+       3. An em-scaled stroke width (`-webkit-text-stroke-width: 0.075em`), because
+          the stroke does NOT follow `font-size` on its own. */
   .fan-title {
     position: relative;
     z-index: 1;
@@ -2137,32 +2343,38 @@ const artHref = getLocalizedPath("/art", language);
     /* The cloud is in flow now, so this is only the print gap under it — it no
        longer has to reserve the cloud's height as well. */
     margin: clamp(22px, 2.4vw, 30px) 0 0;
-    font-family: var(--font-display);
-    font-size: clamp(52px, 12vw, 156px);
-    font-weight: 900;
-    line-height: 0.9;
-    letter-spacing: -0.02em;
-    color: var(--fan-magenta);
+    font-family: var(--font-script);
+    /* ⚠️ Sized to FIT, and the numbers come from a measurement: Pacifico sets
+       `RRSUIKA STUDIO` at 10.26x its font-size (882px at 86px), against 5.8x for
+       the Saira Condensed 900 it replaces. The hero is 1180px wide with 24px
+       padding, so the wordmark may not exceed ~110px — the 156px it used to be set
+       at would have run ~1600px wide, off both edges. The 108px cap also covers
+       wide screens, where `vw` alone would keep growing while the hero stops at
+       1180px. Measured after: 1107px wide at 1440. */
+    font-size: clamp(26px, 7.6vw, 108px);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: 0;
+    color: var(--art-face, var(--fan-magenta));
+    -webkit-text-stroke: 0.075em var(--art-edge, var(--fan-white));
+    paint-order: stroke fill;
+    text-shadow: 0 0.05em 0 var(--art-shadow, rgba(214, 31, 116, 0.26));
   }
 
   /* ⚠️ `global.css` §13 sets `html[lang="zh"] h1 { letter-spacing: 0;
      line-height: 1.2 }` at (0,2,1), which BEATS this component's scoped
      `.fan-title[data-astro-cid-…]` at (0,2,0). On the Chinese page the wordmark
      therefore fell back through the font stack and rendered in Smiley Sans instead
-     of Saira Condensed — measured: `Saira Condensed` vs `Smiley Sans Oblique`, and
+     of the display face — measured: `Saira Condensed` vs `Smiley Sans Oblique`, and
      905px vs 878.9px wide, i.e. two visibly different logos for one string.
-     `RRSUIKA STUDIO` is Latin in BOTH languages, so it keeps the Latin face and
-     tracking in both. The Chinese NAME under it (`.fan-title-cn`) is a different
+     `RRSUIKA STUDIO` is Latin in BOTH languages, so it keeps the Latin face, weight
+     and tracking in both. The Chinese NAME under it (`.fan-title-cn`) is a different
      element and keeps `--font-zh-display`; that one IS Chinese and should. */
   :global(html[lang="zh"]) .fan-title {
-    font-family: var(--font-display);
-    /* ⚠️ The WEIGHT has to be here too. §13 resets it to the initial value, and
-       Saira Condensed ships no 400 — so at weight 400 the browser synthesised a
-       bold and the string came out 905px wide in English against 882.8px in
-       Chinese. Same face, different metrics. */
-    font-weight: 900;
-    letter-spacing: -0.02em;
-    line-height: 0.9;
+    font-family: var(--font-script);
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1.1;
   }
 
   /* ⚠️ There WAS a blue bar under the wordmark. It is gone: the visitor called it
@@ -2363,14 +2575,22 @@ const artHref = getLocalizedPath("/art", language);
     position: relative;
     z-index: 0;
     width: min(290px, 56vw);
-    margin: 0 auto;
+    /* ⚠️ The group is lifted by 44px WITHOUT moving the wordmark under it, and the
+       arithmetic is the whole trick: a `margin-top` on its own would carry everything
+       below it up by the same amount and the crowding would simply travel with it.
+       What shifts the picture is the SUM staying at -96px (the empty band under the
+       silhouette) while the split moves: -44 above, -52 below. Measured before:
+       cloud bottom 318, wordmark box top 323, i.e. 5px — and the cloud's own
+       drop-shadow (20px offset + 34px blur) reaches ~372, straight through the
+       ascenders of `RRSUIKA`. After: cloud bottom 274 against the same 323. */
+    margin: -44px auto 0;
     pointer-events: none;
     /* ⚠️ The square viewBox carries ~40px of empty band under the silhouette
        (the path's lowest point is y=183 of 242). The box is kept square so the
        cloud is not stretched, and the slack is taken back HERE: measured, the box
        is 290x290 with the cloud occupying the top 175px, so the line below is
        pulled up by the band's own height. */
-    margin-bottom: -96px;
+    margin-bottom: -52px;
   }
 
   .hero-blob .cloud {
@@ -2480,17 +2700,6 @@ const artHref = getLocalizedPath("/art", language);
     transform: rotate(-2deg);
   }
 
-  .fan-scroll {
-    position: relative;
-    z-index: 1;
-    margin-top: 20px;
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 2.4px;
-    text-transform: uppercase;
-    color: var(--fan-ink-soft);
-    opacity: 0.7;
-  }
 
   /* ══════════════════════════════════════════════════════════════
      DECORATION — the vocabulary, and the util
@@ -2825,21 +3034,35 @@ const artHref = getLocalizedPath("/art", language);
     opacity: 0.7;
   }
 
+  /* Same art-lettering system as the wordmark, one size down. ⚠️ `text-transform`
+     is deliberately NOT uppercase here any more: a script face has no capitals to
+     shout with — its whole character is the CONNECTED lowercase, and Pacifico's
+     caps-only setting reads as a row of separate swashes. The en titles are title
+     case in `src/utils/fan.ts` already ("Who am I?", "Get in touch"), so nothing
+     had to change in the copy. */
   .block-title {
     margin: 8px 0 10px;
-    font-family: var(--font-display);
-    font-size: clamp(34px, 5vw, 62px);
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: -0.01em;
-    text-transform: uppercase;
-    color: var(--fan-magenta);
+    font-family: var(--font-script);
+    font-size: clamp(30px, 4.6vw, 56px);
+    font-weight: 400;
+    line-height: 1.15;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--art-face, var(--fan-magenta));
+    -webkit-text-stroke: 0.055em var(--art-edge, var(--fan-white));
+    paint-order: stroke fill;
+    text-shadow: 0 0.05em 0 var(--art-shadow, rgba(214, 31, 116, 0.22));
   }
 
+  /* ⚠️ The Chinese titles are still Chinese, so the script face cannot render them
+     — Pacifico has no CJK. They keep `--font-zh-display` (Smiley Sans Oblique,
+     already a hand-cut display face) and take the SAME face/edge treatment, which
+     is what keeps the two languages looking like one page instead of two. */
   :global(html[lang="zh"]) .block-title {
     font-family: var(--font-zh-display);
     text-transform: none;
     letter-spacing: 0.04em;
+    -webkit-text-stroke-width: 0.045em;
   }
 
   .block-sub {
@@ -2986,7 +3209,12 @@ const artHref = getLocalizedPath("/art", language);
     flex-direction: column;
     align-items: center;
     gap: 10px;
-    margin-top: 22px;
+    /* ⚠️ 22px of margin read as far more than 22px: the GIF's own frame carries
+       headroom above the animal (that is where the hop goes), so the visible gap was
+       this margin PLUS roughly a third of the 168px box. The margin comes down to
+       4px and the box is pulled up 26px on top of that; the hop still happens inside
+       the box, it just no longer floats. */
+    margin-top: 4px;
   }
 
   /* ── the avatar above the button ──
@@ -2995,12 +3223,14 @@ const artHref = getLocalizedPath("/art", language);
      it sitting on the paper rather than in a white square. */
   .nudge-pfp {
     display: block;
-    /* ⚠️ 120, not 96. The GIF's frame has headroom above the animal — that is
-       where the jump goes — so the animal itself is only ~55% of the box. At 96px
-       it read as a speck; at 120 the animal is ~66px and the hop still fits. */
-    width: 120px;
-    height: 120px;
-    margin-bottom: -6px;
+    /* ⚠️ The GIF's frame has headroom above the animal — that is where the jump
+       goes — so the animal itself is only ~55% of the box: at 168px the animal is
+       ~92px and the hop still fits inside the box. (It went 96 → 120 → 168 on the
+       visitor's ask; the source art is 240px, so there is room before it softens.) */
+    width: 168px;
+    height: 168px;
+    margin-top: -26px;
+    margin-bottom: -10px;
     object-fit: contain;
     user-select: none;
     -webkit-user-drag: none;
@@ -3008,8 +3238,8 @@ const artHref = getLocalizedPath("/art", language);
 
   @media (max-width: 860px) {
     .nudge-pfp {
-      width: 96px;
-      height: 96px;
+      width: 132px;
+      height: 132px;
     }
   }
 
@@ -3766,6 +3996,10 @@ const artHref = getLocalizedPath("/art", language);
 
     .hero-blob {
       width: min(216px, 60vw);
+      /* the small-screen split of the same -96px sum: less lift, because the top bar
+         is closer here (the cloud's ink starts 91px down, the bar ends at ~34px) */
+      margin-top: -16px;
+      margin-bottom: -80px;
     }
 
     .fan-title {
