@@ -409,11 +409,7 @@ const artHref = getLocalizedPath("/art", language);
           margins, and the tuning would live only in the tuner. The space becomes a
           non-breaking space so the per-letter margin applies to it too. */}
       <h1 class="fan-title">
-        {c.hero.title.split(" ").map((word) => (
-          <span class="title-line">
-            {word.split("").map((ch) => <span class="tl">{ch}</span>)}
-          </span>
-        ))}
+        {c.hero.title.split("").map((ch) => <span class="tl">{ch === " " ? "\u00A0" : ch}</span>)}
       </h1>
       <p class="fan-title-cn">{c.hero.cn}</p>
       <p class="fan-sub">{c.hero.sub}</p>
