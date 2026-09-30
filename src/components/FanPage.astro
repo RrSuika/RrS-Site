@@ -266,8 +266,25 @@ const HERO_ORNS: { kind: string; x: string; y: string; size: number; turn: numbe
  * advances differ a lot (`U` wanted +19.5 after it, `D` -3.25). All zeroes is the
  * untouched default; to re-tune, write the numbers here and reload — the values are
  * plain `margin-right` on the spans below, so a devtools edit previews them live.
- */
+ *
+ * ⚠️ **The numbers are px AS TUNED, but they must SHIP as `em`** (visitor,
+ * 2026-10: 「粉丝页开头的标题 RRSUIKA STUDIO 这些单词之间间隔有点远」). They were
+ * dialled in on a 2K window, where `.fan-title` sits at its `108px` clamp cap, and
+ * for a while they shipped as literal `px` — so the gaps stayed put while the type
+ * shrank. Measured on a 390px phone: font-size 29.64px, `U` carrying a 19.5px gap
+ * = **66% of one character's advance**, and the wordmark read `RRSU IKA STUD IO`.
+ * Dividing by the tuning size makes every gap a fixed fraction of the em, so the
+ * lockup is the same drawing at every width — which is also what the numbers meant
+ * in the tuner, whose sliders were never width-aware.
+ * ⚠️ `em` here resolves against the SPAN's own font-size, which is what we want:
+ * `.tl` carries no font-size of its own and inherits `.fan-title`'s. */
 const TITLE_GAPS: number[] = [2, 3.75, 5, 19.5, 4, 11.25, 0, 14.75, -0.25, -2, 8.5, -3.25, 0, 0];
+
+/** The `clamp()` cap of `.fan-title` — the font-size `TITLE_GAPS` was dialled at. */
+const TITLE_GAP_BASE = 108;
+
+/** A tuned px gap as the em fraction it was always meant to be. */
+const titleGap = (px: number) => `${(px / TITLE_GAP_BASE).toFixed(4)}em`;
 
 const enHref = getLocalizedPath("/fan/", "en");
 const zhHref = getLocalizedPath("/fan/", "zh");
@@ -415,12 +432,13 @@ const artHref = getLocalizedPath("/art", language);
       {/* ⚠️ Split into ONE SPAN PER CHARACTER. Not decoration: `TITLE_GAPS` is indexed
           by exactly this order, and a single text node could not take per-letter
           margins. The space becomes a non-breaking space so it is a span like any
-          other (and can carry its own gap). */}
+          other (and can carry its own gap).
+          ⚠️ The gap is written in `em`, not `px` — see `titleGap` above. */}
       <h1 class="fan-title">
         {c.hero.title.split("").map((ch, i) => (
           <span
             class="tl"
-            style={TITLE_GAPS[i] ? `margin-right:${TITLE_GAPS[i]}px` : undefined}>{ch === " " ? "\u00A0" : ch}</span>
+            style={TITLE_GAPS[i] ? `margin-right:${titleGap(TITLE_GAPS[i])}` : undefined}>{ch === " " ? "\u00A0" : ch}</span>
         ))}
       </h1>
       <p class="fan-title-cn">{c.hero.cn}</p>
@@ -3911,6 +3929,14 @@ const artHref = getLocalizedPath("/art", language);
   .plate-media {
     display: block;
     height: 232px;
+    /* ⚠️ A plate is a COLUMN flex box with a fixed height, so its children shrink
+       by default — and the media is the only one that can. At 641-820px the
+       fixed `height: 238px` was 2px short of its own content, so the media was
+       squeezed to 176 and the `height: 100%` cover was scaled down with it,
+       leaving a strip of empty box: measured at 768, box 316x176 against a
+       312.9px image on a 1.778 cover (crop -3.6px). The image must never be the
+       thing that absorbs a bad height — the caption or the card gives first. */
+    flex-shrink: 0;
     border-radius: 6px;
     overflow: hidden;
     background: var(--fan-cream-2);
@@ -4162,8 +4188,10 @@ const artHref = getLocalizedPath("/art", language);
       height: 262px;
     }
 
+    /* content height, not 238: that number was 2px shorter than the card's own
+       content, which is what squeezed the media (see `.plate-media`). */
     .plate {
-      height: 238px;
+      height: auto;
     }
 
     .plate-media {
@@ -4238,18 +4266,40 @@ const artHref = getLocalizedPath("/art", language);
       letter-spacing: 0;
     }
 
-    /* smaller plates so a row still shows about two and a half cards */
+    /* ⚠️ **NO fixed plate WIDTH here — that one line was cutting the art in half.**
+       A plate is sized by its own cover (`flex: 0 0 auto`, and `.plate-media img`
+       is `height: 100%; width: auto`), which is exactly how the desktop rules leave
+       it. Pinning `width: 168px` at this breakpoint meant the frame no longer
+       followed the picture, and this gallery is deliberately mixed-format — the 22
+       covers run from **0.602 to 1.778** (02-palasi 1669x2773 against 01-xiaoke
+       1920x1080, a 2.95x spread; illustrations alone holds both ends, fashion is
+       4 x 0.667 and food-art 6 x 1.000). Measured at 390 with the old rule:
+         · 01-xiaoke (1.778) drew 245px of image into a 152px inner box — **93px
+           sliced off**, the visitor's 「有的被切断一半」;
+         · 02-palasi (0.602) drew an 83px image and left the rest of the 168px card
+           empty — 「有的右侧空一半的空间」.
+       The marquee does not care: `measurePeriod()` reads the distance between two
+       laid-out cards, not a constant, and the ResizeObserver on the track re-reads
+       it whenever a cover changes the layout (this is the desktop code path).
+
+       ⚠️ The media height has a FLOOR, and it is the card's own caption: with the
+       width no longer pinned, the plate is as wide as max(cover, caption), so a
+       cover narrower than its caption would put the empty strip back. Worst caption
+       at this breakpoint is 「UNCONSCIOUS MONSTER MOUSSE」 (~135px at 11px with its
+       0.6px tracking) against food-art's square covers, and the narrowest portrait
+       is 0.602 → the media needs 135 / 0.602 ≈ 146px. 176px keeps every row
+       clear of it with room to spare. */
     .row-view {
-      height: 214px;
+      height: 258px;
     }
 
     .plate {
-      width: 168px;
-      height: 196px;
+      /* content height, so a two-line caption cannot be clipped by a number */
+      height: auto;
     }
 
     .plate-media {
-      height: 138px;
+      height: 176px;
     }
 
     .plate-title {
@@ -4266,6 +4316,15 @@ const artHref = getLocalizedPath("/art", language);
   @media (max-width: 560px) {
     .fan-hero {
       padding: 0 18px 54px;
+      /* ⚠️ ONE number for the wordmark's top margin, read by TWO rules. `.fan-title`
+         consumes it and `.fan-hero-echo` has to follow it — the echo is absolutely
+         positioned against `.fan-hero`, so before this it kept sliding up out of the
+         lockup as the phone got narrower. Measured at 390: the echo box sat at
+         247..308 and the wordmark at 365..398 — a 57px hole between them, which read
+         as a stray second headline rather than a watermark. Desktop is the same
+         drawing: echo top ≈ wordmark top minus 0.59 of the echo's own height, so it
+         peeks above and below. */
+      --fan-title-lift: clamp(196px, 50vw, 212px);
     }
 
     .hero-blob {
@@ -4277,7 +4336,20 @@ const artHref = getLocalizedPath("/art", language);
     }
 
     .fan-title {
-      margin-top: clamp(196px, 50vw, 212px);
+      margin-top: var(--fan-title-lift);
+    }
+
+    /* ⚠️ Tied to the SAME two numbers the wordmark is: its top margin
+       (`--fan-title-lift`) and the cloud's box `min(216px, 60vw)` — the cloud
+       shrinks below a 360px viewport, which is exactly why the first version of
+       this rule (a flat `+ 133px`) drifted out of the lockup on a 320px phone.
+       The wordmark's flow top is `cloudHeight - 80 (`.hero-blob`'s bottom margin)
+       + lift`; the echo starts 0.59 x its own 61px box ABOVE that, the same ratio
+       the desktop lockup has (there: echo 269, wordmark 315, echo 78 tall) — so
+       `lift + cloudHeight - 116`. Measured at 320/360/560: the echo box begins
+       exactly 36px above the wordmark's top at all three. */
+    .fan-hero-echo {
+      top: calc(var(--fan-title-lift) + min(216px, 60vw) - 116px);
     }
 
     .fan-block {
@@ -4288,21 +4360,26 @@ const artHref = getLocalizedPath("/art", language);
       padding: 38px 0;
     }
 
+    /* ⚠️ The row heads were the only text on this page with NO inline inset. The
+       plates bleed to both edges on purpose and `.fan-row` inherits that bleed, so
+       the row number sat at x=0 and the works count finished exactly on the last
+       pixel of the screen (measured at 390: `.row-idx` 0..15.2, `.row-count`
+       336.8..390) — type flush against the glass reads as clipped even when it is
+       not. `.bleed-head` above it is already inset 18px; this is the same 18px. */
+    .row-head {
+      padding: 0 18px;
+    }
+
+
     .bleed-head {
       padding: 0 18px;
     }
 
-    .row-view {
-      height: 226px;
-    }
-
-    .plate {
-      height: 206px;
-    }
-
-    .plate-media {
-      height: 148px;
-    }
+    /* ⚠️ The plate size is NOT re-declared here any more. This block used to set
+       `206 / 148` on top of the 640px block's `196 / 138`, i.e. cards got BIGGER as
+       the screen got smaller — and both sizes are below the ~146px media floor the
+       640px block documents, so every portrait left a gap. One set of numbers, in
+       one place. */
 
     .fan-top {
       padding: 16px 18px 0;

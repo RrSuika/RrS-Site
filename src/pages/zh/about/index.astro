@@ -4293,6 +4293,18 @@ const personSchema = {
     .intro-heading,
     .intro-content {
       display: block;
+
+      /* ⚠️ A grid item's automatic minimum size is its MIN-CONTENT, so a `1fr`
+         track may not shrink past it. Here the Chinese h2 is set with
+         `white-space: pre-line` over short two-character lines ("设计 / 工程 /
+         艺术"), which gives `.intro-heading` a 112px floor; with the second track
+         at 164px and the 90px column-gap the row came to 366px inside a 320px
+         container, and the DOCUMENT measured 386px wide on a 360px screen —
+         `body { overflow-x: hidden }` then silently clipped 26px of the intro.
+         The English pages never hit this because Latin text breaks at spaces and
+         keeps a small min-content. `min-width: 0` is the fix for the floor, not a
+         new width; it is a no-op wherever the track already has room. */
+      min-width: 0;
     }
 
     .process-station {

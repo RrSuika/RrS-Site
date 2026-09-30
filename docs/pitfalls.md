@@ -51,6 +51,17 @@ Headless Chrome 的虚拟时间会**饿死 `requestAnimationFrame`**，所有 rA
 
 ⚠️ **同一个仓库里两种换行并存**：`src/components/CassetteShelf.astro`（以及其它早期文件）是 **CRLF**，而新建的文件（`FanPage.astro`、`FanMosaic.astro`、`docs/*.md`）是 **LF**。
 
+> ⚠️ **2026-10 更正**：上面这句里的 `FanPage.astro` **已经不准了**。本轮量到的是 `CRLF=4357 / bareLF=0` —— 它现在是 **CRLF**（中间某次工具回写把整个文件转过去了，`docs/*.md` 仍然是 LF：`fan-page.md` 量到 `bareLF=1133 / CRLF=0`）。
+> **所以别再照这张名单猜**：`docs/pitfalls.md` 只说了「两种换行并存」，没说是哪几个文件。写脚本前**每次现量**，一行就够：
+>
+> ```js
+> const crlf = (src.match(/\r\n/g) || []).length;
+> const loneLf = (src.match(/(?<!\r)\n/g) || []).length;
+> const NL = crlf > loneLf ? "\r\n" : "\n";
+> ```
+>
+> 拼锚点、拼替换文本都用这个 `NL`，并且**在写盘前**断言 `src.split(anchor).length - 1 === 1`。
+
 用脚本按锚点做替换时，多行锚点如果写死 `\n`，在 CRLF 文件里**永远匹配不上**，而报错只有一句「anchor missing」——2026-09-28 因此在同一个补丁上连试了三次（先怀疑反引号被转义、又怀疑 here-string 的问题），实际原因只是换行。
 
 规则：

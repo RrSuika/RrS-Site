@@ -479,7 +479,16 @@ const projectsPath = getLocalizedPath("/projects", language);
      and writes inline overrides on top of them while it is switched on. */
   .ltr {
     display: inline-block;
-    transform: translate(var(--lx, 0px), var(--ly, 0px));
+    /* ⚠️ The baked `--lx`/`--ly` are px, and they are the numbers dialled at the
+       DESKTOP type size. `--hero-kern` scales them so they stay the same fraction
+       of the em when the title shrinks on a phone — without it the last glyph of
+       `AESTHETICS` keeps its full +9.5px nudge at a 64px font (15% of the em) and
+       the word comes apart exactly like the fan page's wordmark did.
+       `--hero-kern` defaults to 1, so the desktop lockup is untouched. */
+    transform: translate(
+      calc(var(--lx, 0px) * var(--hero-kern, 1)),
+      calc(var(--ly, 0px) * var(--hero-kern, 1))
+    );
   }
 
   /* ── Per-letter offsets — BAKED VALUES (2026-09-19) ──
@@ -932,6 +941,52 @@ const projectsPath = getLocalizedPath("/projects", language);
     }
     .hero-bg {
       display: none;
+    }
+
+    /* ⚠️ **THE PHONE TITLE WAS BROKEN, NOT JUST TIGHT.** `--text-scale-hero` is
+       `clamp(80px, 10vw, 110px)`, so from 800px down to a 320px phone the type sat
+       at its 80px FLOOR while the box kept shrinking — and because every glyph is an
+       `inline-block` span, the browser may break between ANY two of them. Measured
+       before this fix: `FUNCTIONAL` set itself as `FUNCTION / AL` at 430 and 768,
+       and as `FUNCTION / A / L` at 390 and below; `AESTHETICS` lost its `S` to a
+       second line at every width under 800. Four ragged lines where the lockup is
+       meant to be two.
+       Two rules, and they only work together:
+       · `nowrap` — a word may never be split. This is the guarantee.
+       · the `clamp` below — the size that makes the guarantee hold. `FUNCTIONAL`
+         sets at 4.225x its font-size in Saira Condensed 900, and the hero gives the
+         line `100vw - 50px` of padding minus the 37px the tri-bar and its gap take,
+         i.e. `100vw - 87px`. `20.5vw - 16px` stays under that everywhere from 320
+         up (measured ink 210px of 233 available at 320; 270 of 303 at 390) and is
+         capped at the old 80px floor, so 500px and up is unchanged. */
+    h1 {
+      font-size: clamp(34px, calc(20.5vw - 16px), 80px);
+      --hero-kern: 0.73;
+    }
+
+    h1 .type-line {
+      white-space: nowrap;
+    }
+
+    /* ⚠️ The bar was a fixed 190px, which read as the title's height only while the
+       title was four ragged lines tall. `stretch` ties it to the lockup instead of
+       to a number — `height: 1.8em` would resolve against the BAR's own font-size
+       (16px), not the heading's (docs/pitfalls.md §4). */
+    .tri-bar {
+      height: auto;
+      align-self: stretch;
+    }
+  }
+
+  @media (max-width: 560px) {
+    /* ~64px of type: 64/110 of the size the baked nudges were dialled at. */
+    h1 {
+      --hero-kern: 0.55;
+    }
+
+    /* the tri-bar's 25px gap is 7% of a 360px screen — buy the width back */
+    .title-wrapper {
+      gap: 16px;
     }
   }
 

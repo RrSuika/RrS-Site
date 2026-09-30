@@ -104,6 +104,14 @@ const t = getTranslations(language);
     font-size: var(--text-scale-2xs);
 
     letter-spacing: var(--tracking-label);
+
+    /* ⚠️ `> ACCESSING_DESIGN_AND_ENGINEERING_RECORDS...` is ONE 43-character
+       token: underscores give the line breaker nowhere to break, so below ~380px
+       the whole readout ran past the box and made the DOCUMENT 373px wide on a
+       320px screen (measured; `body { overflow-x: hidden }` then silently clipped
+       it). `anywhere` lets the run break mid-token on the narrow screens that need
+       it and changes nothing where the line already fits. */
+    overflow-wrap: anywhere;
   }
 
   .project-count {

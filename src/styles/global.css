@@ -347,22 +347,42 @@ body {
 /* ═══════════════════════════════════════════
    §6  MOBILE NOTICE — desktop mode recommended
    ═══════════════════════════════════════════ */
+/* ⚠️ **IN FLOW, not `position: fixed`.** It used to be a fixed bar at `top: 0`
+   with `z-index: 200`, while `Navbar`'s `nav` is `sticky; top: 0` at `z-index: 100`
+   — so the notice sat on top of the nav's first row for the whole visit, at every
+   scroll position. On a phone the nav is a three-row column, which meant the brand
+   (`RrSuika // STUDIO` and its three dots) was never visible at all: the only trace
+   of it was a 5% ghost through the notice's `rgba(…, 0.95)` background.
+   In flow the notice scrolls away with the page, the nav then sticks to the real top
+   edge, and nothing is covered. `position: relative` (not `static`) keeps the
+   `z-index: 200` it needs to stay above `.site-content` (`z-index: 1`). */
 #mobile-notice {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  position: relative;
+
   z-index: 200;
+
   display: flex;
+
   align-items: center;
+
   justify-content: center;
+
   gap: 12px;
+
   padding: 10px 48px 10px 16px;
-  background: rgba(7, 7, 13, 0.95);
+
+  /* ⚠️ OPAQUE. The 5% the old `0.95` let through was the navbar's brand text, which
+     read as a rendering fault rather than as a translucent bar. */
+  background: #07070d;
+
   border-bottom: 1px solid var(--terminal-green);
+
   font-family: var(--font-mono);
+
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+
   animation: noticeIn 0.4s var(--ease-out);
+
   transition:
     opacity 0.4s var(--ease-out),
     transform 0.4s var(--ease-out);
@@ -452,7 +472,7 @@ body {
 
 /* Light mode */
 :root[data-theme="light"] #mobile-notice {
-  background: rgba(240, 235, 224, 0.97);
+  background: #f0ebe0;
   border-bottom-color: rgba(26, 112, 48, 0.5);
 }
 

@@ -11,7 +11,7 @@
 > | 技术细则 | `docs/README.md` 有总表 | **只在动到那个模块时读**——磁带盒 `docs/cassette-shelf.md`、开场 `docs/site-intro.md`、主题切换 `docs/theme-switch.md`、背景 `docs/backgrounds.md`、设计决策 `docs/decisions.md`、技术债 `docs/tech-debt.md`、跨模块陷阱 `docs/pitfalls.md`、文风 `docs/writing-style.md`、版本历史 `docs/changelog.md` |
 > | 开发服务器 | `AGENTS.md` | 只讲 `astro dev --background` 的用法 |
 >
-> **当前状态**：v1.33（2026-09-19）。六个列表页（en/zh/nl × projects/lab）是 CSS 3D 磁带盒书架；首页暗色有黑洞视频 + 引力透镜星空；主题切换是整页拷贝的圆圈波；开场是机能仪表盘 + 信号色扫描退场。**逐轮完整记录见 `docs/changelog.md`**（v1.15 起），本文件头不再堆版本日志。
+> **当前状态**：v1.52（2026-10）。六个列表页（en/zh/nl × projects/lab）是 CSS 3D 磁带盒书架；首页暗色有黑洞视频 + 引力透镜星空；主题切换是整页拷贝的圆圈波；开场是机能仪表盘 + 信号色扫描退场；粉丝页 `/fan/` 是独立的粉色单页（见 `docs/fan-page.md`）。**v1.52 起手机端（320–430px）也在一遍一遍地量**：12 个主要页面全部无横向溢出，粉丝页画廊逐张断言「裁切 / 留空 / 拉伸」三项。**逐轮完整记录见 `docs/changelog.md`**（v1.15 起），本文件头不再堆版本日志。
 >
 > **章节导航**：§1 概览 ｜ §2 目录结构 ｜ §3 路由 ｜ §4 内容管理 ｜ §5 组件与布局（§5.3 磁带盒名词表）｜ §6 样式与 token ｜ §7 功能与交互 ｜ §8 配置与部署 ｜ §9 设计决策（→ `docs/decisions.md`）｜ §10 技术债（→ `docs/tech-debt.md`）｜ §11 **快速索引：我要改什么 → 去哪** ｜ §12 AI 工作规则（14–23 见 `docs/writing-style.md`）
 >
