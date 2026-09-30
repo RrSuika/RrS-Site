@@ -66,7 +66,7 @@ MyPortfolio/
 │   ├── robots.txt             # 全站允许；AI 训练爬虫禁 /art/ 与 /zh/art/
 │   ├── google0d89945c0c4db4b1.html  # Google Search Console 验证文件
 │   ├── icons/                 # 6 个软件 logo PNG（about 档案卡 SOFTWARE 行；来自 输入/，勿重命名）
-│   ├── media/blackhole.mp4    # 首页黑洞背景视频（1920×1080/60fps/约5s/3.1MB，来自 输入/黑洞动画 - AI 插帧.mp4，未转码）
+│   ├── media/blackhole.mp4    # 首页黑洞背景视频（1950×1062/60fps/301 帧/5.017s/2.79MB；用户自己的渲染，已修正冷色漂移与亮度起伏。见 docs/backgrounds.md §D / 决策 26）
 │   └── art/fashion-design/    # 4 张 PNG 副本;为保留 alpha 透明通道直接以原图提供
 ├── src/
 │   ├── content.config.ts      # ★ 内容 Schema 唯一事实来源（单一 collection `entries`）

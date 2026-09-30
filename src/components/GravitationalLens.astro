@@ -198,17 +198,25 @@ const lensTune = getTranslations(language).lensTune;
     /* ── 2a. VIEWPORT-ADAPTIVE DEFAULTS ─────────────────────────────────
        The §10 values are ONE hand-tuned profile ("profile A", tuned on a
        2K desktop window, 1661×802). The video box is 125% + object-fit
-       cover, so on any window with aspect ≥ 16:9 (width-bound — the normal
-       desktop case) every video-anchored feature scales with viewport
-       WIDTH. A second hand-tuned profile ("profile B", an FHD desktop
-       window, 1234×562) relates to A by px = m·W + b per feature, so each
-       SCALED knob below is derived from that two-point fit at the current
-       viewport instead of the static baseline: the hole, the ring and the
-       disk stay glued to the video on every screen, not only the one the
-       profile was tuned on. cx / cyPx are identical in both profiles (real
-       anchors); the remaining knobs are not video-anchored and stay
-       static. Height-bound windows (aspect < 16:9) keep the raw baseline —
-       there is no calibration data for them.
+       cover, so on any window with aspect ≥ the video's own ratio (width-bound
+       — the normal desktop case; ⚠️ that ratio is **1.836:1** since the clip
+       was replaced on 2026-09-30, it was 16:9 before) every video-anchored
+       feature scales with viewport WIDTH. A second hand-tuned profile
+       ("profile B", an FHD desktop window, 1234×562) relates to A by
+       px = m·W + b per feature, so each SCALED knob below is derived from that
+       two-point fit at the current viewport instead of the static baseline:
+       the hole, the ring and the disk stay glued to the video on every screen,
+       not only the one the profile was tuned on. cx / cyPx are identical in
+       both profiles (real anchors); the remaining knobs are not video-anchored
+       and stay static. Height-bound windows (aspect below that ratio) keep the
+       raw baseline — there is no calibration data for them.
+
+       ⚠️ Both profiles were fitted while the video was 16:9, and Vh/Vw enters
+       the vertical mapping, so the new 1.836:1 clip sits ~2px off on screen.
+       That is documented (docs/backgrounds.md §D.6) and left alone on purpose:
+       to re-fit, change --blackhole-x for the horizontal (pure CSS) and the
+       two --lens-cy-vh values down in SCALED for the vertical — never one
+       without the other.
 
        Precedence: an inline tuner value always wins verbatim (provenance
        decides, not equality — nudging a knob back to its baseline number
