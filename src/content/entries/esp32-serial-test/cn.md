@@ -1,5 +1,5 @@
 ---
-title: ESP32 串口输出测试
+title: ESP32 + 串口输出测试
 date: 2026-07-20
 description: 验证 ESP32 单片机基本功能;上传程序并通过 USB 串口确认通信正常。
 

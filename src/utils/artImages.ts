@@ -1,7 +1,7 @@
 import { artImageMap } from "./art-images.generated";
 
 /**
- * Shared art-image discovery used by all three /art pages.
+ * Shared art-image discovery used by the three /art pages and the /fan/ page.
  *
  * `scripts/optimize-art.mjs` pre-generates lossless webp variants in
  * `public/art-optimized/` and records them in the generated manifest.
@@ -50,4 +50,20 @@ export function getArtImages(): ArtImageFile[] {
   }
 
   return images;
+}
+
+/**
+ * Files that must NOT appear on the three `/art` pages.
+ *
+ * ⚠️ Kept out of `getArtImages()` on purpose: `/fan/` is the fan-facing page and
+ * shares the same discovery, and its plates stay untouched. `/art` is the
+ * job-facing surface, so this is a per-surface filter, not a deletion.
+ */
+const ART_PAGE_EXCLUDED = new Set(["08-pepe.png"]);
+
+/** `getArtImages()` minus the art-page exclusions; use on all three `/art` pages. */
+export function getArtPageImages(): ArtImageFile[] {
+  return getArtImages().filter(
+    (image) => !ART_PAGE_EXCLUDED.has(image.filename),
+  );
 }

@@ -11,7 +11,7 @@
  * ⚠️ **It is an EASTER EGG, not a call to action** (visitor: 「把整个方框和里面
  * 内容做的很小很小，几乎难以看见，因为他是一个彩蛋按钮」). It used to be a full
  * 11px bordered pill with a dot, a glow and an ↗; it is now a speck at 6px and
- * 14% opacity in the corner of the hero, and it only becomes legible under the
+ * 1% opacity in the corner of the hero, and it only becomes legible under the
  * pointer or the keyboard's focus ring. The hit area is genuinely small, which is
  * the point — but `:focus-visible` still brings it back to full opacity, so it
  * stays reachable without a mouse.
@@ -62,7 +62,7 @@ const t = getTranslations(language);
     background: rgba(255, 111, 168, 0.06);
 
     /* the easter egg itself: faint enough to miss, present enough to find */
-    opacity: 0.14;
+    opacity: 0.01;
 
     transition:
       opacity 0.35s var(--ease-out),

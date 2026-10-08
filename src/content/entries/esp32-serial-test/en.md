@@ -1,5 +1,5 @@
 ---
-title: ESP32 Serial Output Test
+title: ESP32 + Serial Output Test
 date: 2026-07-20
 description: "ESP32 microcontroller verification: uploading a sketch and confirming serial communication over USB."
 

@@ -1,5 +1,5 @@
 ---
-title: ESP32 RGBNW Light + Motor Controller with Four Encoder Dials
+title: ESP32 + RGBNW Light + Motor Controller with Four Encoder Dials
 date: 2026-09-28
 description: Four EC11 dials and four OLEDs on one TCA9548A, driving a 24V RGBNW strip and a stepper motor, with a WiFi page that stays in sync with the dials.
 

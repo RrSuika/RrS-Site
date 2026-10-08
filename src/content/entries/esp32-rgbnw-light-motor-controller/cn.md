@@ -1,5 +1,5 @@
 ---
-title: ESP32 RGBNW 灯光 + 电机控制器，四个旋钮各管一路
+title: ESP32 + RGBNW 灯光 + 电机控制器，四个旋钮各管一路
 date: 2026-09-28
 description: 四组 EC11 旋钮与 OLED 挂在同一个 TCA9548A 上，驱动 24V RGBNW 灯带和步进电机，网页与旋钮双向同步。
 

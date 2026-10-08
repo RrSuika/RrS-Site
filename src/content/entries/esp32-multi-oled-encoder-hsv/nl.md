@@ -1,5 +1,5 @@
 ---
-title: ESP32 + multi-OLED + encoder HSV-besturingssysteem
+title: ESP32 + multi-OLED + encoder HSV-regeling
 date: 2026-09-14
 description: "Drie OLED + encoder-modules op één I2C-bus via een TCA9548A, tweezijdig gesynchroniseerd met een WiFi-webpagina: de HSV-tests."
 

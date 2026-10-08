@@ -1,5 +1,5 @@
 ---
-title: ESP32 多路 OLED + 旋转编码器 HSV 控制系统
+title: ESP32 + 多路 OLED + 旋转编码器 HSV 控制系统
 date: 2026-09-14
 description: 用 TCA9548A 把三块 OLED 扩到一条 I2C 总线上，配三个 EC11 编码器，做一套与 WiFi 网页双向同步的 HSV 测试。
 

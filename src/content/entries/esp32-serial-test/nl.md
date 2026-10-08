@@ -1,5 +1,5 @@
 ---
-title: ESP32 seriële communicatietest
+title: ESP32 + seriële communicatietest
 date: 2026-07-20
 description: "Verificatie van de ESP32-microcontroller: een sketch uploaden en seriële communicatie via USB bevestigen."
 

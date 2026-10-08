@@ -1,5 +1,5 @@
 ---
-title: ESP32 WiFi LED 亮度控制
+title: ESP32 + WiFi LED 亮度控制
 date: 2026-08-04
 description: 使用 ESP32 WiFi 网页服务器和 PWM，通过浏览器控制内置 LED 亮度。
 

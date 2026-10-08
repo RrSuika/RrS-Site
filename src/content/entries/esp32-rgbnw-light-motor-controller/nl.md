@@ -1,5 +1,5 @@
 ---
-title: ESP32 RGBNW licht- en motorcontroller met vier draaiknoppen
+title: ESP32 + RGBNW licht- en motorcontroller met vier draaiknoppen
 date: 2026-09-28
 description: Vier EC11-knoppen en vier OLEDs op één TCA9548A, die een 24V RGBNW-strip en een stappenmotor aansturen, met een webpagina die met de knoppen meeloopt.
 

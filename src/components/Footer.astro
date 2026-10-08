@@ -6,6 +6,15 @@ const language = getLanguageFromPath(Astro.url.pathname);
 const t = getTranslations(language);
 
 const aboutPath = getLocalizedPath("/about", language);
+
+/**
+ * Pixiv / QQ / Discord are personal fan handles, so they appear in the footer
+ * ONLY on the fan page (`/fan/`, `/zh/fan/`, `/nl/fan/`). Everywhere else is the
+ * job-facing surface and keeps just GitHub, email and About.
+ */
+const fanRoutePath = Astro.url.pathname.replace(/^\/(?:zh|nl)(?=\/|$)/, "");
+const showPersonalContacts =
+  fanRoutePath === "/fan" || fanRoutePath.startsWith("/fan/");
 ---
 
 <footer class="footer">
@@ -71,17 +80,23 @@ const aboutPath = getLocalizedPath("/about", language);
         &gt; {t.footer.email}
       </a>
 
-      <a
-        href="https://www.pixiv.net/users/71884225"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        &gt; {t.footer.pixiv}
-      </a>
+      {
+        showPersonalContacts && (
+          <>
+            <a
+              href="https://www.pixiv.net/users/71884225"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              &gt; {t.footer.pixiv}
+            </a>
 
-      <div class="qq">&gt; QQ: 2385568240</div>
+            <div class="qq">&gt; QQ: 2385568240</div>
 
-      <div class="qq">&gt; Discord: rrsuika</div>
+            <div class="qq">&gt; Discord: rrsuika</div>
+          </>
+        )
+      }
 
       <a href={aboutPath}>
         &gt; {t.footer.about}

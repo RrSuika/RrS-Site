@@ -1,5 +1,5 @@
 ---
-title: ESP32 WiFi LED-helderheidsregeling
+title: ESP32 + WiFi LED-helderheidsregeling
 date: 2026-08-04
 description: WiFi-webserver en PWM-LED-helderheidsregeling via een browserinterface.
 

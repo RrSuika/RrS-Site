@@ -3,7 +3,7 @@ import Layout from "../../../layouts/Layout.astro";
 import FanCta from "../../../components/FanCta.astro";
 import { getLanguageFromPath } from "../../../utils/i18n";
 import { getTranslations } from "../../../utils/translations";
-import { getArtImages } from "../../../utils/artImages";
+import { getArtPageImages } from "../../../utils/artImages";
 
 const language = getLanguageFromPath(Astro.url.pathname);
 const t = getTranslations(language);
@@ -22,10 +22,10 @@ interface Category {
 }
 
 const CATEGORIES: { folder: string; titles: Record<string, string> }[] = [
-  { folder: "illustrations", titles: { en: "Illustrations", zh: "插画" } },
   { folder: "product-posters", titles: { en: "Product Posters", zh: "产品海报" } },
-  { folder: "fashion-design", titles: { en: "Fashion Design", zh: "服装设计" } },
   { folder: "food-art", titles: { en: "Food Art", zh: "美食艺术" } },
+  { folder: "illustrations", titles: { en: "Illustrations", zh: "插画" } },
+  { folder: "fashion-design", titles: { en: "Fashion Design", zh: "服装设计" } },
 ];
 
 const TITLE_MAP: Record<string, Record<string, string>> = {
@@ -63,7 +63,7 @@ function titleFromFilename(folder: string, filename: string): string {
 
 const categories: Category[] = CATEGORIES.map((cat) => ({
   ...cat,
-  images: getArtImages()
+  images: getArtPageImages()
     .filter((image) => image.folder === cat.folder)
     .map((image) => ({
       src: image.src,
