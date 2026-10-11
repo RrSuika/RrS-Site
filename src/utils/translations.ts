@@ -266,7 +266,7 @@ export const translations = {
       },
       notes: {
         title: "Notes",
-        description: "Working notes on electronics: the fundamentals, and the circuits I keep running into in real projects.",
+        description: "Electronics explained from the beginning: what each part does, why the circuit is built that way, and the ones I keep running into.",
       },
       about: {
         pageTag: "PERSONNEL_DOSSIER // PROFILE_MODULE",
@@ -854,7 +854,7 @@ export const translations = {
       },
       notes: {
         title: "笔记",
-        description: "给自己写的电子学笔记：基础原理，以及在实际项目里反复撞到的那些电路。",
+        description: "从零讲起的电子学笔记：每个元件在做什么、电路为什么要这么接，以及我在实际项目里反复撞到的那些。",
       },
 
       about: {
@@ -1416,7 +1416,7 @@ export const translations = {
       },
       notes: {
         title: "Notities",
-        description: "Werknotities over elektronica: de basis, en de schakelingen die ik in echte projecten steeds tegenkom.",
+        description: "Elektronica vanaf het begin uitgelegd: wat elk onderdeel doet, waarom de schakeling zo is opgebouwd, en welke ik in de praktijk steeds tegenkom.",
       },
       about: {
         pageTag: "PERSONEELSDOSSIER // PROFIELMODULE",

@@ -1,7 +1,7 @@
 ---
 title: "Button Input: Debounce & Pull-Up/Down Resistors"
 date: 2026-08-10
-description: "Why a button needs a pull-up or pull-down at all, what a floating pin does to an MCU input, how to debounce in hardware and software, and why industrial products end up on pull-up."
+description: "A button is just a switch, so why does it need a resistor? What a floating pin does to a chip, why one press can be read as five, and how to fix both."
 
 type: note
 category: Electronics
@@ -30,19 +30,25 @@ translationKey: button-debounce-pullup-pulldown
 
 # What a Button Actually Is
 
-A button is a mechanical switch. All it does is connect or disconnect two metal contacts, which leaves the MCU with an electrical problem: the pin it is wired to has no defined level whenever the contacts are open. Not pressed: `── ──`, pressed: `──────`.
+After this note you will know why a bare button cannot be read reliably, why one resistor fixes it, and when you still need software on top.
 
-The MCU can't sense the button directly. It only reads voltage on a GPIO pin. So the whole chain is: mechanical action → GPIO voltage change → MCU reads voltage → firmware decides state. The button changes the circuit; the MCU reads the result.
+A button is two metal contacts that touch when you press it. The chip that reads it is a microcontroller, or MCU, the small computer running your firmware. The MCU cannot see those contacts move. It can only measure the voltage on one of its pins, and a pin you read is called a GPIO. So: you press, the contacts touch, the pin voltage changes, and the firmware decides what that means.
+
+Two words first. LOW means the pin sits near 0V, the voltage of ground. HIGH means it sits near the supply voltage, 3.3V on most boards and 5V on older ones.
 
 ## The Floating Problem
 
-The simplest possible wiring: GPIO → Button → GND. Pressed = GPIO pulled to GND = LOW. That works. But when it's NOT pressed? The GPIO pin is connected to nothing. It floats. The voltage is undefined: anywhere between 0V and 3.3V, completely at the mercy of nearby electric fields and noise. The MCU reads random garbage.
+The simplest wiring is a pin, a button and ground: GPIO → Button → GND. Press it and the pin connects to ground, so the MCU reads LOW.
 
-This is why you need a pull resistor: it gives the GPIO a known default state.
+The trouble starts when you let go. The pin is now connected to nothing, so nothing holds its voltage. We say the pin floats, and it drifts with nearby electrical noise. Your firmware then sees presses that never happened. The pin needs something to hold it at a known level while the button is open, and that something is a resistor.
 
 ## A Beginner's Mistake
 
-Someone might think: `5V → GPIO → Button → GND`. When not pressed, GPIO sits at HIGH. Looks fine. And the moment you press the button, the wire and the switch are a dead short from 5V to ground: near-zero path resistance, so the only thing limiting the current is the supply itself. Before you even press it, 5V on a 3.3V pin is above the pin's absolute maximum (VDD + 0.3V), so the pin's clamp diode is already conducting into the 3.3V rail. At best you fry the IO pin. At worst, the whole chip.
+It is tempting to wire the pin straight to the supply: `5V → GPIO → Button → GND`. While the button is open the pin reads HIGH, which looks right.
+
+Press it, though, and you have connected 5V to ground through nothing but a wire and a switch. Almost no resistance is left in that path, so only the supply itself limits the current. Something there gets hot and fails.
+
+There is a second problem, and it is there before you press anything. 5V on a pin that runs on 3.3V is more than the pin can survive. Every pin has a small protection diode inside that conducts when the voltage goes too high, and it pushes current back into the 3.3V rail.
 
 Never do this.
 
@@ -52,10 +58,12 @@ Never do this.
 5V → 10kΩ resistor → GPIO + Button → GND
 ```
 
-- **Not pressed**: 5V charges the GPIO pin through the 10kΩ resistor. GPIO input impedance is megohm-level (nearly an insulator), so it draws almost no current. Barely any voltage drops across the resistor: the pin sits at a solid HIGH.
-- **Pressed**: GPIO gets shorted straight to ground = LOW. Current = 5V / 10kΩ = 0.5mA (the same circuit on a 3.3V rail draws 0.33mA, which is what the rest of this note uses). That's tiny: safe, efficient, and the pin gets pulled reliably to 0V.
+Put a resistor between the supply and the pin instead. A resistor limits how much current can flow, and 10kΩ means 10,000 ohms.
 
-This is "weak pull-up, strong pull-down" in action: the resistor's pull is weak enough that the button's direct short to ground easily overrides it, but strong enough to hold the pin HIGH when the button is open.
+- **Not pressed**: the resistor connects the pin to 5V, so the pin reads HIGH. The pin draws almost no current, so almost no voltage is lost across the resistor.
+- **Pressed**: the button connects the pin to ground, so the pin reads LOW. The resistor now sets the current: 5V / 10kΩ = 0.5mA, a fraction of what an indicator LED uses. On a 3.3V board the same circuit draws 0.33mA, which is what the rest of this note uses.
+
+The resistor pulls weakly, the button pulls hard. While the button is open the resistor wins and holds the pin HIGH; press it and the direct connection to ground wins easily.
 
 ## Pull-Up vs Pull-Down
 
@@ -72,45 +80,46 @@ Button closed
 GND
 ```
 
-Pull-up: resistor from VCC to GPIO. Default = HIGH, pressed = LOW (active-low).
-Pull-down: resistor from GPIO to GND. Default = LOW, pressed = HIGH (active-high).
+The resistor can sit on either side of the pin, which gives you the two names:
 
-A resistor from power to GPIO is a pull-up: it clamps the pin HIGH by default. A resistor from GPIO to ground is a pull-down: it clamps the pin LOW. Both also limit current: without the resistor, pressing the button is a dead short.
+- Pull-up: resistor from the supply to the pin. Default HIGH, pressed LOW, which is called active-low.
+- Pull-down: resistor from the pin to ground. Default LOW, pressed HIGH, which is called active-high.
+
+Both hold a default level, and both limit the current, which is why you never get the dead short from the previous section.
 
 ![Pull-Up vs Pull-Down Comparison](./02-pullup-pulldown-comparison.png)
 
-Key functions of pull resistors:
+What decides between them is the level your firmware expects. A pin that must not be active at power-up gets a pull-up if it is active-low, a pull-down if it is active-high.
 
-- They set a known default state, preventing floating and false triggers. At power-up, the pin level is uncertain: a pull-up guarantees it starts HIGH and won't glitch.
-- On an open-drain or open-collector output, the pull-up is the only thing that can pull the line HIGH; the transistor can only pull it LOW.
+One more case is worth knowing. Some chips can only pull a line low, never high, because the output transistor inside works in one direction only. On those lines the pull-up resistor is the only thing that can produce the HIGH level.
 
 ## Why Not Wire GPIO Directly to 3.3V?
 
-Same failure as A Beginner's Mistake above, just on 3.3V instead of 5V. In this circuit the current-limiting element is the pull resistor itself.
+The same failure as the beginner's mistake, just at 3.3V: press the button and you connect the supply straight to ground. The resistor is what limits that current.
 
 ## Why 10kΩ?
 
-Common pull resistor values: 4.7kΩ, 10kΩ, 22kΩ, 47kΩ.
+A lower resistance holds the pin more firmly and shrugs off noise better, but burns more current. A higher resistance burns less, but noise overrides it more easily. 10kΩ is the usual compromise.
 
-- Lower resistance → stronger pull, better noise immunity, but more power burned
-- Higher resistance → less power, but more susceptible to noise
-- 10kΩ hits the sweet spot: 3.3V/10kΩ = 0.33mA, negligible power, reliable noise immunity.
+At 3.3V it draws 3.3V / 10kΩ = 0.33mA, small enough to ignore. Read it like this: at a fixed voltage, a bigger resistor means less current.
 
-Whether to pull up or down depends on the system. An active-high enable signal (EN) that should default to inactive → use pull-down. An active-low reset (RST#) that should default to inactive → use pull-up. For motor control, a floating pin could get noise-triggered to HIGH and spin the motor by accident: a pull-down locking the default to LOW is critical there.
+Which side you pull depends on what the pin does. An enable pin that must stay off at power-up gets a pull-down if it is active-high, and a pull-up if it is active-low: a motor driver, for instance, must not be switched on by noise when its pin floats.
 
-Internal MCU pull resistors are typically weak: high value, 20kΩ~50kΩ.
+Most MCUs also have a pull-up built in, switched on in software. It is weak, usually tens of kΩ: fine on a short wire, less trustworthy on a long one.
 
 ## Why Buttons Bounce
 
-Mechanical buttons aren't ideal switches. When you press one, the metal contacts don't close cleanly: they collide, rebound, collide again, rebound again, producing a burst of rapid ON-OFF-ON-OFF-ON transitions over several milliseconds (sometimes tens of ms). On an oscilloscope, a single press looks like a dense pulse train. A fast MCU can easily count each bounce as a separate press.
+Real buttons are not clean switches. Their contacts are pieces of metal that hit each other, so they touch, bounce apart, touch again and finally settle, all within a few milliseconds. Your firmware may run thousands of times in those milliseconds, and every bounce looks like a separate press. One press can be counted as five.
 
-## Debounce
+## Debounce: Why One Press Can Count as Ten
 
-**Software debounce**: Detect pin change → wait ~20ms → read again → confirm it's still the new state → act. Zero hardware cost, good enough for most cases.
+Debouncing means ignoring that noise, and there are two ways to do it.
 
-**Hardware debounce**: RC low-pass filter (e.g., 10kΩ + 100nF). fc = 1/(2πRC) ≈ 159Hz; the RC sets how fast the node can move between the two levels, and the Schmitt trigger input cleans up what is left.
+**Software debounce**: when the firmware sees the pin change, it waits about 20ms and reads the pin again. If the pin is still in the new state, the press was real. No hardware cost, and enough for most buttons.
 
-Many products use both: RC for the first pass, software for confirmation.
+**Hardware debounce**: a resistor and a capacitor next to the pin smooth the fast jumps out, so the firmware sees only one clean change. The capacitor stores a little charge, which stops the voltage from jumping instantly. Some chips also have a Schmitt trigger input: a circuit that shoves a half-way voltage decisively to one side instead of wobbling.
+
+Most products do both: the capacitor clears the noise, the firmware confirms.
 
 ## Production-Grade Button Circuit
 
@@ -133,10 +142,10 @@ GND
 
 ## What Industrial Designers Should Know
 
-- Mechanical design: button size, travel, actuation force, rebound speed, assembly tolerances, long-term wear.
-- Environmental reliability: water/dust resistance (IP rating), ESD protection, EMC immunity.
-- User experience: single click, double click, long press, repeat trigger, state feedback (haptic/visual/audio).
-- Product lifetime: rated cycle count, mechanical fatigue, temperature effects on materials.
+- Mechanical design: button size, travel, actuation force, rebound speed, tolerances, wear.
+- Environmental reliability: water and dust (IP rating), ESD, EMC.
+- User experience: single click, double click, long press, repeat, feedback (haptic, visual, audio).
+- Product lifetime: rated cycles, mechanical fatigue, temperature effects.
 
 A TV remote and a rice cooker use the same button logic: user input → button → GPIO → MCU → execute function.
 
@@ -151,73 +160,63 @@ A TV remote and a rice cooker use the same button logic: user input → button �
 
 #### Built-In MCU Pull-Ups Are Free
 
-Most MCUs (STM32, ESP32, AVR) have programmable internal pull-up resistors. Internal pull-downs are less universal: many classic 8-bit parts, AVR and 8051 among them, have none at all. Enable the internal pull-up and you save a resistor and PCB space: zero BOM cost. Engineers naturally reach for the free option, and over time this created a "pull-up first" design culture.
+Most MCUs have a pull-up inside the pin, switched on with one line of code, saving a part and some board space. Pull-downs are less common: many classic 8-bit chips, AVR and 8051 among them, have none at all.
 
 #### Fail-Safe: What an Open Circuit Actually Does
 
-- In a pull-up circuit, pressed = LOW.
-- If the wire between button and board breaks, a connector comes loose, or a solder joint cracks, the pull-up immediately yanks the floating GPIO back to a solid HIGH: "not pressed."
-- **Result**: the failure does NOT cause a false trigger. The system stays safe.
+If the wire to the button breaks, the pull-up pulls the pin back to HIGH, which means not pressed: a broken wire does not look like a press.
 
-Flip the scheme around and the same open circuit behaves the same way: a pull-down holds the pin LOW, and in that convention LOW means "not pressed". An open circuit fails to idle in both schemes. What does differ is the short: a pull-up input reads a short to ground as a permanent press, a pull-down input reads a short to the supply as a permanent press, and in a vehicle the accidental contact is far more often chassis ground than the supply.
+Flip the circuit around. A pull-down holds the pin LOW, and in that scheme LOW also means not pressed, so a broken wire fails to idle in both cases.
+
+What differs is a short. With a pull-up, a short to ground reads as a permanent press; with a pull-down, a short to the supply does. In a car, a wire is far more likely to touch the chassis than the supply.
 
 #### Ground as Reference Is More Reliable
 
-- The ground plane is the 0V reference for the entire system: it is everywhere and its impedance is very low, which makes it a much stiffer reference than the supply rail.
-- Static or noise from a finger touch gets safely shunted to earth rather than injected into the sensitive power rail.
+Ground is the 0V reference for the whole board, and its impedance is very low, which makes it stiffer than the supply rail.
 
 #### Power and Logic Naturally Align
 
-- **Quiescent power**: when not pressed, both ends of the pull-up are HIGH: virtually zero power. Pressed = 3.3V/10kΩ = 0.33mA, consumed only during the action. A pull-down scheme produces the same current (VCC through button to pull-down), so there's no static power advantage either way.
-- **Logic intuition**: many sequential logic circuits (reset circuits, etc.) use active-low signaling. Pull-up + button-to-ground naturally gives "pressed = 0", matching interrupt triggers and reset logic: less mental overhead when writing firmware.
+While the button is open no current flows, and while you hold it the current is tiny. A pull-down draws the same current when pressed, so neither side saves power. Many chips also treat a low level as the active one, reset pins for example.
 
 #### Open-Drain and Bus Compatibility
 
-When multiple devices share a signal line (I²C, 1-Wire, or a button sharing a pin with a status indicator), open-drain + pull-up is the standard topology. Pull-up slots right in. Pull-down needs extra level translation or circuit rework.
-
----
+Some wires are shared by several chips, I²C for instance: no chip drives them high, only low, and one resistor pulls them high for everybody.
 
 ### When Would You Actually Choose Pull-Down?
 
-Some designs actively choose pull-down:
-
-- **Active-high requirement**: some peripheral reset or enable pins are active-high. For logic consistency, design the button to output HIGH when pressed → use pull-down.
-- **Ultra-low-power wake-up pin limits**: some ultra-low-power MCUs only support rising-edge or high-level wake-up. You must use pull-down with the button tied to VCC.
+- **The pin is active-high**: some reset and enable pins expect a high level. Wire the button to give HIGH when pressed, which means a pull-down.
+- **The chip only wakes on a rising edge**: some very low-power MCUs only wake when the pin goes from low to high, which forces a pull-down with the button to the supply.
 
 ## Further Reading
 
 ### Internal vs External Pull-Up
 
-MCU internal pull-ups (20kΩ~50kΩ) save components, but they're high-value and weak. In long traces or noisy environments, they're not reliable enough. Industrial products often add an external 10kΩ even when the MCU supports internal pull-ups: lower resistance, stronger noise immunity. The designer chooses based on trace length, ambient noise, and power budget.
+Use the built-in one while the wire is short and the board is quiet, and add an external 10kΩ when the wire is long or noisy.
 
 ### Debounce State Machine
 
-A simple delay(20ms) only handles basic clicks. Production-grade interaction needs a state machine:
+Waiting 20ms covers one click. For double clicks and long presses, keep track of where you are:
 
-IDLE → press detected → DEBOUNCE_PRESS (wait 20ms confirm) → PRESSED (execute, enter release debounce) → release detected → DEBOUNCE_RELEASE (wait 20ms confirm) → back to IDLE.
+IDLE → press detected → DEBOUNCE_PRESS (wait 20ms) → PRESSED (act, then watch for release) → release detected → DEBOUNCE_RELEASE (wait 20ms) → back to IDLE.
 
-This framework prevents long-press retriggering and is the foundation for double-click, long-press, and other gestures.
+That structure stops a long press from firing over and over.
 
 ### Polling vs Interrupt
 
-Polling: main loop or timer periodically reads GPIO. Simple but burns CPU, bad for low power.
+Polling means the main loop reads the pin every time it goes around: simple, but it keeps the CPU busy.
 
-Interrupt: button on interrupt pin, edge-triggered ISR, start a timer in the ISR for debounce. Lower power, faster response: essential for battery-powered devices.
-
-Real products often combine both: interrupt wakes the system, then polling handles debounce.
+An interrupt does the opposite. The pin change itself calls a small piece of code, called an interrupt handler, and the CPU can sleep until then, which is why battery-powered devices use it. Many designs do both: the interrupt wakes the system, polling handles the debounce.
 
 ### Quantitative Hardware Debounce Design
 
-RC filter (10kΩ + 100nF): fc = 1/(2πRC) ≈ 159Hz, far below the mechanical bounce frequency (kHz range), so filtering is very effective. τ = RC = 1ms. With a Schmitt trigger, residual ripple gets further suppressed. Tune the capacitor value based on actual bounce characteristics: balance response speed against filtering.
+10kΩ and 100nF are the usual starting point, and together they give a 1ms time constant, longer than a single bounce. As a filter the cut-off is 1/(2πRC) ≈ 159Hz: changes slower than about 160 times a second get through, faster ones are smoothed away.
 
 ### Safety and Reliability Design
 
-GPIO mode misconfiguration protection: if GPIO accidentally gets set to push-pull output HIGH and the button is pressed, you get a short. Place a 100Ω~1kΩ protection resistor between GPIO and the button node to limit the fault current to 3.3V/100Ω = 33mA at the low end instead of a dead short; check the per-pin current limit in the datasheet, because 33mA is above the absolute maximum on some MCUs.
+If the firmware ever sets the pin as an output by mistake, pressing the button shorts it to ground. A 100Ω to 1kΩ resistor in series with the button limits the fault current (3.3V / 100Ω = 33mA). Check your chip's per-pin limit before using the low end, because some chips allow less.
 
-ESD protection: an exposed button is a direct human-touch path, so it wants a TVS or dedicated ESD diode to ground, which shunts the zap away before it reaches the MCU.
+An exposed button is also a path for static from your finger; a protection diode to ground gives it somewhere to go before it reaches the chip.
 
 ### Multi-Button and GPIO Optimization
 
-One button per GPIO only works for a few buttons.
-
-When you have many, the industry uses matrix scanning (row/column) or an ADC resistor-ladder (a chain of resistors dividing voltage; one ADC pin reads different voltages for different buttons) to dramatically save GPIO pins.
+One pin per button runs out quickly. The usual answers are a matrix, where buttons share rows and columns, or a resistor ladder, where one pin reads a different voltage per button.

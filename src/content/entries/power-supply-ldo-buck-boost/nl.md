@@ -1,7 +1,7 @@
 ---
 title: "Voeding: LDO-, buck- en boost-omzetters"
 date: 2026-08-10
-description: "De drie vragen die ik stel voordat ik een voedingstopologie kies, wat een LDO je aan warmte kost tegenover wat een buck je aan rimpel kost, en waarom een accu zowel een beschermingsboard als een lader nodig heeft."
+description: "Waar begin je als een project voeding nodig heeft: de drie vragen om eerst te stellen, waarom de ene regelaar heet wordt en de andere ruis geeft, en waarom een accu zowel een lader als een beveiliging nodig heeft."
 
 type: note
 category: Elektronica
@@ -25,17 +25,17 @@ translationKey: power-supply-ldo-buck-boost
 
 # Voedingsontwerp: drie vragen die ik eerst stel
 
-Voordat ik enig ander deel van het schema aanraak, stel ik mezelf drie vragen:
+Een schakeling werkt bijna nooit op de spanning die je toevallig hebt. Je moet de spanningen zelf maken, en dat doen maar twee families onderdelen: de lineaire en de schakelende. Na dit stuk weet je welke je moet kiezen, hoeveel warmte elk ervan maakt, en hoe je een lithiumcel veilig oplaadt.
 
-1. Wat is het spanningsverschil tussen in- en uitgang? Is dat meer dan 3V en komt de stroom boven 0.3A, dan overweeg ik niet eens een LDO; meteen naar Buck.
-2. Is het systeem ruisgevoelig? Draadloze modules en analoge precisieschakelingen neigen naar LDO's, of op zijn minst extra filtering na een switcher.
-3. Hoe zit het met ruimte en thermiek? Een volledig afgesloten, kleine behuizing betekent dat ik voor schakelend ga; warmte hoopt zich in een klein kastje snel op.
+1. Hoe groot is het verschil tussen de spanning die erin gaat en de spanning die ik nodig heb? Meer dan ongeveer 3V en 0,3A, en de lineaire soort valt af.
+2. Kan dit deel van de schakeling slecht tegen elektrische ruis? Draadloze modules en precisie-analoog wel.
+3. Hoeveel ruimte is er, en hoe warm mag het worden? In een klein gesloten kastje kan de warmte nergens heen.
 
 Deze drie vragen hebben me veel herwerk bespaard.
 
 ## Vermogensarchitectuur: het is een energiedistributiesysteem
 
-Na een tijdje besefte ik: voedingsontwerp draait erom de juiste spanning, de juiste stroom en het juiste ruisniveau naar elke module te brengen, precies daar waar het nodig is. Als ik nu naar een printplaat kijk, is mijn eerste reflex om de voedingsingang te vinden en het vermogenspad stroomafwaarts te volgen.
+Een voeding is een bezorgsysteem: elk onderdeel heeft een bepaalde spanning, een bepaalde stroom en een bepaalde rust nodig, en wel op zijn eigen pinnen.
 
 ## Voedingssystemen zijn ketens van meertrapsomzetting
 
@@ -55,119 +55,105 @@ Verschillende blokken op dezelfde print hebben verschillende spanningen nodig:
 | LED's            | 2~3V            |
 | Hoogvermogenbelastingen| 12V/24V         |
 
-Binnen één product bestaan er dus vaak 5V-, 3.3V-, 1.8V- en andere rails naast elkaar.
+Zo heeft één product vaak meerdere rails naast elkaar: 5V, 3.3V, 1.8V. Een rail is gewoon één van die voedingsspanningen.
 
-Wat ik heb geleerd:
-- Elke trap in het vermogenspad heeft verliezen; beoordeel de efficiëntie trap voor trap.
-- Plan je spanningsrails zorgvuldig. Gevoelige schakelingen hebben mogelijk extra filtering op hun voeding nodig.
-- Beveiligingscomponenten (zekering, omgekeerde polariteit) zien er eenvoudig uit, maar ze leggen de ondergrens van de veiligheid van je product vast. Bespaar hier nooit op.
+Elke trap in die keten verliest een deel van het vermogen dat erdoorheen gaat, en een gevoelig onderdeel heeft misschien extra filtering op zijn eigen voeding nodig.
 
 Zekeringselectie kent vier checks in de bedradingsgids: stroomwaarde, spanningswaarde, onderbrekingsvermogen en snelheid (FF/F/M/T/TT). Het onderbrekingsvermogen wordt op batterijschaal veiligheidskritisch: LiFePO4 levert veel hogere kortsluitstromen dan loodzuur, en de zekering moet die foutstroom kunnen onderbreken zonder zelf te barsten. Typische waarden: MEGA-zekeringen 2,5kA bij 70V DC, NH-meszekeringen 25kA, Class T 20kA bij 125V DC. De gewoonte op printniveau om beveiliging te kiezen op basis van wat die moet doorstaan, gaat één-op-één over naar batterijsystemen.
 
 ## LDO-lineaire regelaars: schoon en simpel, maar ze worden heet
 
-Een LDO verbrandt overtollige spanning in feite als warmte. De rekensom is duidelijk:
+Een zekering heeft vier cijfers die tellen: de stroom, de spanning, de foutstroom die hij kan onderbreken, en hoe snel hij doorslaat. Op een batterij is de derde het belangrijkst: een lithiumbatterij duwt een enorme stroom in een kortsluiting, en de zekering moet dat kunnen afsnijden zonder zelf te barsten. Eén voorbeeld: een Class T-zekering onderbreekt 20kA bij 125V DC.
 
 ```
 P_loss = (Vin - Vout) × I
 ```
 
-Maar LDO's zijn niet altijd inefficiënt; het hangt af van de situatie. Klein spanningsverschil: van 5.5V naar 5V bij 1A, P_loss = 0.5W, ~91% efficiënt; helemaal prima. Groot verschil: van 12V naar 5V bij 1A, P_loss = 7W, slechts 42% efficiënt; rampzalig.
+Een LDO (low drop-out) is een lineaire regelaar die nog werkt als de ingang maar weinig boven de uitgang zit. Hij gedraagt zich als een automatische weerstand: hij laat de overtollige spanning vallen zodat de uitgang stabiel blijft, en die spanning wordt warmte. Het verlies is makkelijk uit te rekenen:
 
-Voordelen van LDO's: doodsimpel circuit (ingangscondensator + LDO + uitgangscondensator, meer niet), lage kosten, weinig ruis, stabiele uitgang.
+In woorden: het verlies is de spanning over het onderdeel maal de stroom erdoorheen. Van 5.5V naar 5V bij 1A gaat 0,5W verloren, ongeveer 91% efficiënt. Van 12V naar 5V bij 1A gaat 7W verloren, maar 42% efficiënt.
 
 Ik grijp naar een LDO wanneer:
-- Ik van 3.6V Li-ion naar 3.3V ga voor een MCU of sensor; slechts 0.3V verschil, nauwelijks warmte.
-- Ik ruisgevoelige analoge/RF-schakelingen voed (audioversterkers, ADC-referenties).
+- Een lithiumcel staat op 3.6V en de microcontroller heeft 3.3V nodig, dus er blijft maar 0,3V over.
+- Het onderdeel dat gevoed wordt, is gevoelig voor ruis, zoals een audioversterker of een analoog-digitaal-omzetter.
 
-Voor 12V naar 5V bij hoog vermogen zou ik er geen gebruiken; dan heb je een enorm koellichaam nodig, en dat is de moeite niet waard.
+Voor 12V naar 5V bij hoge stroom zou ik er geen gebruiken; dan wordt het koellichaam belachelijk.
 
 Praktijklessen:
-- Na het berekenen van P_loss geldt: junctietemperatuur = omgevingstemperatuur + P_loss × θJA. Houd die in de veilige zone.
-- Groot spanningsverschil + hoge stroom? Gebruik een switcher. Forceer geen LDO.
-- PCB-koper kan dienen als koellichaam; stort koper onder de tab van de LDO en verbind het met via's. Dat verlaagt de thermische weerstand effectief.
+- De temperatuur in de chip is de omgevingstemperatuur plus het verlies maal de thermische weerstand van de behuizing. Houd die onder de grens in de datasheet.
 
 ## Buck-schakelomzetters: efficiënt, maar met rimpel
 
-Een Buck pakt het heel anders aan: in plaats van overtollige spanning te verbranden, schakelt hij een MOSFET op hoge snelheid aan en uit en maakt hij de uitgang glad met een LC-filter. De efficiëntie ligt doorgaans tussen 85%–97%.
+Een Buck doet het omgekeerde: hij verbrandt de extra spanning niet. Hij hakt de ingang duizenden keren per seconde aan en uit en strijkt het resultaat daarna glad tot een stabiele uitgang. Een MOSFET, een schakelaar die door spanning wordt gestuurd in plaats van door stroom, doet het hakken; een spoel en een condensator strijken het glad. De efficiëntie ligt meestal tussen 85% en 97%.
 
-De keerzijde: de uitgang heeft hoogfrequente rimpel en je hebt meer externe componenten nodig; minimaal een spoel, een vrijloopdiode (of een synchrone gelijkrichter-MOSFET) en in- en uitgangscondensatoren.
+De prijs is een kleine wiebel op de uitgang op de schakelfrequentie, en die wiebel heet rimpel. Je hebt ook meer onderdelen nodig: een spoel, een diode die de stroom van de spoel ergens heen laat als de schakelaar opent, en condensatoren aan de in- en uitgang.
 
-Dezelfde rekensom van stroom maal serieweerstand komt op systeemschaal terug: een omvormer trekt een fluctuerende gelijkstroom uit de accu op tweemaal de netfrequentie (100Hz), en de weerstand van de accukabel maakt daarvan rimpelspanning op de hele gelijkstroombus; Victron alarmeert op een 24V-systeem bij 2,25V RMS. De fixlijst uit de gids weerspiegelt de board-level-praktijk: kortere en dikkere geleiders, strakke verbindingen, goede componenten. Dezelfde fysica, andere schaal: rimpel is fluctuerende stroom maal serieweerstand, en het medicijn is een pad met lagere impedantie.
+Rimpel bestaat ook op batterijschaal, om een andere reden. Een omvormer trekt zijn stroom in pulsen op tweemaal de netfrequentie (100Hz), en de weerstand van de accukabel maakt daar een spanningswiebel op de hele DC-bus van. De gids van Victron zet het alarmniveau op 2,25V RMS bij een 24V-systeem.
 
-Ik kies standaard voor Buck wanneer het spanningsverschil groter is dan ~3V en de stroom boven ~0.3A komt, zoals bij 12V-systemen, of bij het omlaag brengen van batterijspanning voor hoogvermogenbelastingen. De LM2596-module is mijn vaste prototyping-module; instelbare uitgang, goedkoop, betrouwbaar.
+Mijn standaard is dus een Buck zodra het verschil groter is dan ongeveer 3V en de stroom boven ongeveer 0,3A komt: 12V naar 5V, of een batterij naar iets wat veel trekt. De LM2596-module is degene die ik op de bank heb liggen: goedkoop, en je zet de uitgang met een klein schroefje.
 
 Lessen die ik op de harde manier heb geleerd:
-- De keuze van de spoel is cruciaal: de verzadigingsstroom moet boven de maximale belastingsstroom liggen. Zodra een spoel verzadigt, is het in feite een draad, en je MOSFET kan sneuvelen.
-- Houd het spoor van het schakelknooppunt kort en breed om EMI te minimaliseren.
-- Voeg voor gevoelige schakelingen een LDO of een π-filter na de Buck toe om de rimpel te onderdrukken.
+- Kies de spoel op de stroom die erdoorheen gaat. Voorbij zijn grens, verzadiging, gedraagt hij zich niet meer als spoel maar als een stuk draad, dus hij begrenst de stroom niet meer en de MOSFET kan sneuvelen.
+- Houd het koperspoor waar de MOSFET en de spoel samenkomen kort en breed; dat punt schakelt snel en strooit storing rond.
 
 ## Boost en Buck-Boost
 
-Een Boost verhoogt de spanning, bijvoorbeeld één Li-ion-cel van 3.7V naar 5V of 12V: als de schakelaar aan staat slaat de spoel energie op, en als hij weer opent geeft de spoel die energie vrij in serie met de ingang, waardoor Vout > Vin wordt. Een Buck-Boost vangt het geval op waarin Vin boven of onder Vout kan liggen; een Li-ion-batterij loopt van 4.2V vol tot 2.7V bijna leeg, terwijl je een stabiele 3.3V nodig hebt, en de Buck-Boost schakelt zelf tussen de modi.
+Een Boost gaat de andere kant op: hij maakt van een lage spanning een hoge, dus één lithiumcel van 3.7V kan een 5V- of 12V-belasting voeden. Hij slaat energie op in de spoel terwijl de schakelaar aan staat, en laat die energie in serie met de ingang weer los als de schakelaar opent, waardoor de twee spanningen optellen. Een Buck-Boost vangt het geval op waarin de ingang boven de uitgang begint en eronder eindigt: een lithiumcel is 4.2V vol en 2.7V bijna leeg, dus hij schakelt zelf tussen de modi om 3.3V vast te houden.
 
 Praktische aantekeningen:
-- Boost-circuits kunnen bij het opstarten inschakelstroom hebben; soft-start is eigenlijk standaard.
-- De efficiëntie van Buck-Boost ligt door het extra schakelen doorgaans een paar procentpunten lager dan bij zuivere Buck of Boost.
-- De Boost-uitgang kan niet direct worden kortgesloten; plan je beveiliging vooraf.
+- Een Boost kan bij het starten een grote stroomstoot trekken, dus de meeste komen rustig op gang. Dat heet soft-start.
+- Sluit de uitgang van een Boost niet kort; bedenk vooraf hoe je hem beveiligt.
 
 ## Batterijladen en beveiliging: beide zijn verplicht
 
-Je kunt een Li-ion-cel absoluut niet opladen door er rechtstreeks 5V op te zetten. Je hebt een laadbeheer-IC nodig.
+Je kunt een lithiumcel niet opladen door er 5V direct op te zetten. De stroom moet begrensd worden en de spanning moet bewaakt worden, en dat doet een aparte chip.
 
-- **TP4056**: lineair laden, eerst CC en daarna CV (4.2V), overtollige spanning wordt warmte. Dat grote vrijliggende pad aan de onderkant is voor warmteafvoer; stort koper en verbind met via's, anders raakt hij tijdens het laden oververhit.
-- **Beveiligingsprint** (DW01+8205A): bewaakt overladen (≈4.30V), te diep ontladen (≈2.40V), overstroom en kortsluiting. Schakelt het circuit bij een fout uit.
+- **TP4056**: een kleine laadchip. Hij laadt met een constante stroom tot de cel 4.2V bereikt, houdt daarna die spanning vast, en maakt van de overtollige spanning warmte. Het grote pad aan de onderkant brengt die warmte in de print, dus stort er koper onder en verbind het met via's.
+- **Beveiligingsprint** (een DW01-chip en een 8205A-paar schakelaars): hij bewaakt de hele tijd de spanning en de stroom van de cel, en knipt de verbinding af als de spanning naar ongeveer 4.30V klimt, naar ongeveer 2.40V zakt, de stroom te hoog wordt, of de uitgang kortgesloten raakt.
 
-Mijn beeld: de TP4056 handhaaft de laadregels. De beveiligingsprint is het vangnet.
-
-Complete keten voor één Li-ion-cel:
+De complete keten voor één lithiumcel:
 
 ![Vermogensketen](./01-power-chain.png)
 
-De beveiligingsprint is doorgaans als één geheel met de batterij geïntegreerd.
+De meeste cellen komen al met de beveiligingsprint erin, als één geheel.
 
 ```
 Ingang 5V → TP4056 → [Li-ion-cel + beveiligingsprint (geïntegreerd)] → Buck/Boost → Diverse belastingen
                     ↑____Laden____↑   ↑____Ontladen____↑
 ```
 
-- Laden: de TP4056 regelt de stroom naar de batterij; de beveiligingsprint bewaakt de spanning.
-- Ontladen: de stroom loopt van de batterij door de beveiligingsprint, daarna via DC/DC-omzetting naar de belastingen; de beveiligingsprint let op te diep ontladen en kortsluiting.
+- Tijdens het laden regelt de TP4056 de stroom die erin gaat en bewaakt de beveiligingsprint de spanning.
+- Tijdens het ontladen verlaat de stroom de cel via de beveiligingsprint, die blijft letten op een te lage spanning of een kortsluiting.
 
-Houd bij het instellen van de laadstroom van de TP4056 rekening met wat je USB-bron aankan en met de thermiek; de standaard 1A kan voor kleine cellen te hoog zijn. De beveiligingsprint MOET direct op de batterij worden aangesloten, niet op afstand op de hoofdprint. Gangbare TP4056-modules op de markt hebben de DW01+8205A meestal al geïntegreerd, wat een handige alles-in-één laad- en beveiligingsoplossing vormt.
+Bedenk bij het instellen van de laadstroom waar die stroom vandaan komt: je USB-poort. De gebruikelijke 1A is te veel voor een kleine cel. De beveiligingsprint moet op de cel zitten, niet op de hoofdprint aan het eind van twee draden. De meeste TP4056-modules bevatten de DW01 en de 8205A al, dus laden en beveiligen zitten op één printje.
 
 ## Efficiëntie en thermisch ontwerp: hoge efficiëntie ≠ geen warmte
 
-Een Buck met 95% efficiëntie die 50W levert, dissipeert nog steeds ~2.6W. Genoeg om een MOSFET merkbaar warm te maken.
+Een Buck die 95% efficiënt is en 50W levert, maakt nog steeds ongeveer 2.6W warmte, genoeg om de MOSFET merkbaar warm te maken.
 
-Verliesbronnen in een MOSFET: geleidingsverlies P = I² × R_DS(on), plus schakelverlies (overlap van spanning en stroom, aanzienlijk bij hoge frequentie).
+Die warmte gaat via het pad onder de MOSFET naar de behuizing en de lucht in; telefoonladers en laptopadapters gebruiken de behuizing zelf als koellichaam.
 
-Denk het thermische pad door: MOSFET → thermisch pad → metalen frame/aluminium behuizing → lucht. Veel producten gebruiken de behuizing zelf als koellichaam; telefoonladers en laptopadapters werken allemaal zo.
-
-Mijn ervaring:
-- Word niet zelfgenoegzaam omdat het efficiëntiegetal er goed uitziet. Bereken het absolute aantal verloren watts.
-- Ook de DCR van de spoel genereert warmte; controleer die tijdens de selectie.
-- Thermische simulatie of een opwarmtest is niet optioneel; zorg dat componenten onder de maximale junctietemperatuur blijven bij de slechtst denkbare omgevingstemperatuur.
-- Ventilatieopeningen, thermische interfacematerialen; hier overlappen mechanisch en elektrisch ontwerp elkaar.
+Wat ik controleer:
+- De temperatuur, via een test of een simulatie, en zorg dat niets boven zijn grens komt in de slechtste omstandigheden die het ooit zal meemaken.
 
 ## De drie vragen opnieuw bekeken, met een casestudy
 
-### Twee vergelijkingscases
+### Wat gebeurt er bij dezelfde belasting?
 
-- LM7805 (lineair): 9V ingang → 7805 → uitgang naar Arduino. Laat hem 5 minuten draaien en raak de chip aan; merkbaar heet. ~55.6% efficiëntie.
-- LM2596-module (Buck): afgesteld op 5V uitgang, dezelfde belasting. Nauwelijks warm. ~92.6% efficiëntie.
+- **LM7805**, een lineaire regelaar: 9V in, 5V uit naar een Arduino. Na vijf minuten is de chip merkbaar heet, bij ongeveer 55.6% efficiëntie.
+- **LM2596**, een Buck-module op 5V met dezelfde belasting: nauwelijks warm, ongeveer 92.6% efficiënt.
 
-Conclusie: draagbare producten op batterijen moeten prioriteit geven aan schakelende voedingen.
+Voor alles wat op een batterij werkt, zou ik met een schakelende voeding beginnen.
 
-### Teardown: het vermogenspad volgen in een oude telefoonlader
+### Een oude telefoonlader openmaken
 
-Ik heb een oude lader uit elkaar gehaald en het vermogenspad op de print gevolgd; enorm bevredigend:
+Ik heb een oude telefoonlader uit elkaar gehaald en de stroom gevolgd van de stekker tot de USB-uitgang.
 
 ```
 AC 220V → smeltweerstand → common-mode smoorspoel → gelijkrichtbrug → 400V elco (bulk) → primaire zijde transformator → schakel-IC → secundaire zijde transformator → Schottky-gelijkrichter → elektrolytisch filter → 5V USB-uitgang
 ```
 
-Belangrijkste component: de optocoupler overbrugt de barrière tussen hoog- en laagspanning en koppelt de uitgangsspanning terug terwijl hij voor veiligheidsisolatie zorgt. Als ik nu naar een print kijk, is mijn eerste reflex om deze blokken te lokaliseren.
+Het interessantste onderdeel vind ik de optocoupler, die over de barrière tussen de gevaarlijke netzijde en de veilige 5V-zijde zit.
 
 ## Kerninzichten
 
@@ -176,24 +162,24 @@ De ontwerpketen loopt van energiestroom → spanningsomzetting → thermisch pad
 ## FAQ
 
 ### Waarom moet de beveiligingsprint in de batterij zitten?
-De beveiligingsprint moet de celspanning en -stroom direct kunnen bewaken; doorgaans wordt hij met nikkelstrips rechtstreeks op de celpolen puntgelast. Als hij met draden en connectoren ertussen op de hoofdprint zit, komen er extra weerstand en extra contactpunten in het stroompad te liggen.
+Omdat hij zo dicht mogelijk bij de cel moet zitten, meestal met nikkelstrips direct op de celpolen gelast. Zet je hem op de hoofdprint, dan loopt de stroom onderweg naar en van de cel door extra draden en connectoren.
 
 ### Kan ik een beveiligde batterij rechtstreeks met een TP4056 opladen?
-Ja, dit is de standaardaanpak. De TP4056 voert het CC/CV-laadprofiel uit; de beveiligingsprint fungeert als laatste verdedigingslinie en schakelt het circuit uit als de spanning abnormaal hoog wordt.
+Ja, dat is de normale manier. De TP4056 doet het laden en de beveiligingsprint is de laatste verdedigingslinie.
 
 ### Waarom wordt mijn Buck-circuit nog steeds heet?
-Zelfs 1–2W werkelijk verlies laat de junctietemperatuur zonder adequate koeling stijgen. Controleer de verzadigingsstroom van de spoel, de R_DS(on) van de MOSFET, het koperoppervlak op de PCB en het thermische pad.
+Zelfs één of twee watt duwt de temperatuur in de chip omhoog als niets de warmte afvoert. Controleer de stroomcapaciteit van de spoel, het koperoppervlak op de print en waar de warmte heen gaat.
 
 ## Kennisbank: referentiekaarten voor modules
 
-### Spanningsregelaarmodules
+### Regelaarmodules die ik op de bank heb liggen
 
 | Module    | Type   | Vin       | Vout            | I_max        | Efficiëntie | Warmte   | Toepassing                 |
 | --------- | ------ | --------- | --------------- | ------------ | ---------- | ------ | ------------------------ |
 | LM7805    | Lineair | 7-25V     | 5V              | 1.5A (met koellichaam)| ≈Vo/Vin  | Hoog   | Lage stroom, ruisgevoelig |
 | LM2596    | Buck   | 4.5-40V   | Instelbaar 1.25-37V    | 2-3A         | 85-93%     | Laag    | Groot spanningsverschil, efficiëntie eerst |
 
-### Laad-/beveiligingsmodules
+### Laden en beveiligen op één printje
 
 | Module           | Functie              | Laadmethode    | Beveiliging                    | Opmerkingen                        |
 | ---------------- | --------------------- | ---------------- | ----------------------------- | ---------------------------- |
@@ -201,39 +187,22 @@ Zelfs 1–2W werkelijk verlies laat de junctietemperatuur zonder adequate koelin
 
 ## Verder lezen
 
-### Vermogensniveaus van AC-DC-topologieën
+### Hoe netadapters zijn opgebouwd, per vermogen
 
-**Flyback**
-- Onder ~100W is dit in feite de standaard. Weinig componenten, lage kosten, geïsoleerd, meerdere uitgangen mogelijk.
-- Toepassingen: telefoonladers, routervoedingen, kleine huishoudelijke apparaten, LED-drivers.
+Netadapters komen in families per vermogen: de flyback tot ongeveer 100W, daarboven de forward-, push-pull- en brugschakelingen, en de resonante LLC in moderne pc-voedingen, die 90% tot 96% haalt.
 
-**Forward**
-- De stap boven flyback, 100W+. Betere efficiëntie, maar complexer.
+### Rimpel wegwerken
 
-**Push-Pull**
-- Nog hoger vermogen. Komt vaak voor in omvormers voor auto's en in hoogvermogen-DC/DC-omzetters.
-
-**Half Bridge**
-- Servervoedingen, industriële voedingen, UPS-systemen.
-
-**Full Bridge**
-- Nog hoger vermogen, veel gebruikt in het bereik 1000W–5000W.
-
-**LLC (resonant)**
-- Moderne pc-voedingen gebruiken dit. Typische ATX-PSU-architectuur: PFC → LLC → synchrone gelijkrichting → 12V, 90%–96% efficiëntie.
-
-### Rimpelonderdrukking bij schakelende voedingen
-
-De combinatie Buck+LDO geeft je zowel efficiëntie als weinig ruis.
+Wil je efficiëntie én een stille uitgang, zet dan een LDO achter de Buck.
 
 **DC-ingang → Buck → LDO → Belasting**
 
-De Buck neemt het grote spanningsverschil (bijv. 12V→5.5V) voor zijn rekening met 90%+ efficiëntie en heel weinig warmte, en stopt net boven de uiteindelijke LDO-uitgang, doorgaans met 0.3–0.5V hoofdruimte. De LDO doet daarna de precisiergegling en het opschonen: met zo weinig spanning erover is P_loss verwaarloosbaar, en zijn hoge PSRR drukt weg wat er aan schakelrimpel overbleef. De uitgang is uitzonderlijk schone DC.
+De Buck neemt het grote verschil voor zijn rekening, bijvoorbeeld 12V naar 5.5V, met meer dan 90% efficiëntie. De LDO heeft dan nog maar 0,3–0.5V te verwerken, dus hij wordt nauwelijks warm en strijkt de wiebel glad.
 
-### Batterijselectie en planning van de vermogensboom
+### Kies eerst de batterij
 
-Bepaal eerst de spanningsvereisten van het systeem en beslis daarna op basis van de batterijkarakteristieken (Li-ion 3.7V, NiMH 1.2V) of je Boost of Buck-Boost nodig hebt. Zo voorkom je later grote aanpassingen.
+Reken eerst uit welke spanningen het systeem nodig heeft en kies dan de batterij: een lithiumcel is 3.7V, een NiMH-cel 1.2V, en dat bepaalt of je een Boost of een Buck-Boost nodig hebt.
 
-### Systeemschaal: batterijbekabeling
+### Als het een accubank wordt
 
-Wanneer de vermogensboom uitgroeit tot een accubank, komen dezelfde onderwerpen op systeemniveau terug. [Victron Wiring Unlimited](https://www.victronenergy.com/upload/documents/The_Wiring_Unlimited_book/43562-Wiring_Unlimited-pdf-en.pdf) behandelt spanningsval, kabeldimensies, zekeringselectie en rimpel voor accu- en omvormersystemen. Mijn off-grid zonneproject leunt er zwaar op: [Circuitontwerp: zonnepaneelsysteem voor thuis](/nl/projects/home-solar-storage-design/)
+Als dit uitgroeit tot een accubank komen dezelfde vragen groter terug. [Victron Wiring Unlimited](https://www.victronenergy.com/upload/documents/The_Wiring_Unlimited_book/43562-Wiring_Unlimited-pdf-en.pdf) behandelt ze in detail, en mijn off-grid zonneproject leunt er zwaar op: [Circuitontwerp: zonnepaneelsysteem voor thuis](/nl/projects/home-solar-storage-design/)

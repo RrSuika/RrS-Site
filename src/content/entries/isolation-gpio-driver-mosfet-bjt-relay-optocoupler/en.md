@@ -1,7 +1,7 @@
 ---
 title: "Isolation & GPIO Driver: MOSFET, BJT, Relay, Optocoupler"
 date: 2026-08-10
-description: "How to get from a 3.3V GPIO to a 12V/2A load: what an NMOS low-side switch actually does, when a BJT, a relay or an optocoupler is the better answer, and which protection parts you cannot leave out."
+description: "A chip pin can supply a few milliamps; a lamp strip or a motor wants amps. This is how a transistor, a relay or an optocoupler lets a small signal switch something big."
 
 type: note
 category: Electronics
@@ -26,19 +26,25 @@ translationKey: isolation-gpio-driver-mosfet-bjt-relay-optocoupler
 
 ![MOSFET Switch](./01-mosfet-switch.png)
 
-An MCU pin is a logic output. The things you usually want to switch, LED panels, motors, solenoids, are not logic loads: they want a different voltage and roughly a hundred times the current. A driver circuit is the translator between the two, and for DC loads that translator is almost always a MOSFET.
+After this note you will know why a chip pin cannot switch a lamp by itself, and how a small extra circuit lets a tiny signal control something big.
+
+A microcontroller (the small computer that runs your project) can only say "high" or "low" on a pin. An LED panel, a motor or a solenoid wants far more current, at a different voltage. The circuit that translates between them is a driver.
 
 # What GPIO Actually Is
 
-GPIO is the MCU's general-purpose input/output interface: configurable as input (sense external levels) or output (generate HIGH/LOW). But its essence is a digital control interface. HIGH ≈ 3.3V (or 5V), LOW ≈ 0V, representing logic 1 and 0. Its output current is severely limited: typically around 20mA.
+GPIO stands for general-purpose input/output. It is a pin you can use as an input, to read a voltage, or as an output, to send a high or a low level. High is about 3.3V, low about 0V.
 
-That 20mA is the number everything after this hangs on. A GPIO is a signal, not a supply.
+A GPIO carries a signal, not power. It can supply roughly 20mA.
 
 ## MOSFET Basics: Voltage-Controlled Electronic Switch
 
-MOSFETs are perfect for this because they're voltage-controlled: the Gate draws essentially zero continuous current: you just need enough voltage to turn it on. The MCU provides the control signal to the Gate via GPIO/PWM, and the load current flows from the external supply through the Drain-Source path. Two separate paths that meet only at the Source pin.
+A MOSFET is a switch with three pins and no moving parts. You do not feed it current: you put a voltage on one pin, called the Gate, and the switch closes.
 
-### Three Terminals
+That is why a microcontroller can drive it directly. The MCU supplies a voltage, while a separate supply provides the current. The current enters at the Drain, passes through the load and leaves at the Source.
+
+So the control signal and the load current travel different paths and meet at the Source, which shares the MCU's ground. That is not isolation: the shared ground is exactly what lets a 3.3V signal control the switch. Real isolation needs an optocoupler or a relay, later in this note.
+
+### What the three pins do
 
 | Pin | Name   | Role                                    |
 | --- | ------ | --------------------------------------- |
@@ -46,15 +52,20 @@ MOSFETs are perfect for this because they're voltage-controlled: the Gate draws 
 | D   | Drain  | Connects to load, carries the work current |
 | S   | Source | Current return (NMOS usually to GND)       |
 
-Key insight: **the control signal and the load current travel through separate paths**. The GPIO only touches the Gate; the Drain-Source channel carries the external supply's current. Separate paths are not isolation, though: the Source sits on the same node as the MCU's ground, and that shared node is exactly why a low-side switch works on a 3.3V gate signal. Real isolation needs an optocoupler or a relay.
+Those three names are the whole vocabulary: you control the Gate, and the Drain-to-Source path does the work.
 
 ## Why MCUs Can't Drive Loads Directly
 
-A 12V/24W LED panel needs 2A. An Arduino GPIO outputs ~20mA: a 100× gap, and the supply voltage is wrong as well. The MOSFET bridges both: the MCU provides the control voltage, the external 12V supply provides the current. Each does its own job, and the two meet at the Source pin, which is tied to the MCU's ground.
+Your 12V panel draws 24W, so 2A. A GPIO offers about 20mA at 3.3V: a hundred times too little, and the wrong voltage.
+
+Wire the panel straight to the pin and the pin cannot hold its level: the voltage sags, the chip heats up. So the job splits in two. The MCU decides when to switch, a separate supply provides the current, and the MOSFET joins them.
 
 ## NMOS vs PMOS
 
-### NMOS (Low-Side Switch): Recommended
+MOSFETs come in two polarities, and the names only tell you where the switch sits.
+
+### NMOS: the switch on the ground side
+
 ```
 12V
  │
@@ -64,12 +75,11 @@ NMOS
  │
 GND
 ```
-- NMOS sits between load and GND
-- Gate is referenced to GND, so a 3.3V or 5V GPIO can drive it directly (assuming logic-level MOSFET)
-- Simple circuit, low conduction loss, perfect for PWM
-- This is where I started and what I use in most projects
 
-### PMOS (High-Side Switch)
+NMOS sits between the load and ground. Its Gate is measured against that same ground, so a 3.3V pin turns it on directly.
+
+### PMOS: the switch on the supply side
+
 ```
 12V
  │
@@ -79,27 +89,26 @@ LED
  │
 GND
 ```
-- PMOS sits between supply and load
-- To turn on PMOS, Gate must be pulled below Source by at least V_GS(th). Source is at 12V, so Gate needs to be near 12V - V_GS(th): a 3.3V GPIO can't do that
-- Needs extra level shifting or a gate driver IC: more complex
-- Not recommended for beginners
+
+PMOS sits between the supply and the load. Its Gate must be pulled below the supply to turn it on, so it has to rise to nearly 12V, which a 3.3V pin cannot reach. That is why I do not recommend it to begin with.
 
 ## PWM Dimming
 
-PWM doesn't reduce voltage: it switches between full-on and full-off at high speed, varying the on-time ratio (duty cycle) to control average power. The eye integrates those pulses, so once the switching is faster than the flicker-fusion frequency the LED reads as continuously lit.
+PWM stands for pulse-width modulation. It does not lower the voltage: it switches the load fully on and off, very fast, and varies how long each "on" burst lasts. The average power follows that ratio, so the lamp looks dimmer or brighter.
 
-- LED dimming: >200Hz avoids visible flicker. Arduino defaults of 490Hz/980Hz are fine
-- Motor control: typically several kHz to 20kHz
-- Too low → visible flicker or audible whine
-- Too high → switching losses increase (the MOSFET spends more time in the transition region)
+The switching has to be faster than your eye can follow. Past roughly 200 switches a second an LED looks steady. The Arduino default of about 490 a second is well above that.
+
+Too slow and you see flicker or hear a whine; very fast and the MOSFET spends more of each cycle half-on, which turns into heat.
 
 ## Why You Need a Freewheeling Diode
 
-**Applies to**: motors, fans, solenoids, relay coils: anything with a wound inductor.
+This applies to anything built from a coil: motors, fans, solenoids, relay coils.
 
-When the MOSFET turns off, the inductor's magnetic field collapses, generating a reverse high-voltage spike that can be several times the supply voltage: enough to blow the MOSFET's Drain-Source junction. A freewheeling diode (1N4148 for low power, SS14 or similar Schottky for higher current) placed anti-parallel across the inductive load gives that stored energy a safe path to recirculate.
+A coil stores energy in a magnetic field. When the MOSFET switches off, that field collapses and pushes a voltage spike back the other way, several times the supply voltage, which can destroy the MOSFET.
 
-Pure resistive loads like LEDs generally don't need one, but it doesn't hurt to add it.
+The fix is one diode across the coil. A diode is a one-way valve for current: it blocks the normal direction and opens only for the spike, so the stored energy drains around a safe loop.
+
+An LED is not a coil, so it does not need this.
 
 ## MOSFET vs BJT (NPN/PNP)
 
@@ -112,7 +121,9 @@ Pure resistive loads like LEDs generally don't need one, but it doesn't hurt to 
 | High-freq PWM    | Average          | Excellent      |
 | High current     | Average          | Excellent      |
 
-BJTs are current-controlled: you have to keep feeding base current to stay on. MOSFETs are voltage-controlled: once the Gate capacitance is charged, basically zero current flows. In modern DC power switching, MOSFETs win across the board. BJTs still appear in analog circuits (amplification, linear regulation) and some high-voltage niches, but for driving loads from an MCU? MOSFET every time.
+A BJT is the older kind of transistor. It switches on current instead of voltage. You must keep feeding current into one pin, the base, for as long as it should stay on, and that current is wasted as heat. NPN and PNP are its two polarities.
+
+A MOSFET switches on voltage: once its Gate is charged, almost no current flows in, so the MCU holds it on nearly for free. BJTs still suit analog circuits, where their current behaviour is the point.
 
 ## Relay vs MOSFET
 
@@ -125,44 +136,45 @@ BJTs are current-controlled: you have to keep feeding base current to stay on. M
 | Silent          | Audible click       |
 | DC only         | AC/DC both          |
 
-**I use a relay when**: switching 220V AC, need true physical disconnect (zero leakage current), or need full galvanic isolation.
-**I use a MOSFET when**: LEDs, motors, fans, battery-powered products: DC loads that need speed, silence, and PWM control.
+A relay is a mechanical switch, not a semiconductor: a small coil pulls a metal contact closed. It can switch AC as well as DC, and when it is open there is a real physical gap, so nothing leaks across.
+
+I use a relay for mains AC, for that physical gap, or when the two sides must stay completely separate. I use a MOSFET for DC loads like LEDs, motors and fans, where I want fast, silent PWM switching.
 
 ## Optocoupler: When You Need True Electrical Isolation
 
-An optocoupler transmits signals using light: an internal LED shines on a photosensitive receiver. There's no conductive path between input and output: only photons. This lets a 3.3V MCU safely control 220V equipment, while also breaking ground loops and improving noise immunity.
+An optocoupler passes a signal as light: inside, a small LED and a light sensor face each other across a gap, so no wire joins the two sides.
 
-Classic usage: MCU GPIO → current-limiting resistor → optocoupler LED → optocoupler transistor → driver circuit → TRIAC or relay → mains load. The low-voltage and high-voltage sides are completely isolated.
+That is what makes it safe next to mains voltage: a 3.3V microcontroller can switch mains equipment, and the mains side has no conductive path back into it. It also keeps the two sides from sharing a ground.
+
+The usual chain is: MCU pin, a current-limiting resistor, the optocoupler, the driver stage, and finally the mains load.
 
 ## Industrial Product Analysis: My Framework
 
-When I look at any product's power stage, I ask five questions:
+When I open a product and want to understand its power section, this is the order I work in.
 
 1. Where does power enter?
 2. Which parts are the high-power loads?
 3. What drives them (MOSFET/relay)?
 4. How does the MCU control them (GPIO/PWM)?
-5. What protection is in place (freewheeling diode, TVS, fuse, optocoupler)?
+5. What protection is in place (freewheeling diode, voltage clamp, fuse, optocoupler)?
 
-Common MOSFET-driven products: LED lights, RGB strips, fans, motors, water pumps, solenoid locks, solenoid valves, USB PD power supplies, Li-ion battery management, DC-DC converters, drone and EV motor controllers.
+LED lamps, RGB strips, fans and pumps all follow this pattern.
 
 ## Design Notes: Lessons Learned
 
-**Pick a logic-level NMOS, and check which gate voltage it is specified at.** Standard MOSFETs often need ~10V of gate drive to reach their rated R_DS(on), which a 3.3V GPIO cannot provide. Logic-level parts are characterised at a lower gate voltage, but read which one: the L in IRLZ44N is IR's marker for a logic-level gate, and that part quotes R_DS(on) at V_GS = 5V, so a 3.3V design wants a device specified at 2.5–3.3V. Check the datasheet row for YOUR gate voltage, not the headline number at V_GS = 10V.
+**Choose a MOSFET that turns on fully at 3.3V.** Many are built for a 10V control signal and only half-open at 3.3V. A half-open switch acts like a resistor, and a resistor carrying 2A gets hot. The ones you want are sold as "logic-level".
 
-**The gate resistor is not optional.** In series, 10–100Ω: the gate looks like a capacitor, and every GPIO edge has to charge or discharge it, so the instantaneous current can be high enough to stress the pin. The series resistor limits it and suppresses parasitic oscillation. Gate to source, 10kΩ: at power-up or whenever the GPIO is high-impedance, the gate is otherwise floating. A floating gate can sit half-on, which leaves the channel at high resistance and burning real power. The pull-down holds it at 0V whenever nothing is driving it, and it is never worth skipping in production.
+**Never leave the Gate floating.** Put a 10kΩ resistor from the Gate to ground. Otherwise the Gate sits at an undefined voltage whenever the MCU is not driving it, and it can turn the switch partly on and burn power for nothing.
 
-**Inductive loads must have a freewheeling diode.**
+**Put a small resistor in series with the Gate, 10 to 100Ω.** The Gate acts like a small capacitor, so every flip sends a brief surge of current that the resistor keeps off the pin.
 
-**Common ground is not optional either.** The MCU's GND and the supply's GND have to be connected directly: without a shared reference the gate drive has no return path and the MOSFET never switches. This is the number one beginner trap. If you genuinely need the MCU and the load separated, use an optocoupler rather than trying to keep the two grounds apart.
+**Inductive loads must have a freewheeling diode.** See above. It is not optional.
 
-**MOSFET selection checklist:**
-- V_GS(th): gate threshold voltage (where it *starts* turning on, not fully on)
-- **R_DS(on): on-resistance (lower is always better: heat = I² × R_DS(on))**
-- I_D max current (leave margin)
-- V_DS max voltage (leave margin too)
+**Join the grounds.** The MCU ground and the supply ground must be connected directly. Without a shared reference the Gate voltage means nothing and the switch never turns on. This is the classic beginner trap. If you need the two sides truly separate, use an optocoupler.
 
-**PWM frequency**: LED dimming >200Hz avoids flicker (Arduino 490Hz/980Hz is fine), motor control several kHz to 20kHz. Too low → flicker/noise, too high → switching loss heat.
+**Save these until the basics feel normal:**
+- Picking a MOSFET means comparing four datasheet numbers: gate threshold, on-resistance, maximum current and maximum voltage.
+- For the freewheeling diode, a 1N4148 suits a small relay coil, an SS14 bigger currents.
 
 ![MOSFET Illustration 1](./02-mosfet-illustration-1.png)
 ![MOSFET Illustration 2](./03-mosfet-illustration-2.png)

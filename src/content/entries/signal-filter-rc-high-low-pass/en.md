@@ -1,7 +1,7 @@
 ---
 title: "Signal Filtering: RC High-Pass & Low-Pass"
 date: 2026-08-10
-description: "One resistor, one capacitor and one formula behind anti-aliasing, debounce, PWM smoothing and audio coupling: how fc = 1/(2πRC) behaves in the frequency and the time domain, and where each version shows up."
+description: "One resistor and one capacitor can take out noise, smooth a PWM signal or block a DC offset. This is what that pair actually does, and when to reach for it."
 
 type: note
 category: Electronics
@@ -23,24 +23,25 @@ lang: en
 
 translationKey: signal-filter-rc-high-low-pass
 ---
-
 # RC Passive Filters: Two Components, Everywhere You Look
 
-RC filters were one of the first things I learned in analog circuits. Just a resistor and a capacitor: looks almost too simple. But then I kept running into them in real projects: anti-aliasing before ADCs, button debounce, audio inter-stage coupling, PWM smoothing... all RC filter variants. Once you understand how capacitive reactance changes with frequency, all these circuits trace back to the same core formula.
+By the end of this you will know how one resistor and one capacitor tell fast signals apart from slow ones. You will also know which way round to fit them, and how to choose the two values. I meet the same pair everywhere: in front of measuring chips, behind noisy supplies, on bouncing buttons.
 
 ## Core Principle: Capacitor Impedance Varies With Frequency
 
-Capacitive reactance: **Xc = 1/(2πfC)**. Higher frequency → lower impedance. Lower frequency → higher impedance. Pair this with a resistor divider and you get different attenuation for different frequencies.
+A resistor holds current back by the same amount whatever the signal does. A capacitor does not: the faster the signal, the less it gets in the way. That speed-dependent resistance is called impedance.
 
-- **At low frequencies**: the capacitor is effectively an open circuit (high impedance). What that does to the signal depends on where it sits: in series it blocks, to ground it passes.
-- **At high frequencies**: the capacitor is effectively a short (low impedance).
-- **Cutoff frequency fc**: when |Xc| = R, f = 1/(2πRC), output power drops to half (-3dB).
+Beside a resistor, the capacitor splits a fast signal differently from a slow one. That is filtering.
 
-That one formula is probably the most-used line in my notebook: debounce circuits, audio filters, ADC front-ends, it shows up everywhere.
+- **Slow signal (low frequency)**: the capacitor looks like a break in the wire.
+- **Fast signal (high frequency)**: it looks like a plain piece of wire.
+- **The cutoff frequency** is where the two are equally hard to pass. Below it signals come through, above it they get squashed. It is written fc: **fc = 1/(2πRC)**.
+
+R is in ohms, C in farads, fc in hertz. Make either bigger and the cutoff drops, so you never have to calculate it.
 
 ## RC Low-Pass Filter
 
-### Circuit
+### What the circuit looks like
 
 ```
 Vin ── R ──┬── Vout
@@ -50,31 +51,31 @@ Vin ── R ──┬── Vout
            GND
 ```
 
-Resistor in series, capacitor to ground. Low frequencies pass through the resistor to the output. High frequencies get shunted to ground by the capacitor: the output voltage stays low.
+The resistor sits in the signal path; the capacitor hangs off the side to ground, the 0V line everything is measured against. Slow signals walk through the resistor, fast ones take the capacitor and end at ground.
 
-### Characteristics
+### What it does to fast and slow signals
 
-- Cutoff: **fc = 1/(2πRC)**
-- Above fc, attenuation rolls off at -20dB/decade
-- DC gain = 1 (0dB): DC passes through unchanged
+- Below the cutoff the signal comes out roughly as it went in.
+- Above it, ten times the frequency means ten times smaller out.
+- A steady voltage passes straight through.
 
-### Where I Actually Use Low-Pass Filters
+### Where I actually use it
 
-- **Anti-aliasing before ADC**: anything above the Nyquist frequency (fs/2) must be eliminated before sampling, or it folds back as aliasing. Stick an RC low-pass right at the ADC input pin.
-- **Power ripple suppression**: DC/DC switching noise: use RC (or LC) low-pass to knock it down.
-- **Hardware button debounce**: 10kΩ + 100nF, fc ≈ 159Hz. A switch bounces for roughly 0.1–10ms, and the RC only shaves the edges: a single pole leaves the output creeping through the logic threshold, so I pair it with a Schmitt-trigger input or software debounce.
-- **PWM to analog voltage**: feed PWM square wave through a low-pass with fc well below the PWM frequency, and you get smooth DC proportional to duty cycle. A simple DAC.
-- **Audio bass extraction**: in crossovers and tone controls, the low-pass picks out the low frequencies for the bass path.
+- **In front of a chip that measures voltage.** Such a chip, an ADC, reads many times a second; anything faster than that comes back as nonsense.
+- **Behind a switching power supply**, which leaves fast rubbish on its output.
+- **On a bouncing button.** 10kΩ with 100nF smooths it out, though only the edges, so I still confirm the press in software.
+- **On a fast on/off pin**, called PWM: the low-pass hands you the average, a cheap adjustable voltage.
+- **In a speaker crossover**, sending the low notes to the big speaker.
 
-### Design Notes
+### Things to watch out for
 
-- The next stage's input impedance must be >> R, or the divider ratio shifts and your cutoff frequency drifts. If the next stage is low-Z, buffer it.
-- A single RC stage gives only -20dB/decade. Need steeper roll-off? Cascade stages (buffer between them) or go active.
-- Capacitor type matters in the signal path. C0G/NP0 or film caps preferred. X7R ceramics have piezoelectric effects and nonlinearity: they introduce distortion.
+- Whatever you hang on the output must be harder to get through than R, or your cutoff moves.
+- One RC stage is gentle. Chain two stages if you need a sharper cut, or use an active filter.
+- In a signal path, pick a capacitor meant for signals. Some cheap ceramic ones distort.
 
 ## RC High-Pass Filter
 
-### Circuit
+### What the circuit looks like
 
 ```
 Vin ── C ──┬── Vout
@@ -84,31 +85,33 @@ Vin ── C ──┬── Vout
            GND
 ```
 
-Capacitor in series, resistor to ground. High frequencies sail through the capacitor to the output. Low frequencies get blocked by the capacitor's high impedance, and whatever residual gets through is pulled to ground by the resistor.
+Same two parts, swapped. The capacitor sits in the signal path and the resistor goes down to ground. Fast signals pass through the capacitor easily. Slow ones cannot, and whatever is left is pulled to 0V.
 
-### Characteristics
+### What it does to fast and slow signals
 
-- Cutoff: **fc = 1/(2πRC)**: same formula
-- Below fc, attenuation at -20dB/decade
-- At sufficiently high frequencies, gain approaches 1 (0dB)
+- Above the cutoff the signal comes out roughly as it went in.
+- Below it the signal shrinks at the same rate.
+- The cutoff uses the same formula: **fc = 1/(2πRC)**.
 
-### Where I Actually Use High-Pass Filters
+### Where I actually use it
 
-- **AC coupling / DC blocking**: strip the DC offset from a sensor signal, keep only the AC variation. Ubiquitous in audio and sensor circuits.
-- **Audio inter-stage coupling**: a capacitor between stages isolates their different DC operating points so they don't mess with each other.
-- **PIR sensor signal extraction**: human body movement causes AC infrared changes. A high-pass filters out the slow ambient temperature drift, leaving only the useful motion signal.
-- **ECG / bio-potential signals**: electrode half-cell potentials create DC offsets of tens to hundreds of mV. A high-pass removes the offset so you can safely amplify the actual heartbeat waveform.
-- **Audio treble extraction**: in crossovers, the high-pass sends high frequencies to the tweeters.
+- **To strip the fixed part off a sensor signal.** Many sensors give a steady voltage with a small wobble on top, and the wobble is the information.
+- **Between two audio stages**, which sit at different steady voltages. The capacitor passes the sound and not the steady voltage.
+- **In a motion sensor.** A person walking past changes the infrared quickly, a warming room slowly. The high-pass keeps the person.
+- **On heart signals.** The electrodes bring a large steady voltage of their own; remove it and the tiny heartbeat is big enough to measure.
+- **In a speaker crossover**, sending the high notes to the small speaker.
 
-### Design Notes
+### Things to watch out for
 
-- Set fc well below your minimum signal frequency so in-band attenuation is negligible (fc << f_min).
-- The source output impedance and R form a divider that affects passband gain: R needs to be large enough.
-- Don't go oversized on coupling caps. Bigger C means longer settling time at power-up before the DC level stabilizes.
+- Set the cutoff well below the slowest signal you care about, or you lose part of it.
+- Whatever feeds the filter has resistance too. It adds to R, so R has to stay big enough to be in charge.
+- Do not oversize the capacitor; a big one takes longer to settle at power-up.
 
 ## RC Band-Pass Filter
 
-Cascade a high-pass followed by a low-pass, with a buffer between them. The drawing omits that buffer: without it the second stage loads the first and both cutoffs move.
+Put a high-pass first and a low-pass after it, and only the middle survives. The first stage blocks what is too slow, the second what is too fast.
+
+The second stage pulls on the first and drags both cutoffs. If the numbers matter, buffer between them: a stage that copies the voltage without drawing current. The drawing leaves it out.
 
 ```
 Vin ── C1 ──┬── R1 ──┬── Vout
@@ -118,33 +121,20 @@ Vin ── C1 ──┬── R1 ──┬── Vout
             GND      GND
 ```
 
-- Lower cutoff f_L = 1/(2π × R2 × C1), set by the high-pass stage
-- Upper cutoff f_H = 1/(2π × R1 × C2), set by the low-pass stage
-- Bandwidth BW = f_H - f_L, center frequency f_0 = √(f_L × f_H)
-
-Applications: audio equalizers, communication receiver IF filtering, extracting and detecting signals at specific frequencies.
+Use it for one band of frequencies and nothing else: a tone control, or one signal out of a radio.
 
 ## Don't Forget the Time Domain: τ
 
-RC circuits are just as important in the time domain:
+Everything so far was about frequency. The same two parts also set how fast the output can change, which is what matters the moment you switch something on.
 
-- **Time constant τ = RC**
-- Charging: Vout(t) = V_final × (1 - e^(-t/τ))
-- Discharging: Vout(t) = V_initial × e^(-t/τ)
-- After 1τ: ~63% change. After 5τ: >99%, effectively settled.
+Charge the capacitor through the resistor and the voltage climbs, fast then slower. The trip is set by **τ = RC** (R in ohms, C in farads, τ in seconds). After one τ you are about two thirds of the way; after five, it is done.
 
-The same RC network acts as a filter in the frequency domain and controls rise/fall time in the time domain. Timing circuits, power-on reset delays, debounce sequencing, pulse shaping: they all depend on τ.
+A bigger R or C means a slower circuit. Anything that has to wait, a power-on delay or a debounce timer, is built this way.
 
 ## Active Filters: What's Next
 
-Passive RC filters have three clear limitations:
-- High output impedance, weak load-driving ability
-- Attenuation only: no gain
-- Single-stage -20dB/decade isn't very steep
+Passive filters, the resistor-and-capacitor kind, have three limits: weak output, smaller-only, and a gentle cut.
 
-Active filters add an op-amp after the RC network and solve all of these: buffering for drive strength, gain, and feedback to shape the response:
-- **Sallen-Key topology**: the most common second-order active filter
-- **Multiple Feedback (MFB)**: better for high-Q applications
-- **Switched-capacitor filters**: clock-tunable cutoff, great for integration
+An amplifier chip after the RC network fixes all three: a strong output, gain, and feedback to shape the cut. That is an active filter. The names you will meet are **Sallen-Key** (most common), **multiple feedback** (sharper), and **switched-capacitor** (cutoff set by a clock).
 
-But honestly? Getting solid on passive RC filters first is the right move. They're the foundation of all filter design, and half the time a simple RC is all you actually need. No reason to overcomplicate it.
+But learn the passive version first. Often a plain RC is all the circuit needs.

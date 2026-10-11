@@ -1,7 +1,7 @@
 ---
 title: "Signaalversterking: op-amp en spanningscomparator"
 date: 2026-08-10
-description: "Op-amps en comparatoren vanuit de twee regels die ze definiëren: de versterkconfiguraties, de klassieke schakelingen (opteller, aftrekker, integrator, differentiator, differentiële versterker) met de hand afgeleid, en de sensorfront-ends waarin ze opduiken."
+description: "Een sensor geeft een signaal dat te klein is om te meten. Dit is hoe een op-amp het groter maakt zonder het te verpesten, en hoe een comparator er een simpel ja of nee van maakt."
 
 type: note
 category: Elektronica
@@ -30,50 +30,43 @@ translationKey: signal-amplifier-opamp-comparator
 
 Bronnen: [Bilibili](https://www.bilibili.com/video/BV1VeQdYUELe) [Zhihu](https://zhuanlan.zhihu.com/p/1928161464247620032)
 
-Toen ik de twee eigenschappen hieronder voor het eerst echt begreep, vielen ineens een heleboel schakelingen op hun plaats. Een **operationele versterker** is in wezen een differentiële versterker met een extreem hoge versterkingsfactor. Hij vertrouwt op een extern terugkoppelingsnetwerk om precieze, beheersbare spanningsversterking te bereiken. In echte projecten is zijn belangrijkste taak om zwakke analoge signalen van sensoren op te nemen, te versterken, te filteren, te conditioneren en om te zetten in iets dat de MCU betrouwbaar kan uitlezen.
+Aan het eind van dit stuk weet je wat een op-amp doet, waarom zijn twee ingangspinnen zich gedragen zoals ze doen, en welke van de klassieke schakelingen je pakt als het signaal van een sensor te zwak is voor de microcontroller. Ik schreef het nadat de twee regels hieronder eindelijk op hun plaats vielen: een heleboel schakelingen zagen er ineens niet meer uit als magie.
 
-## Kernkenmerken
+## De twee regels die bijna alles verklaren
 
-- **Virtueel open**: de ingangen van een op-amp hebben een zeer hoge impedantie en trekken vrijwel geen stroom. Zie ze als probes die de signaallijn aanraken zonder die te beïnvloeden. In de analyse behandel je beide ingangen gewoon als open circuits. Dit wordt het virtueel open genoemd, een afkorting voor "schijnbaar open circuit".
-- **Virtuele kortsluiting**: bij aanwezigheid van negatieve terugkoppeling doet de op-amp zijn uiterste best om de spanning op de inverterende ingang (-) gelijk te maken aan die op de niet-inverterende ingang (+). Elke versterkingsberekening is hierop terug te voeren.
+Bijna elke op-ampschakeling die je ooit leest is een van deze twee regels in een bepaalde vorm, dus het loont om ze eerst goed te krijgen.
 
-## Overige kenmerken
+**Virtueel open.** De twee ingangspinnen trekken bijna geen stroom. In alle berekeningen hieronder mag je doen alsof ze helemaal geen stroom trekken, en ze behandelen als pinnen waar niets aan hangt. Dat is wat de naam zegt: open, maar niet echt.
 
-- **Uitgangsverzadiging**: de uitgang wordt begrensd door de voedingsrails, en hoe dicht hij daarbij komt hangt van de op-amp af. Als de theoretisch versterkte waarde de voeding overschrijdt, clipt de uitgang en ben je niet meer lineair.
-- De **spanningsvolger** is het speciale geval met Rf=0, Rg=∞, wat een versterking van 1 geeft. Hij versterkt de spanning niet; in plaats daarvan zet hij een zwak, hoogimpedant sensorsignaal om in een sterk, laagimpedant stuursignaal, en buffert hij de ene trap ten opzichte van de volgende.
+**Virtuele kortsluiting.** Leg de uitgang terug naar de ingang met het - teken en je hebt een terugkoppelingslus gemaakt, dat wil zeggen dat een deel van de uitgang teruggaat naar de ingang. In die lus stuurt de op-amp zijn uitgang tot beide ingangspinnen op dezelfde spanning staan. Er verbindt niets de pinnen; de op-amp dwingt het. Elke versterkingsberekening hieronder begint hier.
 
-## Niet-inverterende versterker
+## Nog twee dingen die bepalen of het werkt
 
-Het signaal komt binnen op de (+) ingang. De terugkoppelingsweerstand Rf (R1) verbindt de uitgang met (-), en Rg (R2) loopt van (-) naar aarde. De uitgang stijgt actief totdat de spanningsdeler gevormd door Rf en Rg gelijk is aan de ingangsspanning.
+**Uitgangsverzadiging.** De uitgang komt niet voorbij de voedingsspanning. Vraag je een grotere uitslag dan de voeding toestaat, dan stopt de uitgang gewoon op zijn grens en clipt hij: onder die grens volgt hij de ingang, erboven is de vorm weg.
+
+**Spanningsvolger.** Zet de versterking op precies 1 en de uitgang kopieert de ingangsspanning, maar kan nu een zware belasting aandrijven. Je zet er een tussen een zwakke sensor en de volgende trap, zodat de sensor niet wordt omlaaggetrokken door wat erachter komt.
+
+## De versterker die het signaal nauwelijks aanraakt
+
+Gebruik deze als het signaal van iets zwaks komt, zoals een sensor. Het signaal gaat naar de + ingang, en die trekt bijna geen stroom, dus de sensor merkt nauwelijks dat er iets aan hangt. Twee weerstanden bepalen hoeveel groter de uitgang wordt: Rf loopt van de uitgang terug naar de - ingang, en Rg loopt van de - ingang naar aarde. De uitgang stijgt tot de spanning op de - ingang gelijk is aan die op de + ingang.
 
 ### Formule: Vout = Vin × (1 + Rf/Rg)
 
-Afleiding:
-Vi en V- zijn virtueel kortgesloten, dus Vi = V- …(a)
-Door het virtueel open loopt er geen stroom de inverterende ingang in. De stroom door R1 en R2 is gelijk; noem die I:
-I = Vout / (R1 + R2) …(b)
-Vi is gelijk aan de spanning over R2: Vi = I × R2 …(c)
-Uit (a), (b), (c) volgt: Vout = Vi × (R1 + R2) / R2
+Lees het als: de uitgang is de ingang maal een plus de verhouding van de twee weerstanden. Maak Rf gelijk aan Rg en de versterking is 2. Maak Rf negen keer Rg en de versterking is 10. Door die 1 in de formule kan de versterking nooit onder 1 komen, dus deze schakeling maakt een signaal alleen maar groter.
 
 ![Niet-inverterende versterker](./03-non-inverting-amp.png)![Inverterende versterker](./04-inverting-amp.png)
 
-## Inverterende versterker
+## De versterker die het signaal ondersteboven zet
 
-Het signaal komt binnen op de inverterende ingang (-); de niet-inverterende ingang (+) ligt aan aarde. De uitgang is 180° in tegenfase met de ingang: gaat de ingang omhoog, dan gaat de uitgang omlaag.
+Gebruik deze als je signalen bij elkaar wilt optellen, of een stroom in een spanning wilt omzetten. Het signaal gaat naar de - ingang en de + ingang gaat naar aarde, dus hij beweegt de andere kant op: omhoog erin, omlaag eruit. De prijs is dat de - ingang stroom uit de bron trekt, dus hij past bij signaalbronnen die dat kunnen leveren. Rin zit tussen het signaal en de - ingang, en Rf zit tussen de - ingang en de uitgang.
 
 ### Formule: Vout = (-R2/R1) × Vi
 
-Afleiding:
-De niet-inverterende ingang ligt aan aarde = 0V. De virtuele kortsluiting dwingt de inverterende ingang ook naar 0V. Virtueel open betekent dat er bijna geen stroom de op-amp-ingangen in of uit gaat, dus R1 en R2 staan effectief in serie met dezelfde stroom door beide.
+Het minteken betekent dat de uitgang ondersteboven staat, en de grootte van de versterking is Rf gedeeld door Rin. Die versterking kan ook kleiner dan 1 zijn, dus deze schakeling kan een signaal zowel groter als kleiner maken.
 
-Stroom door R1: I1 = (Vi - V-) / R1 …(a)
-Stroom door R2: I2 = (V- - Vout) / R2 …(b)
-V- = V+ = 0 …(c)
-I1 = I2 …(d)
+Omdat de + ingang aan aarde ligt, houdt de op-amp de - ingang ook op aarde, ook al verbindt niets hem daarmee. Dat punt heet de virtuele aarde, en het is precies waarom meerdere ingangsstromen op één plek kunnen optellen.
 
-Samen opgelost: Vout = (-R2/R1) × Vi
-
-## Niet-inverterend versus inverterend
+## Welke moet ik hebben?
 
 | Eigenschap        | Niet-inverterend          | Inverterend                  |
 | --------------- | ---------------------- | -------------------------- |
@@ -83,163 +76,88 @@ Samen opgelost: Vout = (-R2/R1) × Vi
 | Virtuele aarde  | Nee                     | Ja, op de inverterende ingang    |
 | Typisch gebruik     | Hoogohmige buffer, sensoren | Audiomix, inversie, I-V  |
 
-De **virtuele aarde** is vooral belangrijk in de inverterende configuratie. Omdat de (+) ingang aan echte aarde ligt, trekt de virtuele kortsluiting ook de (-) ingang naar ~0V; maar deze 0V is geen echte aardverbinding. De uitgang van de op-amp houdt die actief in stand via de terugkoppelingsweerstand. De ingangsimpedantie die de signaalbron ziet, is gewoon Rin zelf, meestal een paar kΩ tot tientallen kΩ; totaal anders dan de bijna oneindige impedantie van de niet-inverterende configuratie. De inverterende ingang hangt op een onzichtbaar nulpunt.
+De regel die de meeste keuzes bepaalt is de ingangsimpedantie, oftewel hoeveel de schakeling de bron belast. De niet-inverterende ingang trekt bijna niets, dus die is veilig vóór een zwakke sensor. De inverterende ingang ziet er voor de bron uit als Rin en trekt er stroom doorheen; dat is precies wat je wilt als je stromen optelt, en precies wat je niet wilt bij een sensor met hoge impedantie.
 
-## Niet-inverterende versterker in echte producten
+## Schakelingen die je al in huis hebt
 
-Elektronische weegschalen en druksensoren, temperatuurregelaars, PIR-bewegingssensoren, motorstroommeting en audioproducten gebruiken allemaal dezelfde trap. Het zwakke differentiële signaal van een brugsensor gaat via een instrumentatieversterker (of een structuur met drie op-amps) naar de ADC, waarbij het bereik zo gekozen wordt dat er niets clipt. Het microvoltsignaal van een thermokoppel wordt versterkt en splitst zich daarna: het ene pad naar het display, het andere naar een comparator die met een ingestelde drempel vergelijkt en een relais aanstuurt. Een PIR geeft een minuscuul AC-signaal af, dat door een op-amp-banddoorlaatfilter wordt versterkt voordat een comparator het detecteert en de verlichting triggert. De millivoltdaling over een shuntweerstand wordt versterkt en naar de MCU gestuurd voor overstroombeveiliging. Het signaal van een elektreetmicrofoon wordt AC-versterkt en gefilterd en daarna naar een eindversterker of ADC gevoerd.
+Een keukenweegschaal of druksensor geeft een piepklein verschil tussen twee draden, en de op-amp maakt daar een spanning van die de ADC kan lezen (de ADC is het deel van de microcontroller dat een spanning meet). Het bereik moet zo gekozen worden dat harde signalen niet clippen. Een thermokoppel geeft nog minder, en daar wordt het versterkte signaal twee keer gebruikt: één keer voor het display, één keer om een relais om te zetten zodra een ingestelde temperatuur wordt gepasseerd. Een PIR-bewegingssensor geeft een kleine wisselende spanning als er iets warms beweegt, en de versterker filtert die voordat een comparator (een onderdeel dat alleen ja of nee antwoordt) beslist of er een lamp aangaat. Motorstroom wordt gemeten als een kleine spanning over een weerstand in het pad van de motor, en daarna versterkt zodat de microcontroller de voeding kan afsnijden als die te hoog wordt. In audio wordt het signaal van een microfoon versterkt en gefilterd voordat het bij een eindversterker of een ADC komt.
 
-## Inverterende versterker in echte producten
+## Schakelingen met de inverterende versie
 
-Audiomixers zijn het klassieke geval: meerdere audiokanalen gaan elk door hun eigen Rin en worden opgeteld op het virtuele aardpunt, zonder dat de kanalen elkaar storen. Dezelfde trap draait een sensorsignaal dat tegengesteld aan de fysieke grootheid loopt (druk omhoog, spanning omlaag) weer goed voordat de MCU het ziet, en zet stroom om in spanning wanneer Rin helemaal wegvalt en de sensorstroom rechtstreeks de inverterende ingang in gaat, met Rf die de lineaire omzetting bepaalt (fotodiodedetectie werkt bijna altijd zo). Door inverterende en niet-inverterende trappen te combineren bouw je bovendien de differentiële versterker die een zwak signaal uit een rumoerige common-mode-omgeving haalt, iets waar industriële sensor-front-ends veelvuldig gebruik van maken.
+Audiomixers zijn het klassieke geval: elk kanaal krijgt zijn eigen ingangsweerstand, allemaal komen ze op dezelfde virtuele aarde uit, en daar tellen de stromen op. Daarom storen de kanalen elkaar niet. Dezelfde trap lost een sensor op die de verkeerde kant op wijst: sommige sensoren geven een lagere spanning als de druk stijgt, en één inverterende trap draait dat weer terug. Haal Rin weg en stuur een stroom rechtstreeks de - ingang in, en dezelfde schakeling zet stroom om in spanning, wat bijna elke fotodiodeschakeling doet (een fotodiode is een lichtsensor die stroom levert). Zet een inverterende en een niet-inverterende trap achter elkaar en je krijgt een differentiële versterker, de trap die industriële sensoren gebruiken als het signaal het verschil tussen twee draden is.
 
-## Ontwerpaantekeningen: wat ik heb geleerd
+## Wat je tegenkomt als je het echt bouwt
 
-Standaard op-amps zoals de LM358 kunnen niet tot aan de rails uitslaan. Bij een 5V-voeding komt de uitgang niet hoger dan ongeveer VCC-1.5V = 3.5V, en de ingangen werken alleen van aarde tot diezelfde 3.5V, dus een ingang van 6V zit boven de voedingsrail zelf en de op-amp gedraagt zich onvoorspelbaar. Met een ADC-referentie van 3.3V kan de op-amp voorbij full scale sturen, dus het bereik wordt aan de bovenkant door de ADC bepaald. Het versterkings-bandbreedteproduct is ongeveer 1MHz; prima voor thermische, optische en andere langzame signalen, niet voor hoogfrequente zaken.
+Een gewone op-amp zoals de LM358 kan zijn uitgang niet helemaal naar de voedingsspanning laten uitslaan. Bij een 5 V-voeding stopt hij rond 3.5 V, en voor de ingangen geldt dezelfde grens: die werken van aarde tot ongeveer 3.5 V. Zet je 6 V op een ingang, dan zit je boven de voeding zelf en gedraagt het onderdeel zich niet meer zoals bedoeld. Met een ADC van 3.3 V maakt dat uit, want de op-amp kan voorbij de full scale van de ADC sturen: het is de ADC, niet de op-amp, die de bovenkant bepaalt van wat je kunt meten. Heb je de volle uitslag nodig, neem dan een rail-to-rail op-amp, een waarvan de uitgang beide voedingsrails kan halen.
 
-Twee dingen rond de op-amp zelf zijn makkelijk te vergeten. De ingangsbiasstroom moet ergens heen, dus geef elke ingang een DC-pad naar aarde (via een weerstand, of via de bron zelf); zonder pad stort het "virtueel open" in en drift de uitgang. En 0.1μF van elke voedingspin naar aarde is niet optioneel. Staat er een comparator aan de andere kant, onthoud dan dat een kale comparator wild oscilleert wanneer de ingang in de buurt van de drempel zweeft; voeg positieve terugkoppeling toe (een grote weerstand van de uitgang naar de (+) ingang) voor een hysteresisvenster, dat geeft schoon schakelgedrag. Elke schakeling die een langzaam of rumoerig signaal vergelijkt heeft het nodig.
+Twee dingen vergeet je makkelijk. De ingangspinnen trekken nog steeds een beetje stroom, en die stroom moet ergens heen: geef elke ingang een pad naar aarde, via een weerstand of via de bron zelf, anders drift de ingangsspanning en drift de uitgang mee. En zet een condensator van 0.1 μF van elke voedingspin naar aarde, direct bij de chip. Sla die niet over.
 
-## Klassieke schakelingen: met de hand afgeleid
+Als het echt een ja/nee-beslissing is, gebruik dan een comparator, en geef hem een beetje hysteresis: één weerstand van de uitgang terug naar de + ingang maakt een kleine dode zone tussen inschakelen en uitschakelen. Zonder die zone klappert de uitgang zodra de ingang bij de drempel hangt, en elke schakeling die een langzaam of rumoerig signaal vergelijkt heeft die dode zone nodig.
 
-### Opteller (inverterend, virtuele aarde)
+## De klassieke schakelingen en waar ze voor dienen
+
+Ik heb ze met de hand afgeleid toen ik ze aan het leren was. Hier staat waar elke schakeling voor dient en wat hij met het signaal doet, zonder de algebra.
+
+### Twee spanningen bij elkaar optellen (inverterende ingang)
 ![Opteller 1](./05-adder-circuit-1.png)
 
-Uit de virtuele kortsluiting: V- = V+ = 0 …(a)
-Uit virtueel open en de wet van Kirchhoff volgt dat de som van de stromen door R2 en R1 gelijk is aan de stroom door R3:
-(V1 - V-) / R1 + (V2 - V-) / R2 = (V- - Vout) / R3 …(b)
-(a) invullen: V1/R1 + V2/R2 = -Vout/R3
-Als R1 = R2 = R3, dan: -Vout = V1 + V2
+Beide ingangen gaan via hun eigen weerstand naar de - ingang, die op de virtuele aarde ligt. Omdat dat punt niet kan bewegen, tellen de stromen van de twee ingangen daar op. Met drie even grote weerstanden is de uitgang de som van de twee ingangen, geïnverteerd: de grootte klopt, het teken staat op zijn kop.
 
-### Opteller (niet-inverterende ingang)
+### Twee spanningen bij elkaar optellen (niet-inverterende ingang)
 ![Opteller 2](./06-adder-circuit-2.png)
 
-Door het virtueel open loopt er geen stroom de niet-inverterende ingang in. De stroom door R1 is gelijk aan de stroom door R2. Evenzo is de stroom door R4 gelijk aan de stroom door R3:
-(V1 - V+) / R1 = (V+ - V2) / R2 …(a)
-(Vout - V-) / R3 = V- / R4 …(b)
-Uit de virtuele kortsluiting: V+ = V- …(c)
-Als R1 = R2 en R3 = R4, dan volgt uit het bovenstaande:
-V+ = (V1 + V2) / 2, V- = Vout / 2
-Dus: Vout = V1 + V2
+Dezelfde som, anders opgebouwd. De twee ingangen komen via R1 en R2 op de + ingang uit, en R3 en R4 vormen de terugkoppeldeler. Met R1 = R2 en R3 = R4 is de uitgang de som van de twee ingangen, deze keer zonder inversie.
 
-### Aftrekker
+### De ene spanning van de andere aftrekken
 ![Aftrekker](./07-subtractor-circuit.png)
 
-Uit virtueel open volgt dat de stroom door R1 gelijk is aan de stroom door R2. Evenzo is de stroom door R4 gelijk aan de stroom door R3:
-(V2 - V+) / R1 = V+ / R2 …(a)
-(V1 - V-) / R4 = (V- - Vout) / R3 …(b)
-Als R1 = R2: V+ = V2 / 2 …(c)
-Als R3 = R4: V- = (Vout + V1) / 2 …(d)
-Uit de virtuele kortsluiting: V+ = V- …(e)
-Dus: Vout = V2 - V1; de klassieke aftrekker.
+Elke ingang krijgt een weerstand naar een van de op-ampingangen, en de terugkoppelweerstanden zijn per paar gelijk. Welke ingang op de + pin uitkomt is degene die je houdt, en de ingang aan de - kant wordt ervan afgetrokken. Met gelijke weerstanden is de uitgang precies dat verschil.
 
-### Integrator
+### De ingang over de tijd optellen (integrator)
 ![Integrator](./08-integrator-circuit.png)
 
-Uit de virtuele kortsluiting volgt dat de spanning op de inverterende ingang gelijk is aan die op de niet-inverterende ingang. Uit virtueel open volgt dat de stroom door R1 gelijk is aan de stroom door C1.
+Vervang de terugkoppelweerstand door een condensator en de schakeling doet iets anders: hij telt op wat er binnenkomt. Houd de ingang stil en de uitgang blijft bewegen, als een stopwatch die nooit stopt. Een constante ingang laat de uitgang in een rechte lijn oplopen, en dat loopt door tot de uitgang de voedingsrail bereikt en daar stopt.
 
-Stroom door R1: i = V1 / R1
-Stroom door C1: i = C × dUc/dt = -C × dVout/dt
-Dus: Vout = (-1/(R1 × C1)) ∫ V1 dt
-
-De uitgangsspanning is evenredig met de integraal van de ingangsspanning over de tijd. Is V1 een constante spanning U, dan:
-Vout = -U × t / (R1 × C1)
-
-t is de tijd en Vout is een rechte lijn die lineair van 0 richting de negatieve voeding oploopt, tot de uitgang die rail bereikt.
-
-### Differentiator
+### Reageren op hoe snel de ingang verandert (differentiator)
 ![Differentiator](./09-differentiator-circuit.png)
 
-Uit virtueel open volgt dat de stroom door condensator C1 en weerstand R2 gelijk is. Uit de virtuele kortsluiting volgt dat de op-amp-ingangen op gelijke spanning staan:
-Vout = -i × R2 = -(R2 × C1) dV1/dt
+Het spiegelbeeld: een condensator in de ingang en een weerstand in de terugkoppeling. Deze reageert op verandering, niet op niveau. Houd de ingang stil en de uitgang blijft op nul; laat de ingang springen en je krijgt een piek de andere kant op.
 
-Is V1 een plotseling aangebrachte gelijkspanning, dan produceert Vout een scherpe puls in de tegengestelde richting.
-
-### Differentiële versterker
+### Het verschil tussen twee draden lezen (differentiële versterker)
 ![Differentiële versterker](./10-differential-amplifier.png)
 
-Uit de virtuele kortsluiting: Vx = V1 …(a), Vy = V2 …(b)
-Uit virtueel open volgt dat er geen stroom de op-amp-ingangen in loopt. R1, R2 en R3 staan effectief in serie met dezelfde stroom door elk:
-I = (Vx - Vy) / R2 …(c)
-Dus: Vo1 - Vo2 = I × (R1 + R2 + R3) = (Vx - Vy)(R1 + R2 + R3) / R2 …(d)
+Dit is de schakeling voor een signaal dat bestaat als het verschil tussen twee draden. De eerste trap meet dat verschil over de middelste weerstand, en de keten weerstanden eromheen bepaalt hoe vaak dat verschil wordt vermenigvuldigd. Een tweede trap trekt de ene kant van de andere af, zodat je één uitgang krijgt. Wat beide draden in gelijke mate oppikken heft elkaar op en wordt niet versterkt.
 
-Uit virtueel open volgt dat de stroom door R6 gelijk is aan de stroom door R7. Als R6 = R7: Vw = Vo2 / 2 …(e)
-Evenzo, als R4 = R5: Vout - Vu = Vu - Vo1, dus: Vu = (Vout + Vo1) / 2 …(f)
-Uit de virtuele kortsluiting: Vu = Vw …(g)
-Uit (e), (f), (g): Vout = Vo2 - Vo1 …(h)
-Uit (d), (h): Vout = (Vy - Vx)(R1 + R2 + R3) / R2
-
-De term (R1+R2+R3)/R2 is een constante die de versterkingsfactor voor het verschil (Vy - Vx) bepaalt. Dit is de differentiële versterker.
-
-### Stroomdetectie (4~20mA)
+### Een sensorstroom van 4~20mA lezen
 ![Stroomdetectie](./11-current-detection.png)
 
-Veel controllers accepteren een stroom van 0~20mA of 4~20mA van instrumentatie. Dit circuit zet die stroom om in een spanning voor de ADC.
+Sommige industriële transmitters sturen een stroom in plaats van een spanning: 4 mA onderaan hun bereik en 20 mA bovenaan, en controllers accepteren vaak een stroom van 0~20mA of 4~20mA. Stuur die stroom door een weerstand van 100Ω en er wordt 0.4~2V van. De versterker vermenigvuldigt dat met 2.2, ingesteld door de weerstanden van 22k en 10k, dus de ADC ziet 0.88~4.4V. De uitgang komt er negatief uit; draai de stroom om en hij is positief.
 
-De 4~20mA-stroom loopt door een meetweerstand R1 van 100Ω en veroorzaakt daarover een spanningsval van 0.4~2V.
-
-Uit virtueel open volgt dat er geen stroom de op-amp-ingangen in loopt. De stroom door R3 is gelijk aan de stroom door R5, en de stroom door R2 is gelijk aan de stroom door R4:
-(V2 - Vy) / R3 = Vy / R5 …(a)
-(V1 - Vx) / R2 = (Vx - Vout) / R4 …(b)
-Uit de virtuele kortsluiting: Vx = Vy …(c)
-Naarmate de stroom varieert van 4~20mA: V1 = V2 + (0.4~2) …(d)
-(c) en (d) in (b) invullen: (V2 + (0.4~2) - Vy) / R2 = (Vy - Vout) / R4 …(e)
-Als R3 = R2 en R4 = R5, dan geeft (e) - (a): Vout = -(0.4~2)R4/R2 …(f)
-Hier geldt R4/R2 = 22k/10k = 2.2, dus: Vout = -(0.88~4.4)V
-
-Met andere woorden: 4~20mA wordt omgezet naar -0.88~-4.4V, klaar voor de ADC. Keer de stroomrichting om en Vout = +(0.88~4.4)V.
-
-### Spanning-naar-stroomomzetter
+### Een stroom maken van een spanning
 ![Spanning-naar-stroomomzetter](./12-voltage-current-converter.png)
 
-Stroom kan in spanning worden omgezet, en spanning kan in stroom worden omgezet. De negatieve terugkoppeling van dit circuit loopt niet rechtstreeks door een weerstand; die gaat door de emitterovergang van transistor Q1. Verwar dit niet met een comparator; zolang we in het actieve gebied zitten, gelden virtuele kortsluiting en virtueel open nog steeds.
+De omgekeerde truc: een spanning erin, een stroom eruit. Hier loopt het terugkoppelpad door een transistor in plaats van rechtstreeks via een weerstand terug. Dat maakt er geen comparator van: zolang de transistor in zijn actieve gebied zit, gelden de twee regels nog steeds. De stroom door R7 wordt bepaald door de ingangsspanning gedeeld door de waarde van R7, en zolang de belasting veel kleiner is dan de weerstand van 100kΩ aan de uitgang gaat bijna al die stroom door de belasting.
 
-Uit virtueel open: (Vi - V1) / R2 = (V1 - V4) / R6 …(a)
-Evenzo: (V3 - V2) / R5 = V2 / R4 …(b)
-Uit de virtuele kortsluiting: V1 = V2 …(c)
-Als R2 = R6 en R4 = R5, dan volgt uit (a), (b), (c): V3 - V4 = Vi
-
-Dit betekent dat de spanning over R7 gelijk is aan de ingangsspanning Vi, dus de stroom door R7: I = Vi / R7
-Als RL << 100kΩ, is de stroom door RL in essentie gelijk aan die door R7.
-
-### PT100-sensorfront-end
+### Een PT100-temperatuursensor lezen
 ![PT100-sensor](./13-pt100-sensor.png)
 
-Een PT100-voorversterkercircuit in 3-draadsuitvoering. De PT100-sensor gebruikt drie draden van identiek materiaal, identieke dikte en identieke lengte. Over de brug gevormd door R14, R20, R15, Z1, de PT100 en zijn leidingweerstanden staat 2V. Z1, Z2, Z3, D11, D12, D83 en de condensatoren verzorgen filtering en bescherming; behandel ze voor de statische analyse als kortsluitingen (Z1/Z2/Z3) of open verbindingen (D11/D12/D83 en de condensatoren).
+Een PT100 is een temperatuursensor: een weerstand waarvan de waarde met de temperatuur verandert, waarna je de temperatuur in een tabel opzoekt. Er gaan drie draden naartoe, allemaal van hetzelfde materiaal en dezelfde lengte. Twee ervan voeren de stroom, en de weerstand van de kabel zelf staat in serie met de sensor, dus hij telt mee in de meting: een lange kabel ziet eruit als extra temperatuur.
 
-Uit de weerstandsdeler: V3 = 2 × R20 / (R14 + 20) = 200/1100 = 2/11 …(a)
-Uit de virtuele kortsluiting volgt dat de spanning op pinnen 6 en 7 van U8B gelijk is aan die op pin 5: V4 = V3 …(b)
-Uit virtueel open volgt dat pin 2 van U8A geen stroom trekt. De stroom door R18 is gelijk aan de stroom door R19:
-(V2 - V4) / R19 = (V5 - V2) / R18 …(c)
-Uit virtueel open volgt dat pin 3 van U8A geen stroom trekt: V1 = V7 …(d)
+De schakeling omzeilt dat door op de derde draad de spanningsval over de kabel zelf te meten. De eerste versterker zet de sensorweerstand om in een spanning, en een tweede versterker meet de kabelweerstand apart. Twee metingen, twee onbekenden, dus je kunt de sensorweerstand er alleen uit halen en de temperatuur opzoeken. Die tweede versterker moet op het punt van de kabelspanningsval aangesloten zitten en niet op de uitgang van de eerste: als hij de eerste versterker gewoon kopieerde, zouden beide metingen dezelfde onbekende bevatten en kon je ze niet scheiden.
 
-In de brug staan R15 en Z1 in serie met de PT100 en de leidingweerstanden. De spanning over de PT100 + leidingweerstanden loopt via R17 naar pin 3 van U8A:
-V7 = 2 × (Rx + 2R0) / (R15 + Rx + 2R0) …(e)
-Uit de virtuele kortsluiting: V1 = V2 …(f)
-Uit (a) tot en met (f): (V5 - V7) / 100 = (V7 - V3) / 2.2
-Vereenvoudigd: V5 = (102.2 × V7 - 100V3) / 2.2
-Oftewel: V5 = [204.4(Rx + 2R0) / (1000 + Rx + 2R0) - 200/11] / 2.2 …(g)
+### Waarom heet het "operationeel"?
 
-Nu de leidingweerstanden. De spanningsval over de onderste leidingweerstand loopt via de middelste leidingdraad, Z2 en R22 naar pin 10 van U8C.
-
-Uit virtueel open: V8 = V9 = 2 × R0 / (R15 + Rx + 2R0) …(a')
-(V6 - V10) / R25 = V10 / R26 …(b')
-Uit de virtuele kortsluiting: V10 = V8 …(c')
-Uit (a'), (b'), (c'): V6 = (102.2/2.2)V8 = 204.4R0 / [2.2(1000 + Rx + 2R0)] …(h)
-
-Met het stelsel vergelijkingen (g) en (h) kun je door V5 en V6 te meten Rx en R0 oplossen. Met Rx bekend zoek je in de PT100-tabel de temperatuur op.
-
-### Waar de naam vandaan komt
-"Operationele versterker" komt uit het tijdperk van de vroege analoge computers: deze circuits voerden letterlijk wiskundige bewerkingen uit.
+De naam komt uit de tijd van de analoge computers, toen deze schakelingen echt het rekenwerk deden: optellen, aftrekken, integreren. De naam is blijven hangen.
 
 ![Analoge computer 1](./14-analog-computer-1.png)![Analoge computer 2](./15-analog-computer-2.png)
 
-## Samenvatting: op-amp versus comparator
+## Op-amp of comparator: welke heb ik nodig?
 
-Een **comparator** is fundamenteel anders dan een op-amp: hij streeft geen lineariteit na, hij neemt direct binaire beslissingen. V+ > V- → uitgang hoog (of door een externe weerstand naar hoog getrokken), V+ < V- → uitgang laag. Slechts twee uitkomsten: ja of nee.
+Een **comparator** ziet er bijna hetzelfde uit als een op-amp en doet iets anders. Hij probeert niet lineair te blijven: hij vergelijkt zijn twee ingangen en antwoordt met één bit, hoog of laag. Sommige kunnen hun uitgang helemaal niet hoog trekken en hebben daar een weerstand naar de voeding voor nodig.
 
-**Op-amps (zoals de LM358)** werken in het **lineaire gebied**. Met negatieve terugkoppeling doen ze hun best om beide ingangen gelijk te houden (de virtuele kortsluiting houdt stand), en de uitgang is een continu variërende analoge spanning, evenredig met de ingang. Ze zijn gebouwd voor **versterking**; precisie, getrouwheid, lage vervorming. Een 0.2V-fotodiodesignaal naar 2V brengen met behoud van de golfvorm, dat is het werk van een op-amp. Je kunt een op-amp tijdelijk open-loop als comparator gebruiken, maar daar is hij niet voor ontworpen.
+**Op-amps (zoals de LM358)** zijn gebouwd om in het **lineaire gebied** te blijven. Met terugkoppeling houden ze beide ingangen gelijk, en de uitgang volgt de ingang continu. Hun werk is versterken, wat betekent dat de vorm van de uitgang moet kloppen met die van de ingang: breng een fotodiodesignaal van 0.2V naar 2V en de golfvorm komt er ongeschonden uit. Je kunt er in een noodgeval open-loop een comparator van maken, maar daar is hij niet voor gemaakt.
 
-**Comparators (zoals de LM393)** werken in **verzadiging / open-loop**. Ze laten de twee ingangen bewust uiteenlopen, en de uitgang klapt tegen een rail (hoog of laag); slechts twee toestanden. Ze zijn gebouwd voor **besluitvorming**; snelheid, schoon schakelen, eenduidige logische niveaus. Een drempel van 2.5V instellen en een LED laten branden wanneer die wordt overschreden, dat is het werk van een comparator.
+**Comparators (zoals de LM393)** zijn gebouwd om te schakelen. Ze laten de twee ingangen bewust uiteenlopen, en de uitgang klapt tegen de ene of de andere rail, dus er zijn maar twee toestanden. Hun werk is beslissen: stel een drempel van 2.5V in en de uitgang verandert op het moment dat die wordt gepasseerd.
 
 Mijn vuistregel:
 - Moet je een **continue analoge waarde lezen** (temperatuurcurve, lichtniveau, drukgolfvorm) → gebruik een **op-amp** voor buffering, versterking en filtering, en voer daarna de ADC.

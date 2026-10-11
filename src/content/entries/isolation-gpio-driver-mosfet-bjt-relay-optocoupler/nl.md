@@ -1,7 +1,7 @@
 ---
 title: "Isolatie en GPIO-driver: MOSFET, BJT, relais, optocoupler"
 date: 2026-08-10
-description: "Van een 3,3V-GPIO naar een belasting van 12V/2A: wat een NMOS low-side schakelaar echt doet, wanneer een BJT, een relais of een optocoupler het betere antwoord is, en welke beveiligingsonderdelen je niet kunt weglaten."
+description: "Een chippin levert een paar milliampère; een ledstrip of motor wil ampères. Dit is hoe een transistor, een relais of een optocoupler een klein signaal iets groots laat schakelen."
 
 type: note
 category: Elektronica
@@ -26,19 +26,25 @@ translationKey: isolation-gpio-driver-mosfet-bjt-relay-optocoupler
 
 ![MOSFET-schakelaar](./01-mosfet-switch.png)
 
-Een MCU-pin is een logische uitgang. De dingen die je wilt schakelen, LED-panelen, motoren, solenoïdes, zijn geen logische belastingen: de spanning klopt niet en de stroom is ongeveer honderd keer te groot. Een drivercircuit is de vertaler ertussen, en voor DC-belastingen is dat vrijwel altijd een MOSFET.
+Na dit stuk weet je waarom een chippin geen lamp kan schakelen, en hoe een klein extra circuitje een piepklein signaal iets groots laat besturen.
+
+Een microcontroller (het kleine computertje dat je project bestuurt) kan op een pin alleen "hoog" of "laag" zeggen. Een LED-paneel, een motor of een solenoïde wil veel meer stroom, bij een andere spanning. Het circuit dat daartussen vertaalt, heet een driver.
 
 # Wat een GPIO eigenlijk is
 
-GPIO is de algemene input/output-interface van de MCU; instelbaar als ingang (externe niveaus meten) of uitgang (hoog/laag genereren). Maar in essentie is het een digitale besturingsinterface. Hoog ≈ 3.3V (of 5V), laag ≈ 0V, voor logische 1 en 0. De uitgangsstroom is sterk beperkt; doorgaans rond de 20mA.
+GPIO staat voor general-purpose input/output. Het is een pin die je als ingang kunt gebruiken, om een spanning te lezen, of als uitgang, om een hoog of laag niveau te sturen. Hoog is ongeveer 3,3V, laag ongeveer 0V.
 
-Die 20mA is het getal waar alles daarna op teruggaat: een GPIO is een signaal, geen voeding.
+Een GPIO vervoert een signaal, geen vermogen. Hij kan ongeveer 20mA leveren.
 
 ## MOSFET-basis: spanningsgestuurde elektronische schakelaar
 
-MOSFETs zijn hier perfect voor omdat ze spanningsgestuurd zijn: de Gate trekt vrijwel geen continue stroom; je hebt alleen genoeg spanning nodig om hem aan te zetten. De MCU levert het stuursignaal aan de Gate via GPIO/PWM, en de belastingsstroom loopt van de externe voeding door het Drain-Source-pad. Twee gescheiden paden die elkaar alleen bij de Source-pin raken.
+Een MOSFET is een schakelaar met drie pinnen en geen bewegende delen. Je voert er geen stroom naartoe: je zet een spanning op één pin, de Gate, en de schakelaar sluit.
 
-### Drie aansluitingen
+Daarom kan een microcontroller hem rechtstreeks aansturen. De MCU levert een spanning, een aparte voeding levert de stroom. Die stroom komt binnen bij de Drain, gaat door de belasting en verlaat het geheel bij de Source.
+
+Het stuursignaal en de belastingsstroom lopen dus verschillende paden en komen samen bij de Source, die dezelfde aarde deelt als de MCU. Dat is geen isolatie: juist door die gedeelde aarde kan een signaal van 3,3V de schakelaar bedienen. Echte isolatie vraagt een optocoupler of een relais, verderop in dit stuk.
+
+### Wat de drie pinnen doen
 
 | Pin | Naam   | Rol                                    |
 | --- | ------ | --------------------------------------- |
@@ -46,15 +52,20 @@ MOSFETs zijn hier perfect voor omdat ze spanningsgestuurd zijn: de Gate trekt vr
 | D   | Drain  | Verbonden met de belasting, draagt de werkstroom |
 | S   | Source | Stroomretour (bij NMOS meestal naar GND)       |
 
-Belangrijk inzicht: **het stuursignaal en de belastingsstroom lopen door aparte paden**. De GPIO raakt alleen de Gate; het Drain-Source-kanaal draagt de stroom van de externe voeding. Aparte paden zijn alleen geen isolatie: de Source zit aan dezelfde knoop als de GND van de MCU, en precies daarom werkt een low-side schakelaar met een stuursignaal van 3,3V. Echte isolatie vraagt een optocoupler of een relais.
+Die drie namen zijn de hele woordenschat: jij bestuurt de Gate, en het pad van Drain naar Source doet het werk.
 
 ## Waarom MCU's belastingen niet direct kunnen aansturen
 
-Een LED-paneel van 12V/24W heeft 2A nodig. Een Arduino-GPIO levert ~20mA: een kloof van 100×, en de spanning klopt ook niet. De MOSFET overbrugt beide: de MCU levert de stuurspanning, de externe 12V-voeding levert de stroom. Ieder doet zijn eigen werk, en ze komen samen bij de Source-pin, die aan de GND van de MCU hangt.
+Je paneel van 12V neemt 24W op, dus 2A. Een GPIO biedt ongeveer 20mA bij 3,3V: honderd keer te weinig, en de verkeerde spanning.
+
+Sluit het paneel direct op de pin aan en de pin houdt zijn niveau niet vast: de spanning zakt in, de chip wordt warm. Dus wordt het werk opgesplitst. De MCU bepaalt wanneer er geschakeld wordt, een aparte voeding levert de stroom, en de MOSFET verbindt de twee.
 
 ## NMOS versus PMOS
 
-### NMOS (low-side schakelaar): aanbevolen
+MOSFETs bestaan in twee polariteiten, en de twee namen zeggen alleen waar de schakelaar in de kring zit.
+
+### NMOS: de schakelaar aan de massazijde
+
 ```
 12V
  │
@@ -64,12 +75,11 @@ NMOS
  │
 GND
 ```
-- NMOS zit tussen belasting en GND
-- De Gate is gerefereerd aan GND, dus een GPIO van 3.3V of 5V kan hem direct aansturen (uitgaande van een logic-level MOSFET)
-- Simpel circuit, weinig geleidingsverlies, perfect voor PWM
-- Hier ben ik begonnen, en dit gebruik ik in de meeste projecten
 
-### PMOS (high-side schakelaar)
+NMOS zit tussen de belasting en de massa. Zijn Gate wordt gemeten ten opzichte van diezelfde massa, dus een pin van 3,3V zet hem direct open.
+
+### PMOS: de schakelaar aan de voedingszijde
+
 ```
 12V
  │
@@ -79,27 +89,26 @@ LED
  │
 GND
 ```
-- PMOS zit tussen voeding en belasting
-- Om een PMOS aan te zetten, moet de Gate minstens V_GS(th) onder de Source worden getrokken. De Source staat op 12V, dus de Gate moet in de buurt van 12V - V_GS(th) komen; dat kan een 3.3V-GPIO niet
-- Vereist extra level shifting of een gate-driver-IC; complexer
-- Niet aanbevolen voor beginners
+
+PMOS zit tussen de voeding en de belasting. Om hem open te zetten moet de Gate onder de voeding worden getrokken, dus hij moet richting 12V, en daar komt een pin van 3,3V niet. Daarom raad ik hem niet aan om mee te beginnen.
 
 ## PWM-dimmen
 
-PWM verlaagt de spanning niet; het schakelt op hoge snelheid tussen volledig aan en volledig uit, en varieert de aan-tijdverhouding (dutycycle) om het gemiddelde vermogen te regelen. Het oog integreert die pulsen, dus zodra de schakelfrequentie boven de flikkerfusiefrequentie ligt, ervaar je de LED als continu brandend.
+PWM staat voor pulse-width modulation. Het verlaagt de spanning niet: het schakelt de belasting heel snel volledig aan en uit, en varieert hoe lang elke "aan"-stoot duurt. Het gemiddelde vermogen volgt die verhouding, dus de lamp lijkt dimmer of feller.
 
-- LED-dimmen: >200Hz voorkomt zichtbaar flikkeren. De Arduino-standaardwaarden 490Hz/980Hz zijn prima
-- Motoraansturing: doorgaans enkele kHz tot 20kHz
-- Te laag → zichtbaar flikkeren of hoorbaar fluiten
-- Te hoog → de schakelverliezen nemen toe (de MOS brengt meer tijd door in het overgangsgebied)
+Het schakelen moet sneller gaan dan je oog kan volgen. Boven ongeveer 200 keer per seconde ziet een LED er stabiel uit. De Arduino-standaard van ongeveer 490 keer per seconde zit daar ruim boven.
+
+Te langzaam en je ziet flikkeren of hoort een motor piepen; heel snel en de MOSFET staat een deel van elke cyclus half open, en dat wordt warmte.
 
 ## Waarom je een vrijloopdiode nodig hebt
 
-**Van toepassing op**: motoren, ventilatoren, solenoïdes, relaisspoelen; alles met een gewikkelde spoel.
+Dit geldt voor alles wat uit een spoel bestaat: motoren, ventilatoren, solenoïdes, relaisspoelen.
 
-Wanneer de MOSFET uitschakelt, stort het magnetische veld van de spoel in, wat een omgekeerde hoogspanningspiek opwekt die meerdere keren de voedingsspanning kan bedragen; genoeg om de Drain-Source-overgang van de MOSFET op te blazen. Een vrijloopdiode (1N4148 voor laag vermogen, SS14 of een vergelijkbare Schottky voor hogere stromen) antiparallel over de inductieve belasting geeft die opgeslagen energie een veilige weg om te recirculeren.
+Een spoel slaat energie op in een magneetveld. Zodra de MOSFET uitschakelt, stort dat veld in en duwt het een spanningspiek de andere kant op, meerdere keren de voedingsspanning, en dat kan de MOSFET slopen.
 
-Zuiver resistieve belastingen zoals LED's hebben er meestal geen nodig, maar het kan geen kwaad om er een toe te voegen.
+De oplossing is één diode over de spoel. Een diode is een eenrichtingsklep voor stroom: hij blokkeert de normale richting en gaat alleen open voor de piek, zodat de opgeslagen energie via een veilige lus wegloopt.
+
+Een LED is geen spoel, dus die heeft dit niet nodig.
 
 ## MOSFET versus BJT (NPN/PNP)
 
@@ -112,7 +121,9 @@ Zuiver resistieve belastingen zoals LED's hebben er meestal geen nodig, maar het
 | Hoogfrequente PWM    | Matig          | Uitstekend      |
 | Hoge stromen     | Matig          | Uitstekend      |
 
-BJT's zijn stroomgestuurd: je moet basistroom blijven toevoeren om ze aan te houden. MOSFETs zijn spanningsgestuurd: zodra de Gate-capaciteit is opgeladen, loopt er vrijwel geen stroom meer. In moderne DC-vermogensschakelingen winnen MOSFETs op alle fronten. BJT's komen nog voor in analoge schakelingen (versterking, lineaire regeling) en in enkele hoogspanningsniches, maar voor het aansturen van belastingen vanuit een MCU? Altijd een MOSFET.
+Een BJT is de oudere soort transistor. Hij schakelt op stroom in plaats van op spanning. Je moet stroom in één pin, de basis, blijven sturen zolang hij aan moet blijven. Die stroom gaat verloren als warmte. NPN en PNP zijn zijn twee polariteiten.
+
+Een MOSFET schakelt op spanning: zodra zijn Gate geladen is, loopt er bijna geen stroom meer in, dus de MCU houdt hem bijna gratis aan. BJT's horen nog thuis in analoge schakelingen, waar hun stroomgedrag juist het punt is.
 
 ## Relais versus MOSFET
 
@@ -125,44 +136,45 @@ BJT's zijn stroomgestuurd: je moet basistroom blijven toevoeren om ze aan te hou
 | Stil          | Hoorbare klik       |
 | Alleen DC         | Zowel AC als DC          |
 
-**Ik gebruik een relais wanneer**: ik 220V AC schakel, een echte fysieke scheiding nodig heb (geen lekstroom) of volledige galvanische isolatie nodig heb.
-**Ik gebruik een MOSFET wanneer**: LED's, motoren, ventilatoren, producten op batterijen; DC-belastingen die snelheid, stilte en PWM-aansturing nodig hebben.
+Een relais is een mechanische schakelaar, geen halfgeleider: een klein spoeltje trekt een metalen contact dicht. Daardoor kan hij zowel AC als DC schakelen, en in open toestand is er een echte fysieke opening, dus er lekt niets door.
+
+Ik pak een relais voor netspanning, voor die fysieke opening, of als de twee kanten volledig gescheiden moeten blijven. Ik pak een MOSFET voor DC-belastingen zoals LED's, motoren en ventilatoren, waar ik snel en stil wil schakelen met PWM.
 
 ## Optocoupler: wanneer je echte elektrische isolatie nodig hebt
 
-Een optocoupler geeft signalen door met licht: een interne LED schijnt op een lichtgevoelige ontvanger. Er is geen geleidend pad tussen in- en uitgang; alleen fotonen. Zo kan een 3.3V-MCU veilig 220V-apparatuur aansturen, terwijl aardlussen worden doorbroken en de ruisimmuniteit verbetert.
+Een optocoupler geeft een signaal door als licht: binnenin kijken een klein LEDje en een lichtgevoelig onderdeel elkaar aan over een opening, dus er verbindt geen draad de twee kanten.
 
-Klassieke opbouw: MCU-GPIO → stroombegrenzende weerstand → optocoupler-LED → optocoupler-transistor → drivercircuit → TRIAC of relais → netbelasting. De laagspannings- en hoogspanningszijde zijn volledig van elkaar geïsoleerd.
+Dat maakt hem veilig naast netspanning: een microcontroller van 3,3V kan netapparatuur schakelen, en de netzijde heeft geen geleidend pad terug. De twee kanten delen ook geen aarde meer.
+
+De gebruikelijke keten is: MCU-pin, een stroombegrenzende weerstand, de optocoupler, de driverstrap, en dan de belasting op het net.
 
 ## Analyse van industriële producten: mijn raamwerk
 
-Wanneer ik naar de vermogenstrap van een willekeurig product kijk, stel ik vijf vragen:
+Als ik een product openmaak en het vermogensdeel wil begrijpen, kijk ik in deze volgorde.
 
 1. Waar komt het vermogen binnen?
 2. Welke onderdelen zijn de hoogvermogenbelastingen?
 3. Wie stuurt ze aan (MOSFET/relais)?
 4. Hoe bestuurt de MCU ze (GPIO/PWM)?
-5. Welke beveiliging is aanwezig (vrijloopdiode, TVS, zekering, optocoupler)?
+5. Welke beveiliging is er (vrijloopdiode, spanningsklem, zekering, optocoupler)?
 
-Veelvoorkomende MOSFET-aangestuurde producten: LED-verlichting, RGB-strips, ventilatoren, motoren, waterpompen, solenoïdesloten, magneetventielen, USB-PD-voedingen, Li-ion-batterijbeheer, DC-DC-omzetters, motorcontrollers voor drones en EV's.
+LED-lampen, RGB-strips, ventilatoren en pompen volgen hetzelfde patroon.
 
 ## Ontwerpaantekeningen: geleerde lessen
 
-**Kies een logic-level NMOS, en let op bij welke gate-spanning hij is gespecificeerd.** Standaard-MOSFETs hebben vaak ~10V gate-aansturing nodig om volledig open te gaan en hun R_DS(on) te halen; een 3,3V-GPIO krijgt dat niet voor elkaar. Logic-level typen worden bij een lagere gate-spanning gekarakteriseerd, maar let op welke: de L in IRLZ44N is IR's markering voor een logic-level gate, en dat type geeft R_DS(on) bij V_GS = 5V, dus een 3,3V-ontwerp wil een onderdeel dat op 2,5–3,3V is gespecificeerd. Zoek de datasheetregel bij JOUW gate-spanning, niet het headline-getal bij V_GS = 10V.
+**Kies een MOSFET die bij 3,3V volledig opengaat.** Veel exemplaren zijn gemaakt voor een stuursignaal van 10V en gaan bij 3,3V maar half open. Een halfopen schakelaar gedraagt zich als een weerstand, en een weerstand waar 2A doorheen gaat wordt warm. De types die je wilt hebben, worden als "logic-level" verkocht.
 
-**Een gate-weerstand is niet optioneel.** In serie, 10–100Ω: de Gate gedraagt zich als een condensator, elke GPIO-flank moet die laden of ontladen, en de momentane stroom kan hoog genoeg zijn om de pin te belasten. De serieweerstand begrenst die stroom en onderdrukt parasitaire oscillatie. Tussen Gate en Source, 10kΩ: bij het opstarten of wanneer de GPIO hoogimpedant is, zou de Gate anders zweven. Een zwevende Gate kan half open staan, waardoor het kanaal hoogohmig blijft en echt vermogen dissipeert. De pull-down houdt hem op 0V zolang niets hem actief aanstuurt, en in productie is er geen reden om hem weg te laten.
+**Laat de Gate nooit zweven.** Zet een weerstand van 10kΩ van de Gate naar de massa. Anders staat de Gate op een onbepaalde spanning zodra de MCU hem niet aanstuurt, en dan kan hij de schakelaar half openzetten en voor niets vermogen verstoken.
 
-**Inductieve belastingen moeten een vrijloopdiode hebben.**
+**Zet een kleine weerstand in serie met de Gate, 10 tot 100Ω.** De Gate gedraagt zich als een kleine condensator, dus bij elke omschakeling loopt er even een stroomstoot die de weerstand van de pin weghoudt.
 
-**Gemeenschappelijke aarde is net zo min optioneel.** De GND van de MCU en die van de voeding moeten direct verbonden zijn: zonder gedeelde referentie heeft de gate-aansturing geen retourpad en schakelt de MOSFET nooit. Dit is de grootste beginnersvalkuil. Heb je MCU en belasting echt gescheiden nodig, gebruik dan een optocoupler in plaats van de twee aardingen uit elkaar te houden.
+**Inductieve belastingen hebben een vrijloopdiode nodig.** Zie hierboven. Die is niet optioneel.
 
-**Checklist voor MOSFET-selectie:**
-- V_GS(th): Gate-drempelspanning (waar hij *begint* te geleiden, niet volledig aan)
-- **R_DS(on): aan-weerstand (lager is altijd beter; warmte = I² × R_DS(on))**
-- I_D maximale stroom (houd marge)
-- V_DS maximale spanning (houd ook marge)
+**Verbind de aardingen.** De massa van de MCU en die van de voeding moeten direct verbonden zijn. Zonder gedeelde referentie betekent de Gate-spanning niets en gaat de schakelaar nooit open. Dit is de klassieke beginnersvalkuil. Heb je de twee kanten echt gescheiden nodig, gebruik dan een optocoupler.
 
-**PWM-frequentie**: LED-dimmen >200Hz voorkomt flikkeren (Arduino 490Hz/980Hz is prima), motoraansturing enkele kHz tot 20kHz. Te laag → flikkeren/ruis, te hoog → warmte door schakelverliezen.
+**Bewaar deze tot de basis vertrouwd voelt:**
+- Een MOSFET kiezen komt neer op vier getallen uit de datasheet: de gate-drempelspanning, de aan-weerstand, de maximale stroom en de maximale spanning.
+- Voor de vrijloopdiode voldoet een 1N4148 bij een kleine relaisspoel, en een SS14 bij grotere stromen.
 
 ![MOSFET-illustratie 1](./02-mosfet-illustration-1.png)
 ![MOSFET-illustratie 2](./03-mosfet-illustration-2.png)

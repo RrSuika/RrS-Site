@@ -1,7 +1,7 @@
 ---
 title: "Power Supply: LDO, Buck & Boost Converters"
 date: 2026-08-10
-description: "The three questions I ask before picking a power topology, what an LDO costs you in heat versus what a Buck costs you in ripple, and why a battery needs a protection board as well as a charger."
+description: "Where to start when a project needs power: the three questions to ask first, why one regulator runs hot and another gets noisy, and why a battery needs a guard as well as a charger."
 
 type: note
 category: Electronics
@@ -25,27 +25,27 @@ translationKey: power-supply-ldo-buck-boost
 
 # Power Supply Design: Three Questions I Ask First
 
-Before touching any other part of the schematic, I ask myself three questions:
+A circuit almost never runs on the voltage you have. It runs on voltages you have to make, and only two families of part do that: the linear kind and the switching kind. By the end you will know which one to pick, how much heat each makes, and how a lithium cell gets charged safely.
 
-1. What's the input-output voltage difference? If it's over 3V and current exceeds 0.3A, I don't even consider an LDO: straight to Buck.
-2. Is the system noise-sensitive? Wireless modules and precision analog circuits lean toward LDOs, or at least extra filtering after a switcher.
-3. What's the space and thermal situation? A fully sealed tiny enclosure means I'm going switching: heat builds up fast in a small box.
+1. How big is the gap between the voltage going in and the voltage I need? More than about 3V and 0.3A, and the linear kind is out.
+2. Will this part of the circuit mind electrical noise? Radio modules and precision analog parts do.
+3. How much room is there, and how hot can it get? A small sealed box has nowhere to put the heat.
 
 These three questions have saved me a lot of rework.
 
 ## Power Architecture: It's an Energy Distribution System
 
-After a while I realized: power design is about getting the right voltage, the right current, and the right noise level to each module, exactly where it's needed. When I look at any PCB now, my first instinct is to find the power entry and trace the power path downstream.
+A power supply is a delivery system: every part needs a certain voltage, current and quiet, at its own pins.
 
 ## Power Systems Are Multi-Stage Conversion Chains
 
-A typical product power chain looks like this:
+A product usually moves the power through several stages:
 
 ```
 Input (USB/Battery) → Protection (fuse, reverse-polarity) → Charge management → Battery → DC/DC conversion → Multiple voltage rails → MCU/Sensors/LEDs/Motors
 ```
 
-Different blocks on the same board need different voltages:
+Different parts of the same board want different voltages:
 
 | Module          | Typical Voltage |
 | --------------- | --------------- |
@@ -55,145 +55,130 @@ Different blocks on the same board need different voltages:
 | LEDs            | 2~3V            |
 | High-power loads| 12V/24V         |
 
-So inside a product you often have 5V, 3.3V, 1.8V, and other rails coexisting.
+So one product often has 5V, 3.3V and 1.8V rails side by side. A rail is simply one of those supply voltages.
 
-What I've learned:
-- Every stage in the power path has losses: evaluate efficiency stage by stage.
-- Plan your voltage rails thoughtfully. Sensitive circuits may need extra filtering on their supply.
-- Protection devices (fuse, reverse-polarity) look basic but define your product's safety floor. Never cheap out here.
+Every stage in that chain loses some of the power it passes on, and a sensitive part may need extra filtering on its own supply.
 
-Fuse selection gets four checks in the wiring guide: current rating, voltage rating, interrupt rating and speed (FF/F/M/T/TT). The interrupt rating becomes safety-critical at battery scale: LiFePO₄ delivers far higher short-circuit currents than lead-acid, and the fuse has to break that fault current without rupturing itself. Typical values: MEGA fuses 2.5kA at 70V DC, NH blade fuses 25kA, Class T 20kA at 125V DC. The board-level habit of picking protection for what it has to survive carries straight over to battery systems.
+A fuse has four ratings: current, voltage, the fault current it can break, and how fast it blows. On a battery the third one matters most, because a lithium battery pushes an enormous current into a short circuit and the fuse has to cut that off without bursting. One example: a Class T fuse breaks 20kA at 125V DC.
 
 ## LDO Linear Regulators: Clean and Simple, But They Get Hot
 
-An LDO essentially burns excess voltage as heat. The math is clear:
+An LDO (low drop-out) is a linear regulator that still works when the input is only slightly above the output. It behaves like an automatic resistor: it drops the leftover voltage to keep the output steady, and that voltage turns into heat:
 
 ```
 P_loss = (Vin - Vout) × I
 ```
 
-But LDOs aren't always inefficient: it depends on the scenario. Small voltage drop: 5.5V to 5V at 1A, P_loss = 0.5W, ~91% efficient, which is fine. Large drop: 12V to 5V at 1A, P_loss = 7W, only 42% efficient, which is terrible.
+In words: the loss is the voltage dropped across the part times the current through it. Drop 5.5V to 5V at 1A and 0.5W is lost, about 91% efficient. Drop 12V to 5V at 1A and 7W is lost, only 42% efficient.
 
-LDO advantages: dead simple circuit (input cap + LDO + output cap, that's it), low cost, low noise, stable output.
+The good side: almost no circuit to build, cheap, quiet and steady.
 
 I reach for an LDO when:
-- Dropping 3.6V Li-ion to 3.3V for an MCU or sensor: only 0.3V dropout, barely any heat.
-- Feeding noise-sensitive analog/RF circuits (audio amps, ADC references).
+- A lithium cell sits at 3.6V and the microcontroller needs 3.3V, so only 0.3V is left over.
+- The part being fed cares about noise, like an audio amplifier or an analog-to-digital converter.
 
-I would not use one for 12V-to-5V at high power; you'd need a massive heatsink, and it is not worth it.
+I would not use one to drop 12V to 5V at high current; the heatsink gets silly.
 
 Practical lessons:
-- After calculating P_loss, junction temp = ambient + P_loss × θJA. Keep it in the safe zone.
-- Big voltage drop + high current? Use a switcher. Don't force an LDO.
-- PCB copper can serve as a heatsink: pour copper under the LDO tab, stitch with vias. Effectively lowers thermal resistance.
+- The chip's internal temperature is the room temperature plus the loss times the thermal resistance of the package. Keep it under the datasheet limit.
 
 ## Buck Switching Converters: Efficient, But With Ripple
 
-A Buck takes a completely different approach: instead of burning excess voltage, it switches a MOSFET on and off at high speed and smooths the output with an LC filter. Efficiency is typically 85%–97%.
+A Buck does the opposite: it never burns the extra voltage off. It chops the input on and off thousands of times a second and then smooths it back into a steady output. A MOSFET, a switch worked by voltage rather than current, does the chopping; an inductor and a capacitor smooth it out. Efficiency is usually 85% to 97%.
 
-The trade-off: output has high-frequency ripple, and you need more external components: at minimum an inductor, a freewheeling diode (or synchronous rectifier MOSFET), and input/output caps.
+The price is a small wobble on the output at the switching speed, called ripple. You also need more parts: an inductor, a diode that gives the coil's current somewhere to go when the switch opens, and capacitors on the input and the output.
 
-The same current-times-resistance arithmetic shows up at system scale: an inverter pulls a fluctuating DC current from the battery at twice the grid frequency (100Hz), and the battery-cable resistance turns that into ripple voltage on the whole DC bus, with Victron alarming at 2.25V RMS on a 24V system. Its fix list mirrors board-level practice: shorter and thicker conductors, tight connections, quality parts. Same physics, different scale: ripple is fluctuating current times series resistance, and the cure is a lower-impedance path.
+Ripple happens at battery scale too, for a different reason. An inverter pulls its current in pulses at twice the grid frequency (100Hz), and the resistance of the battery cable turns those pulses into a voltage wobble on the DC bus. Victron's guide puts the alarm level at 2.25V RMS on a 24V system.
 
-I default to Buck when the voltage drop exceeds ~3V and current is above ~0.3A: like 12V systems, or stepping battery voltage down for high-power loads. The LM2596 module is my prototyping staple: adjustable output, cheap, reliable.
+So my default is a Buck whenever the drop is more than about 3V and the current more than about 0.3A: 12V down to 5V, or a battery down to something that draws a lot. The LM2596 module is the one I keep on the bench: cheap, and you set the output with a small screw.
 
 Lessons learned the hard way:
-- Inductor selection is critical: saturation current must exceed max load current. Once an inductor saturates it behaves like a wire, and the MOSFET can fail.
-- Keep the switching node trace short and wide to minimize EMI.
-- For sensitive circuits, add an LDO or π filter after the Buck to suppress ripple.
+- Pick the inductor for the current it will carry. Past its limit, called saturation, it stops behaving like a coil and behaves like a plain wire, so the MOSFET can fail.
+- Keep the copper track where the MOSFET meets the inductor short and wide; that point switches fast and sprays interference.
 
 ## Boost and Buck-Boost
 
-A Boost steps up: one Li-ion cell at 3.7V to 5V or 12V. The switch stores energy in the inductor while it is on, and releases it in series with the input when it opens, so Vout > Vin. A Buck-Boost covers the case where Vin can sit above or below Vout; a Li-ion cell runs from 4.2V full to 2.7V near empty, and behind a steady 3.3V rail it switches between modes by itself.
+A Boost goes the other way: it makes a higher voltage out of a lower one, so one lithium cell at 3.7V can feed a 5V or 12V load. It stores energy in the inductor while the switch is on, then lets it out in series with the input when the switch opens, so the two voltages add. A Buck-Boost covers the case where the input starts above the output and ends up below: a lithium cell is 4.2V full and 2.7V nearly empty, so it switches modes by itself to hold 3.3V.
 
 Practical notes:
-- Boost circuits can have inrush current at startup: soft-start is basically standard.
-- Buck-Boost efficiency is typically a few points lower than pure Buck or Boost due to extra switching.
-- Boost output can't be directly shorted: plan your protection ahead of time.
+- A Boost can pull a big surge of current when it starts, so most ramp up gently. That is called soft-start.
+- Do not short the output of a Boost; plan the protection before you build it.
 
 ## Battery Charging and Protection: Both Are Mandatory
 
-You absolutely cannot charge a Li-ion cell by connecting 5V directly. You need a charge management IC.
+You cannot charge a lithium cell by putting 5V straight onto it. The current has to be limited and the voltage watched, and a dedicated chip does that.
 
-- **TP4056**: Linear charging, CC then CV (4.2V), excess voltage becomes heat. That big exposed pad on the bottom carries heat into the copper: pour copper, stitch vias, or it'll overheat while charging.
-- **Protection board** (DW01+8205A): monitors overcharge (≈4.30V), over-discharge (≈2.40V), overcurrent, and short circuit. Cuts the circuit on fault.
+- **TP4056**: a small charging chip. It charges at a steady current until the cell reaches 4.2V, then holds that voltage, and turns the leftover voltage into heat. The big pad underneath carries that heat into the board, so pour copper under it and stitch it with vias.
+- **Protection board** (a DW01 chip and an 8205A pair of switches): it watches the cell's voltage and current and cuts the connection if the voltage climbs to about 4.30V, falls to about 2.40V, the current gets too high, or the output is shorted.
 
-My understanding: TP4056 is the charging-rules enforcer. The protection board is the safety net.
-
-Complete single-cell Li-ion chain:
+The complete chain for one lithium cell:
 
 ![Power Chain](./01-power-chain.png)
 
-The protection board is typically integrated with the battery as one unit.
+Most cells come with the protection board already built in, as one unit.
 
 ```
 Input 5V → TP4056 → [Li-ion cell + Protection board (integrated)] → Buck/Boost → Various loads
                     ↑____Charging____↑   ↑____Discharging____↑
 ```
 
-- Charging: TP4056 controls current into the battery; protection board monitors voltage.
-- Discharging: current flows from battery through protection board, then DC/DC conversion to loads; protection board watches for over-discharge/short.
+- While charging, the TP4056 controls the current going in and the protection board watches the voltage.
+- While discharging, the current leaves the cell through the protection board, which watches for a voltage that has dropped too low, or for a short.
 
-When setting TP4056 charge current, consider your USB source capability and thermals: the default 1A may be too high for small cells. The protection board MUST connect directly to the battery: not remotely on the main board. Common TP4056 modules on the market usually integrate the DW01+8205A already, forming a convenient all-in-one charge+protection solution.
+When you set the charging current, remember where it comes from: your USB port. The usual 1A is too much for a small cell. The protection board has to sit on the cell, not on the main board at the end of two wires. Most TP4056 modules already include the DW01 and the 8205A, so charging and protection come as one board.
 
 ## Efficiency and Thermal Design: High Efficiency ≠ No Heat
 
-A Buck at 95% efficiency delivering 50W still dissipates ~2.6W. That's enough to make a MOSFET noticeably warm.
+A Buck that is 95% efficient and delivers 50W still turns about 2.6W into heat, which is enough to make the MOSFET noticeably warm.
 
-MOSFET loss sources: conduction loss P = I² × R_DS(on), plus switching loss (voltage-current overlap, significant at high frequency).
+That heat leaves through the pad under the MOSFET and into the case, and phone chargers and laptop adapters use the case itself as the heatsink.
 
-Think through the thermal path: MOSFET → thermal pad → metal frame/aluminum case → air. Many products use the enclosure itself as the heatsink: phone chargers, laptop power adapters all work this way.
-
-My experience:
-- Don't get complacent because the efficiency number looks good. Calculate the absolute watts lost.
-- Inductor DCR also generates heat: check it during selection.
-- Thermal simulation or temperature-rise testing is not optional: make sure components stay below max junction temp at worst-case ambient.
-- Vent holes, thermal interface materials: this is where mechanical and electrical design overlap.
+Check the temperatures, by testing or by simulating, and make sure nothing goes past its limit in the hottest conditions it will ever see.
 
 ## The Three Questions Revisited, With a Case Study
 
-### Two Comparison Cases
+### What Happens With The Same Load?
 
-- LM7805 (linear): 9V input → 7805 → output to Arduino. Run for 5 minutes, touch the chip: noticeably hot. ~55.6% efficiency.
-- LM2596 module (Buck): adjusted to 5V output, same load. Barely warm. ~92.6% efficiency.
+- **LM7805**, a linear regulator: 9V in, 5V out to an Arduino. After five minutes the chip is noticeably hot, at about 55.6% efficient.
+- **LM2596**, a Buck module set to 5V with the same load: barely warm, about 92.6% efficient.
 
-Conclusion: portable, battery-powered products should default to switching supplies.
+For anything that runs on a battery, I would start with a switching supply.
 
-### Teardown: Tracing Power in an Old Phone Charger
+### Opening Up An Old Phone Charger
 
-I tore down an old charger and traced the power path on the PCB. Deeply satisfying.
+I once took an old phone charger apart and followed the power from the mains plug to the USB socket.
 
 ```
 AC 220V → fuse resistor → common-mode choke → bridge rectifier → 400V bulk electrolytic → transformer primary → switching IC → transformer secondary → Schottky rectifier → electrolytic filter → 5V USB output
 ```
 
-Key component: the optocoupler straddles the high/low-voltage barrier, feeding back the output voltage while providing safety isolation. Now when I look at a board, my first reflex is to locate these blocks.
+The part I find most interesting is the optocoupler, which sits across the barrier between the dangerous mains side and the safe 5V side.
 
 ## Core Takeaways
 
-The design chain runs energy flow → voltage conversion → thermal path → mechanical integration. This is where EE and industrial design meet.
+The design chain runs energy flow, voltage conversion, the thermal path, then the mechanical integration. This is where electrical engineering and industrial design meet.
 
 ## FAQ
 
 ### Why must the protection board be integrated with the battery?
-The protection board needs direct monitoring of cell voltage and current, usually spot-welded with nickel strips right onto the cell terminals. If placed on the main board, extra resistance and extra connection points sit inside the current path.
+Because it has to sit as close to the cell as possible, usually welded onto the cell's terminals with nickel strips. Move it to the main board and the current travels through extra wires and connectors instead.
 
 ### Can I charge a protected battery directly with TP4056?
-Yes, this is the standard approach. TP4056 executes the CC/CV charge profile; the protection board acts as the last line of defense, cutting the circuit if voltage goes abnormally high.
+Yes, that is the normal way. The TP4056 runs the charging and the protection board is the last line of defence.
 
 ### Why is my Buck circuit still getting hot?
-Even 1–2W of real loss will raise the junction temperature without adequate cooling. Check inductor saturation current, MOSFET R_DS(on), PCB copper area, and the thermal path.
+Even one or two watts will push the chip's internal temperature up if nothing carries the heat away. Check the inductor's current rating, the board's copper area, and where the heat goes.
 
 ## Knowledge Base: Module Reference Cards
 
-### Voltage Regulator Modules
+### Regulator Modules I Keep On The Bench
 
 | Module    | Type   | Vin       | Vout            | I_max        | Efficiency | Heat   | Use Case                 |
 | --------- | ------ | --------- | --------------- | ------------ | ---------- | ------ | ------------------------ |
 | LM7805    | Linear | 7-25V     | 5V              | 1.5A (w/ sink)| ≈Vo/Vin  | High   | Low current, noise-sensitive |
 | LM2596    | Buck   | 4.5-40V   | Adj 1.25-37V    | 2-3A         | 85-93%     | Low    | Large voltage drop, efficiency-first |
 
-### Charge/Protection Modules
+### Charging And Protection In One Board
 
 | Module           | Function              | Charge Method    | Protection                    | Notes                        |
 | ---------------- | --------------------- | ---------------- | ----------------------------- | ---------------------------- |
@@ -201,39 +186,22 @@ Even 1–2W of real loss will raise the junction temperature without adequate co
 
 ## Further Reading
 
-### AC-DC Topology Power Levels
+### How Mains Adapters Are Built, By Power Level
 
-**Flyback**
-- Under ~100W, this is basically the default. Few components, low cost, isolated, multi-output capable.
-- Applications: phone chargers, router power supplies, small appliances, LED drivers.
+Mains adapters come in families by power level: the flyback up to about 100W, the forward, push-pull and bridge circuits above that, and the resonant LLC in modern PC supplies, which reaches 90% to 96%.
 
-**Forward**
-- A step up from flyback, 100W+. Better efficiency, but more complex.
+### Getting Rid Of Ripple
 
-**Push-Pull**
-- Higher power still. Common in automotive inverters, high-power DC/DC converters.
-
-**Half Bridge**
-- Server power supplies, industrial power, UPS.
-
-**Full Bridge**
-- Even higher power, widely used in the 1000W–5000W range.
-
-**LLC (Resonant)**
-- Modern PC power supplies use this. Typical ATX PSU architecture: PFC → LLC → synchronous rectification → 12V, 90%–96% efficiency.
-
-### Switching Supply Ripple Mitigation
-
-The Buck+LDO combo gives you both efficiency and low noise.
+If you want efficiency and a quiet output together, put an LDO after the Buck.
 
 **Input DC → Buck → LDO → Load**
 
-The Buck takes the big drop (12V→5.5V) at 90%+ efficiency and very little heat, stopping just above the LDO's output, usually with 0.3–0.5V of headroom. The LDO then does the precision regulation and cleanup: with only that much across it, P_loss is negligible, and its high PSRR knocks down whatever switching ripple survived. The output is exceptionally clean DC.
+The Buck takes the big drop, say 12V down to 5.5V, at better than 90% efficiency. The LDO then has only 0.3–0.5V left to drop, so it barely warms up, and it smooths out the wobble.
 
-### Battery Selection and Power Tree Planning
+### Pick The Battery First
 
-Determine system voltage requirements first, then decide whether you need Boost or Buck-Boost based on battery characteristics (Li-ion 3.7V, NiMH 1.2V). Avoid major rework later.
+Work out the voltages the system needs first, then pick the battery: a lithium cell is 3.7V, a NiMH cell 1.2V, and that decides whether you need a Boost or a Buck-Boost.
 
-### System Scale: Battery Wiring
+### When It Grows Into A Battery Bank
 
-When the power tree grows to a battery bank, the same topics reappear at system level. [Victron Wiring Unlimited](https://www.victronenergy.com/upload/documents/The_Wiring_Unlimited_book/43562-Wiring_Unlimited-pdf-en.pdf) covers voltage drop, cable sizing, fuse selection and ripple for battery and inverter systems. My off-grid solar project leans on it heavily: [Home Low-Load Solar Panel Circuit Design](/projects/home-solar-storage-design/)
+When this grows into a battery bank, the same questions come back bigger. [Victron Wiring Unlimited](https://www.victronenergy.com/upload/documents/The_Wiring_Unlimited_book/43562-Wiring_Unlimited-pdf-en.pdf) covers them in detail, and my off-grid solar project leans on it heavily: [Home Low-Load Solar Panel Circuit Design](/projects/home-solar-storage-design/)

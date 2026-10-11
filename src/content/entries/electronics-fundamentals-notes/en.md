@@ -1,7 +1,7 @@
 ---
 title: "Electronics Fundamentals: Self-Study Notes"
 date: 2026-05-14
-description: "My self-study notes on electronics fundamentals: what actually happens when you flip a switch, Kirchhoff's laws, and how resistors, capacitors, inductors and diodes behave."
+description: "Start here if electronics still feels like magic. What voltage and current actually are, why a lamp lights up the instant you flip the switch, and what each part on a circuit board is doing."
 
 type: note
 category: Electronics
@@ -29,108 +29,108 @@ translationKey: electronics-fundamentals-notes
 
 # Electronics Fundamentals: My Self-Study Notes
 
-I wanted to be able to look at a circuit board and say what each component is doing. These are the notes I built up teaching myself hardware and analog electronics, starting from the absolute basics: what voltage actually is, how current works, what a resistor looks like inside. I come back to them regularly, and each time I find something new.
+I wanted to look at a circuit board and say what each part is doing. These are the notes I built up from zero. By the end you should be able to say why an LED needs a resistor in front of it, what a capacitor does that a resistor cannot, and why the current into a point equals the current out.
 
 > **Note:** Images are for educational and self-study purposes only.
 
 ## The Water Analogy: A Decent Starting Point
 
-Before diving into physics equations, use water pipes to build intuition:
+The fastest way to get a feel for the three basic quantities is a water pipe.
 
-- **Voltage (V):** equivalent to water pressure: the "push" that drives charges through a circuit, i.e., the potential energy difference per unit charge
-- **Current (I):** equivalent to water flow rate: the actual movement of charges through the conductor
-- **Resistance (R):** equivalent to pipe diameter: narrower pipe, more resistance
+- **Voltage (V):** the push, in volts. Like water pressure.
+- **Current (I):** how much charge flows past a point per second, in amps. Like litres per second.
+- **Resistance (R):** how much something fights the flow, in ohms. Like a narrow pipe.
 
 > **Ohm's Law: V = I × R**
 
-The analogy isn't perfect (none are), but it's good enough for a working mental model.
+Read it as: same resistance, more voltage means more current. Same voltage, more resistance means less current. The water picture is not perfect, but it is close enough.
 
 ## Deeper Understanding: What Actually Happens When You Flip a Switch
 
-Flip a switch, the bulb lights instantly. So electrons must race from the battery to the bulb at light speed, right? No. Completely wrong. This was one of the most counterintuitive things I learned.
+Flip a switch and the bulb lights up at once. So the electrons must race from the battery to the bulb at the speed of light, right? They do not. This was the most counterintuitive thing I learned.
 
-### "Snail-Pace" Electrons vs "Light-Speed" Energy
+### Why the light comes on instantly if the electrons crawl
 
-Inside copper wire, free electrons fill the entire metal's crystal lattice, forming what's called an **"electron sea"**: they're already everywhere in the wire.
+A copper wire is already full of free electrons. They sit between the metal's atoms, like water in a full pipe.
 
-- **Drift velocity**: apply a voltage, the electric field pushes electrons forward. But they constantly crash into the copper atom lattice, so their net forward speed is incredibly slow: typically only **tens of micrometers per second**. Slower than a snail.
+Apply a voltage and those electrons start to drift, but they keep bumping into the metal's atoms. Their net speed is only tens of micrometres per second, slower than a snail.
 
-- **So why does the bulb light instantly?** Because energy isn't carried by the electrons themselves: it's carried by the **electromagnetic field**. The moment the switch closes, the field establishes itself along the whole circuit at a large fraction of the speed of light (0.6–0.9c in ordinary insulated cable). The electrons are already everywhere in the wire; the field gives all of them the push (F = qE) simultaneously, and they all start drifting together.
+So why does the light come on at once? Because the energy does not travel inside the electrons. It travels as an electric field, which spreads through the whole circuit almost immediately, at 60 to 90 percent of light speed. Every electron in the wire is pushed at the same moment.
 
-Electrons barely move, but the field travels close to the speed of light. What we call "electricity" is really field propagation.
+What we call electricity is mostly the field moving, not the electrons.
 
-### The Essence of Voltage: the Field's Push, Accumulated Over Distance
+### So what is voltage, really?
 
-In physics, voltage is **electrical potential difference**. A battery uses chemical energy to forcibly separate positive and negative charges, creating an **electric field** in space. As electrons move through this field, the field does work on them. Voltage is that work, per unit charge.
+A battery uses chemical energy to push negative charge to one end and positive charge to the other. That separation sets up an electric field through the circuit. As charge moves through it, the field does work. Voltage is that work divided by the amount of charge.
 
 ## Kirchhoff's Laws
 
-Behind these two laws stand two fundamental conservation laws of the universe: **conservation of charge** and **conservation of energy**.
+These two rules come from two things that cannot be created or destroyed: charge and energy. They are the most useful facts in circuit analysis.
 
 ## Kirchhoff's Current Law (KCL)
 
-### Why Electrons Can't Just Pile Up at a Node
+### Why the current going in equals the current coming out
 
-Kirchhoff's current law says the currents into a node equal the currents out, Σ I_in = Σ I_out. The reason is that electrons carry negative charge, and by **Coulomb's Law** like charges repel each other with enormous force: if more electrons flowed in than left, negative charge would pile up at the node. The instant it starts to build, the repulsive force pushes away incoming electrons and accelerates the outgoing ones, and this self-balancing is effectively instantaneous. Under steady-state conditions **no node can hold excess net charge**, so what goes in comes out, exactly.
+Take any point where wires meet. The current flowing in must equal the current flowing out. Charge cannot pile up there: if more flowed in than out, negative charge would build up, and charges of the same kind push each other away. That push drives the extra charge straight back out. So the rule holds exactly.
 
 ## Kirchhoff's Voltage Law (KVL)
 
-### Why a Full Loop Always Sums to Zero
+### Why the voltages around a loop cancel out
 
-Kirchhoff's voltage law says the voltages around a loop sum to zero, Σ V = 0. In electrostatics and low-frequency circuits the electric field is a **conservative field** (irrotational): the work it does depends only on the start and end points, not the path. Think of the power source as a "charge elevator" that spends chemical energy to lift electrons back up to a higher potential energy; as they flow through resistors they give that energy up again through collisions with the atomic lattice, as **heat** or **light**. By the time an electron is back at the negative terminal, everything it gained has been surrendered.
+A battery is like a lift for charge: it spends chemical energy to raise charge to a higher energy level. Flowing through the rest of the circuit, that charge gives the energy away, mostly as heat. By the time it returns to the battery, nothing is left. So the voltage rises and drops around a closed loop cancel out exactly.
 
 ## Resistor
 
 ![Carbon Film Resistor Cross-Section](./18.jpg)
 
-Resistors are passive components whose job is to impede current flow. Two main uses: current limiting (so your LED doesn't burn out) and voltage division (creating reference levels).
+A resistor is the simplest part in electronics: it makes current harder to push through. Two uses: limiting current so an LED does not burn out, and splitting a voltage into a smaller one.
 
-### Inside a Carbon Film Resistor
+### What is inside a resistor?
 
-1. **Ceramic core**: a solid rod of high-grade ceramic (insulator): the structural foundation.
-2. **Carbon film layer**: a thin layer of pure carbon deposited on the ceramic surface. This is the actual resistive material.
-3. **Helical groove**: a spiral is laser-cut into the carbon film. Shorter, wider spiral = lower resistance; longer, thinner = higher resistance. The spiral geometry sets the value.
-4. **End caps and leads**: metal caps press-fit onto both ends, tinned copper leads welded to the caps.
-5. **Protective coating and color bands**: insulating lacquer with colored stripes encoding the resistance value and tolerance.
+1. **A ceramic rod.** The solid core.
+2. **A carbon film.** A thin carbon layer on the rod. This is what resists.
+3. **A spiral cut.** A laser cuts a groove into the film. A short, wide path resists less; a long, thin path resists more.
+4. **End caps and legs.** Metal caps on both ends, with wire legs welded to them.
+5. **Paint and stripes.** Insulating paint, plus coloured stripes that code the value.
 
-The resistance of a given geometry scales with the material's resistivity ρ. That is the same physics that separates carbon-film from metal-film resistors: the film material sets how much spiral is needed for a target value, along with the temperature behavior and noise floor.
+The value depends on the material and the shape: a long thin path resists more than a short wide one. The film material also decides how much the value drifts when it warms up, and how much electrical noise the resistor adds.
 
 ![Resistor Color Bands](./21.png)
 
-### LED Current Limiting
+### Why does an LED need a resistor?
 
 ![Current Limiting: With Resistor vs LED Burnt by Excess Current](./17.png)
 
-Probably the first resistor circuit everyone builds: LED + series resistor. Without the resistor, the LED pulls as much current as the supply can give until it destroys itself.
+An LED is a lamp made from a semiconductor. Left on its own it pulls as much current as the supply can give, until it destroys itself. A resistor in series sets the current to a safe value.
 
-**Sizing the series resistor:**
-LED operates at 3V, draws 13.5mA (0.0135A), using a 5V supply.
+**Picking the resistor for one LED:**
+Say the LED wants 3V and 13.5mA (thousandths of an amp), and you feed it from 5V.
 
-- V_drop = V_source - V_LED = 5V - 3V = 2V
-- R = V_drop / I = 2V / 0.0135A = 148.15Ω → **use a 150Ω resistor**
+- The resistor has to take the difference: 5V - 3V = 2V.
+- Resistance is volts divided by amps: 2V ÷ 0.0135A = 148Ω. Use the nearest standard value, 150Ω.
 
-One more check before soldering: the resistor burns P = I² × R = 0.0135² × 150 ≈ 27mW, so a standard ¼W resistor runs at about 11% of its rating. The same answer falls out of P = V × I (2V × 0.0135A = 27mW). At higher currents the power climbs with I², which is why a resistor's wattage rating matters as much as its resistance value.
+One more check: the resistor turns that 2V into heat. That is about 27mW, and an ordinary ¼W resistor handles ten times that.
 
-### Voltage Divider
+### How do two resistors make a smaller voltage?
 
-In a series circuit, voltage drop across each resistor is proportional to its resistance (bigger R = larger share of the voltage).
+Put two resistors in a row and the voltage splits between them. The bigger resistor takes the bigger share. That is how you make a smaller voltage out of a bigger one.
 
 ### Can an LED Work as a Resistor?
 
-No. An LED is a diode: it's nonlinear. A resistor follows Ohm's law (current proportional to voltage). An LED's I-V curve is exponential: below the forward voltage it barely conducts; above it, current skyrockets. You can't replace it with a fixed resistance.
+No. A resistor follows a simple rule: double the voltage, double the current. An LED does not. Below a certain voltage it conducts almost nothing, and just above it the current shoots up. That is why you cannot treat one as the other.
 
-### Practical Case: Voltage Comparator
+### How do you tell which of two voltages is bigger?
 
 ![Voltage Comparator Schematic 1](./23.png)
 ![Voltage Comparator Schematic 2](./22.png)
 
-### Resistor Types
+### Which resistor should I buy?
 
 ![Resistor Types Overview](./extra.png)
 
-There's quite a variety: carbon film, metal film, wire-wound, SMD chip resistors, potentiometers (variable resistors). Selection depends on power rating, tolerance, temperature coefficient, and noise requirements. I default to metal film for analog circuits: lower noise than carbon film and better temperature stability.
+There are several kinds: carbon film, metal film, wire-wound for high power, and tiny surface-mount chips for factory boards. Four things matter: how much power it can burn, how close its real value is to the printed one, how much it drifts when it warms up, and how much noise it adds. For analog circuits I default to metal film.
 
-### Resistor Summary
+### What to remember about resistors
 
 ![Resistor Summary](./20.png)
 
@@ -139,34 +139,34 @@ There's quite a variety: carbon film, metal film, wire-wound, SMD chip resistors
 ![Capacitor Overview 1](./27.png)
 ![Capacitor Overview 2](./28.png)
 
-Capacitors store energy in an electric field between two conductive plates separated by a dielectric (insulator). Used for filtering, decoupling, timing circuits, and energy storage. Key formula: I = C × dV/dt; current through a capacitor is proportional to the rate of voltage change.
+A capacitor stores energy in the electric field between two plates. Think of it as a buffer: it fills when there is spare voltage and empties when the voltage sags. Current only flows while the voltage across it changes, so it passes fast changes and blocks steady ones. That is why it smooths supplies and sets timing intervals.
 
 ## Inductor
 
 ![Inductor Overview](./29.png)
 
-Inductors store energy in a magnetic field when current flows through them. It's a coil of wire, typically wound around a magnetic core. Its defining behavior: it resists changes in current. Key formula: V = L × dI/dt; voltage across an inductor is proportional to the rate of current change.
+An inductor is a coil of wire. It stores energy in a magnetic field and fights any change in current. Its rule mirrors the capacitor: the voltage across it depends on how fast the current through it changes. Coils and capacitors are the two halves of most filters.
 
-### Practical Case: Rectifier Bridge LC Filter
+### How do a coil and a capacitor smooth a supply?
 
 ![Rectifier Bridge with Inductor 1](./24.png)
 ![Rectifier Bridge with Inductor 2](./25.png)
 
-In power supply circuits, inductors and capacitors work together as LC filters. After the bridge rectifier converts AC to pulsating DC, the inductor suppresses ripple current and the capacitor smooths the voltage. The resulting DC is much cleaner than filtering with a capacitor alone.
+In a power supply they work as a team. The bridge rectifier turns AC (current that keeps reversing) into DC (current that flows one way), but the result is bumpy. The coil flattens the bumps in the current, and the capacitor flattens the bumps in the voltage.
 
-The same ripple physics shows up at system scale in the wiring guide: an inverter pulls a fluctuating DC current from the battery at twice the grid frequency (100Hz), and the battery-cable resistance turns that into ripple voltage on the DC bus, with Victron alarming at 2.25V RMS on a 24V system. Whether it is a small filter or a fat battery cable, the pattern is the same: a fluctuating current multiplied by whatever impedance it crosses shows up as ripple voltage.
+The same happens at battery scale. An inverter pulls current from a battery in pulses, 100 times a second. In the cable, those pulses become a wobbling voltage, because the cable resists the current. Short, thick cable keeps the wobble small. Victron sets the alarm at 2.25V RMS on a 24V system, and RMS is a kind of average for a wobbling voltage.
 
 ## Diode
 
 ![Diode Overview](./30.png)
 
-Diodes conduct in one direction: anode to cathode. They're the foundation of rectification (AC→DC), reverse-polarity protection, and all kinds of signal processing. Forward voltage drop: ~0.7V for silicon diodes, ~0.2-0.4V for Schottky diodes.
+A diode is a one-way valve for current. It conducts from one leg, the anode, to the other, the cathode, and blocks the reverse direction. A silicon diode costs about 0.7V to pass; a Schottky diode, built for a smaller drop, costs 0.2 to 0.4V. Diodes turn AC into DC and protect against a battery connected the wrong way round.
 
-### Practical Case: Rectifier Bridge
+### How four diodes turn AC into DC
 
 ![Rectifier Bridge: Diode Application](./26.png)
 
-Four diodes arranged as a bridge rectifier convert AC to pulsating DC. The capacitor after the bridge smooths it into something usable. This is the front end of basically every linear power supply.
+Wire four diodes in a ring and you get a bridge rectifier. Whichever way the AC swings, two conduct, so the current leaves in the same direction every time. A capacitor after it smooths the bumps. Almost every linear supply starts this way.
 
 ## Transistor
 
@@ -180,24 +180,24 @@ Four diodes arranged as a bridge rectifier convert AC to pulsating DC. The capac
 
 ![Linear vs Switching PSU Overview](./31.png)
 
-Power supplies convert input power into regulated DC output. Two main topologies:
+A power supply turns what comes from the wall or the battery into the steady low voltage your circuit needs. There are two ways.
 
-- **Linear supply**: transformer → rectifier → filter cap → linear regulator. Simple, low noise, but inefficient: excess voltage all becomes heat.
-- **Switching supply (SMPS)**: high-frequency switching → transformer → rectification → feedback control. More complex, but far more efficient and much smaller.
+- **Linear supply**: a transformer lowers the voltage, then a chip burns off the rest as heat. Simple and quiet, but wasteful.
+- **Switching supply (SMPS)**: the voltage is chopped into high-frequency pulses, transformed, then smoothed. More parts, but far less heat and much smaller.
 
-### Practical Case: 230V → 12V Switching Power Supply
+### What is inside a 230V to 12V supply?
 
 ![SMPS Analysis 1](./32.png)
 ![SMPS Analysis 2](./33.png)
 ![SMPS Analysis 3](./34.png)
 
-Walking through an SMPS schematic stage by stage (input filtering, bridge rectifier, switching controller, transformer, output rectification, feedback loop) is a great way to understand real power supply design.
+Walking through a real schematic stage by stage is the fastest way to see how the pieces fit: the mains filter, the bridge rectifier, the switching chip, the transformer, the output rectifier, and the feedback loop that keeps the output steady.
 
 ## Practical Skills
 
 ![Practical Skills Overview](./35.png)
 
-The hands-on skills I'm building: breadboarding circuits, soldering, using a multimeter correctly, reading schematics, basic troubleshooting. Theory only takes you so far: the moment you find that loose ground connection with a multimeter, a lot of theory suddenly clicks.
+The skills that matter are physical: building a circuit on a breadboard, soldering, using a multimeter, reading a schematic, and hunting down a fault. Theory only gets you so far. The day I found a loose ground wire with a multimeter, a lot of theory suddenly clicked.
 
 ## References
 

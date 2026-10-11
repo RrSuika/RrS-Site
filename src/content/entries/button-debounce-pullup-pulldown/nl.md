@@ -1,7 +1,7 @@
 ---
 title: "Knopinvoer: debounce en pull-up/pull-down-weerstanden"
 date: 2026-08-10
-description: "Waarom een knop überhaupt een pull-up of pull-down nodig heeft, wat een zwevende pin met een MCU-ingang doet, hoe je debouncet in hardware en software, en waarom industriële producten op pull-up uitkomen."
+description: "Een knop is gewoon een schakelaar, waarom heeft die dan een weerstand nodig? Wat een zwevende pin met een chip doet, waarom één druk als vijf kan tellen, en hoe je beide oplost."
 
 type: note
 category: Elektronica
@@ -30,19 +30,25 @@ translationKey: button-debounce-pullup-pulldown
 
 # Wat een knop eigenlijk is
 
-Een knop is een mechanische schakelaar. Alles wat hij doet is twee metalen contacten verbinden of loskoppelen, en dat laat de MCU met een elektrisch probleem achter: de pin waar hij aan hangt heeft geen bepaald niveau zolang de contacten open staan. Niet ingedrukt: `── ──`, ingedrukt: `──────`.
+Na dit stuk weet je waarom een kale knop niet betrouwbaar te lezen is, waarom één weerstand dat oplost, en wanneer je software er nog overheen moet zetten.
 
-De MCU kan de knop niet direct waarnemen. Hij leest alleen de spanning op een GPIO-pin. De hele keten is dus: mechanische actie → verandering van de GPIO-spanning → MCU leest spanning → firmware bepaalt de toestand. De knop verandert het circuit; de MCU leest het resultaat.
+Een knop is niets meer dan twee metalen contacten die elkaar raken als je drukt. Het onderdeel dat hem uitleest is de microcontroller, of MCU, de kleine chip waarop je firmware draait. De MCU ziet niet of die contacten elkaar raken. Hij meet alleen de spanning op een van zijn pinnen, en zo'n pin die je uitleest heet een GPIO. De keten is dus: jij drukt, de contacten raken elkaar, de spanning op de pin verandert, en de firmware beslist wat dat betekent.
+
+Twee woorden eerst. LAAG betekent dat de pin rond 0V zit, de spanning van aarde. HOOG betekent dat hij rond de voedingsspanning zit, 3.3V op de meeste boards en 5V op oudere.
 
 ## Het probleem van een zwevende pin
 
-De simpelst mogelijke bedrading: GPIO - knop - GND. Ingedrukt = GPIO wordt naar GND getrokken = laag. Dat werkt. Maar als de knop NIET is ingedrukt? Dan is de GPIO-pin met niets verbonden. Hij zweeft. De spanning is ongedefinieerd, ergens tussen 0V en 3.3V, volledig overgeleverd aan elektrische velden en ruis in de buurt. De MCU leest willekeurige onzin.
+De simpelste bedrading is een pin, een knop en aarde: GPIO → knop → GND. Druk je, dan hangt de pin aan aarde en leest de MCU laag.
 
-Daarom heb je een pull-weerstand nodig: die geeft de GPIO een bekende standaardtoestand.
+Het probleem begint als je loslaat. De pin hangt dan aan niets, dus niets houdt zijn spanning vast. We zeggen dat de pin zweeft, en hij beweegt mee met de elektrische ruis in de buurt. Je firmware ziet daardoor indrukkingen die nooit hebben plaatsgevonden. De pin heeft dus iets nodig dat hem op een bekend niveau houdt zolang de knop open staat, en dat iets is een weerstand.
 
 ## Een beginnersfout
 
-Iemand zou kunnen denken: `5V → GPIO → knop → GND`. Zolang de knop niet is ingedrukt, staat de GPIO op hoog. Lijkt prima. Maar zodra je de knop indrukt, vormen de draad en de schakelaar een directe kortsluiting van 5V naar aarde: het pad heeft bijna geen weerstand, dus alleen de voeding begrenst de stroom. En nog voor je indrukt staat er 5V op een 3.3V-pin, boven de absolute maximumwaarde (VDD + 0.3V), waardoor de clampdiode van de pin stroom in de 3.3V-rail duwt. In het beste geval brand je de IO-pin door. In het slechtste geval de hele chip.
+Het is verleidelijk de pin direct aan de voeding te hangen: `5V → GPIO → knop → GND`. Zolang je niet indrukt leest de pin hoog, en dat ziet er goed uit.
+
+Maar zodra je indrukt, heb je 5V met aarde verbonden via niets anders dan een draad en een schakelaar. In dat pad zit bijna geen weerstand meer, dus alleen de voeding begrenst de stroom. Ergens wordt het te heet en gaat het stuk.
+
+Er is nog een tweede probleem, en dat is er al voor je indrukt. 5V op een pin die op 3.3V hoort te werken is meer dan die pin aankan. Elke pin heeft binnenin een kleine beveiligingsdiode die gaat geleiden zodra de spanning te hoog wordt, en die duwt stroom de 3.3V-rail in.
 
 Doe dit nooit.
 
@@ -52,10 +58,12 @@ Doe dit nooit.
 5V → 10kΩ weerstand → GPIO + knop → GND
 ```
 
-- **Niet ingedrukt**: 5V laadt de GPIO-pin op via de 10kΩ-weerstand. De ingangsimpedantie van een GPIO ligt op megaohm-niveau (bijna een isolator), dus er loopt nauwelijks stroom. Over de weerstand valt bijna geen spanning, de pin staat stevig op hoog.
-- **Ingedrukt**: de GPIO wordt direct met aarde kortgesloten = laag. Stroom = 5V / 10kΩ = 0.5mA (op een 3.3V-rail geeft dezelfde schakeling 0.33mA; de rest van deze notitie gebruikt 3.3V). Dat is weinig; veilig, efficiënt, en de pin wordt betrouwbaar naar 0V getrokken.
+Zet in plaats daarvan een weerstand tussen de voeding en de pin. Een weerstand begrenst hoeveel stroom er kan lopen, en 10kΩ betekent 10.000 ohm.
 
-Dit is "zwakke pull-up, sterke pull-down" in actie: de pull-up is zwak genoeg dat de directe kortsluiting van de knop naar aarde hem overwint, maar sterk genoeg om de pin hoog te houden wanneer de knop open is.
+- **Niet ingedrukt**: de weerstand verbindt de pin met 5V, dus de pin leest hoog. De pin zelf trekt bijna geen stroom, dus over de weerstand valt bijna geen spanning.
+- **Ingedrukt**: de knop verbindt de pin met aarde, dus de pin leest laag. De weerstand bepaalt nu de stroom: 5V / 10kΩ = 0.5mA, een fractie van wat een indicator-LED gebruikt. Op een 3.3V-board geeft dezelfde schakeling 0.33mA, en dat is wat de rest van dit stuk gebruikt.
+
+De weerstand trekt zwak, de knop trekt hard. Staat de knop open, dan wint de weerstand en blijft de pin hoog; druk je hem in, dan wint de directe verbinding met aarde ruim.
 
 ## Pull-up versus pull-down
 
@@ -72,47 +80,48 @@ Knop gesloten
 GND
 ```
 
-Pull-up: weerstand van VCC naar GPIO. Standaard = hoog, ingedrukt = laag (actief-laag).
-Pull-down: weerstand van GPIO naar GND. Standaard = laag, ingedrukt = hoog (actief-hoog).
+De weerstand kan aan beide kanten van de pin zitten, en daar komen de twee namen vandaan:
 
-Een weerstand van de voeding naar de GPIO is een pull-up; die klemt de pin standaard op hoog. Een weerstand van de GPIO naar aarde is een pull-down; die klemt de pin op laag. Beide beperken ook de stroom: zonder de weerstand is het indrukken van de knop een directe kortsluiting.
+- Pull-up: weerstand van de voeding naar de pin. Standaard hoog, ingedrukt laag, en dat heet actief-laag.
+- Pull-down: weerstand van de pin naar aarde. Standaard laag, ingedrukt hoog, en dat heet actief-hoog.
+
+Beide houden een standaardniveau vast en begrenzen de stroom, en daarom krijg je nooit de kortsluiting van de vorige paragraaf.
 
 ![Vergelijking pull-up en pull-down](./02-pullup-pulldown-comparison.png)
 
-Belangrijkste functies van pull-weerstanden:
+Wat de keuze bepaalt is het niveau dat je firmware verwacht. Een pin die bij het opstarten niet actief mag zijn krijgt een pull-up als hij actief-laag is, een pull-down als hij actief-hoog is.
 
-- Ze leggen een bekende standaardtoestand vast, waardoor zweven en valse triggers worden voorkomen. Bij het opstarten is het pin-niveau onzeker; een pull-up garandeert dat de pin hoog begint en niet glitcht.
-- Bij een open-drain- (of open-collector-)uitgang is de pull-up het enige dat de lijn hoog kan trekken; de transistor kan hem alleen laag trekken.
+Er is nog een geval dat je wilt kennen. Sommige chips kunnen een lijn alleen laag trekken, nooit hoog, omdat de uitgangstransistor maar één kant op werkt. Op zulke lijnen is de pull-up het enige dat het hoge niveau kan maken.
 
 ## Waarom de GPIO niet direct op 3.3V aansluiten?
 
-Dezelfde fout als bij Een beginnersfout hierboven, alleen op 3.3V in plaats van 5V. Het onderdeel dat hier de stroom begrenst is de pull-weerstand zelf.
+Dezelfde fout als de beginnersfout hierboven, alleen op 3.3V: je drukt de knop in en verbindt de voeding direct met aarde. De weerstand is wat die stroom begrenst.
 
 ## Waarom 10kΩ?
 
-Veelgebruikte pull-weerstandswaarden: 4.7kΩ, 10kΩ, 22kΩ, 47kΩ.
+Een lagere weerstand houdt de pin steviger vast en is beter bestand tegen ruis, maar verbruikt meer stroom. Een hogere verbruikt minder, maar ruis krijgt hem makkelijker om. 10kΩ is de gebruikelijke middenweg.
 
-- Lagere weerstand → sterkere pull, betere ruisimmuniteit, maar meer verbruikt vermogen
-- Hogere weerstand → minder vermogen, maar gevoeliger voor ruis
-- 10kΩ is de sweet spot: 3.3V/10kΩ = 0.33mA, verwaarloosbaar vermogen, betrouwbare ruisimmuniteit.
+Op 3.3V loopt er 3.3V / 10kΩ = 0.33mA, klein genoeg om te vergeten. Lees die som zo: bij een vaste spanning betekent een grotere weerstand minder stroom.
 
-Of je pull-up of pull-down gebruikt, hangt af van het systeem. Een actief-hoog enable-signaal (EN) dat standaard inactief moet zijn → gebruik pull-down. Een actief-laag reset-signaal (RST#) dat standaard inactief moet zijn → gebruik pull-up. Bij motoraansturing kan een zwevende pin door ruis naar hoog worden getriggerd en de motor per ongeluk laten draaien; een pull-down die het standaardniveau op laag vastzet is daar cruciaal.
+Naar welke kant je trekt hangt af van wat de pin doet. Een enable-pin die bij het opstarten uit moet blijven krijgt een pull-down als hij actief-hoog is, en een pull-up als hij actief-laag is: een motordriver mag bijvoorbeeld niet door ruis worden aangezet als zijn pin zweeft.
 
-Interne pull-weerstanden van een MCU zijn doorgaans zwak: hoge waarde, 20kΩ~50kΩ.
+De meeste MCU's hebben ook een pull-up ingebouwd, die je in software aanzet. Hij is zwak, meestal tientallen kΩ: op een kort draadje prima, op een lang draadje minder betrouwbaar.
 
 ## Waarom knoppen stuiteren
 
-Mechanische knoppen zijn geen ideale schakelaars. Als je er een indrukt, sluiten de metalen contacten niet netjes; ze botsen, stuiteren terug, botsen opnieuw, stuiteren weer terug, en produceren een reeks snelle AAN-UIT-AAN-UIT-AAN-overgangen gedurende enkele milliseconden (soms tientallen ms). Op een oscilloscoop ziet een enkele indrukking eruit als een dichte pulstrein. Een snelle MCU kan elke stuiter makkelijk als een aparte indrukking tellen.
+Echte knoppen zijn geen schone schakelaars. De contacten zijn stukjes metaal die tegen elkaar slaan, dus ze raken elkaar, stuiteren terug, raken opnieuw en komen dan tot rust, allemaal binnen een paar milliseconden. Je firmware draait in die milliseconden misschien wel duizenden keren, en elke stuiter lijkt een aparte indrukking. Zo wordt één keer drukken geteld als vijf.
 
-## Debounce
+## Debounce: waarom één keer drukken als vijf telt
 
-**Software-debounce**: detecteer pinverandering → wacht ~20ms → lees opnieuw → bevestig dat de toestand nog steeds de nieuwe is → handel. Nul hardwarekosten, goed genoeg voor de meeste gevallen.
+Debouncen betekent de rommel negeren, en dat kan op twee manieren.
 
-**Hardware-debounce**: RC-laagdoorlaatfilter (bijv. 10kΩ + 100nF). fc = 1/(2πRC) ≈ 159Hz; de RC bepaalt hoe snel het knooppunt tussen de twee niveaus kan bewegen, en een Schmitt-trigger-ingang ruimt op wat er overblijft.
+**Software-debounce**: ziet de firmware de pin veranderen, dan wacht hij ongeveer 20ms en leest de pin opnieuw. Staat de pin nog in de nieuwe toestand, dan was de indrukking echt. Kost geen hardware en is voor de meeste knoppen genoeg.
 
-Veel producten gebruiken beide: RC voor de eerste ronde, software voor de bevestiging.
+**Hardware-debounce**: een weerstand en een condensator naast de pin strijken de snelle sprongen glad, zodat de firmware maar één schone verandering ziet. Een condensator bewaart een beetje lading, waardoor de spanning niet in één keer kan verspringen. Sommige chips hebben ook een Schmitt-trigger-ingang: een schakeling die een halfhoge spanning beslist naar één kant duwt in plaats van te twijfelen.
 
-## Knopcircuit op productieniveau
+De meeste producten doen beide: de condensator haalt de rommel weg, de firmware bevestigt.
+
+## Het volledige circuit, onderdeel voor onderdeel
 
 ```
 3.3V
@@ -133,10 +142,10 @@ GND
 
 ## Wat industriële ontwerpers moeten weten
 
-- Mechanisch ontwerp: knopgrootte, slag, bedieningskracht, terugveersnelheid, montagetoleranties, slijtage op lange termijn.
-- Omgevingsbetrouwbaarheid: water-/stofbestendigheid (IP-classificatie), ESD-bescherming, EMC-immuniteit.
-- Gebruikerservaring: enkele klik, dubbele klik, lang indrukken, herhaaltrigger, toestandsfeedback (haptisch/visueel/audio).
-- Productlevensduur: aantal schakelcycli, mechanische vermoeiing, invloed van temperatuur op materialen.
+- Mechanisch ontwerp: knopgrootte, slag, bedieningskracht, terugveersnelheid, toleranties, slijtage.
+- Omgevingsbetrouwbaarheid: water en stof (IP-classificatie), ESD, EMC.
+- Gebruikerservaring: enkele klik, dubbele klik, lang indrukken, herhaling, feedback (haptisch, visueel, audio).
+- Productlevensduur: aantal schakelcycli, mechanische vermoeiing, invloed van temperatuur.
 
 Een tv-afstandsbediening en een rijstkoker gebruiken dezelfde knoplogica: gebruikersinvoer → knop → GPIO → MCU → functie uitvoeren.
 
@@ -151,73 +160,63 @@ Een tv-afstandsbediening en een rijstkoker gebruiken dezelfde knoplogica: gebrui
 
 #### Ingebouwde MCU-pull-ups zijn gratis
 
-De meeste MCU's (STM32, ESP32, AVR) hebben programmeerbare interne pull-up-weerstanden. Interne pull-downs zijn minder vanzelfsprekend: veel klassieke 8-bits onderdelen (AVR, 8051) hebben ze helemaal niet. Schakel de interne pull-up in en je bespaart een weerstand en PCB-ruimte; nul BOM-kosten. Ingenieurs grijpen vanzelf naar de gratis optie, en na verloop van tijd is daaruit een "pull-up-first"-ontwerpcultuur ontstaan.
+De meeste MCU's hebben een pull-up in de pin zelf, aan te zetten met één regel code, wat een onderdeel en wat boardruimte scheelt. Pull-downs zijn minder gebruikelijk: veel klassieke 8-bits chips, AVR en 8051 bijvoorbeeld, hebben ze helemaal niet.
 
 #### Fail-safe: wat een open circuit echt doet
 
-- In een pull-up-circuit geldt: ingedrukt = laag.
-- Als de draad tussen knop en print breekt, een connector loskomt of een soldeerverbinding scheurt, trekt de pull-up de zwevende GPIO meteen terug naar een stevige hoog, "niet ingedrukt".
-- **Resultaat**: de storing veroorzaakt GEEN valse trigger. Het systeem blijft veilig.
+Breekt de draad naar de knop, dan trekt de pull-up de pin terug naar hoog, en dat betekent niet ingedrukt: een gebroken draad lijkt niet op een indrukking.
 
-Draai het schema om en hetzelfde open circuit gedraagt zich hetzelfde: een pull-down houdt de pin laag, en in die conventie betekent laag "niet ingedrukt". Een open circuit valt in beide schema's naar de ruststand. Wat wel verschilt is de kortsluiting: een pull-up-ingang leest een kortsluiting naar aarde als een permanente indrukking, een pull-down-ingang leest een kortsluiting naar de voeding als een permanente indrukking, en in een voertuig is contact met het chassis veel waarschijnlijker dan met de voeding.
+Draai het circuit om. Een pull-down houdt de pin laag, en daarin betekent laag ook niet ingedrukt, dus een gebroken draad valt in beide gevallen naar de ruststand.
+
+Het verschil zit in een kortsluiting. Met een pull-up leest een kortsluiting naar aarde als een permanente indrukking; met een pull-down doet een kortsluiting naar de voeding dat. In een auto raakt een draad veel sneller het chassis dan de voeding.
 
 #### Aarde als referentie is betrouwbaarder
 
-- Het groundvlak is de 0V-referentie voor het hele systeem: het zit overal en de impedantie is zeer laag, wat het een veel stijvere referentie maakt dan de voedingsrail.
-- Statische elektriciteit of ruis van een vingeraanraking wordt veilig naar aarde afgevoerd in plaats van in de gevoelige voedingsrail geïnjecteerd.
+Aarde is de 0V-referentie voor het hele board, en de impedantie is zeer laag, wat het stijver maakt dan de voedingsrail.
 
 #### Vermogen en logica sluiten van nature op elkaar aan
 
-- **Rustvermogen**: als de knop niet is ingedrukt, staan beide uiteinden van de pull-up hoog; vrijwel nul vermogen. Ingedrukt = 3.3V/10kΩ = 0.33mA, alleen verbruikt tijdens de actie. Een pull-down-schema levert dezelfde stroom op (VCC via de knop naar de pull-down), dus er is geen statisch vermogensvoordeel in welke richting dan ook.
-- **Logische intuïtie**: veel sequentiële logische schakelingen (resetcircuits, enzovoort) gebruiken actief-laag signalering. Pull-up + knop-naar-aarde geeft van nature "ingedrukt = 0", wat aansluit bij interrupt-triggers en resetlogica; minder mentale overhead bij het schrijven van firmware.
+Staat de knop open, dan loopt er geen stroom, en tijdens het indrukken is die miniem. Een pull-down trekt bij indrukken dezelfde stroom, dus geen van beide spaart vermogen. Veel chips zien een laag niveau ook als het actieve niveau, resetpinnen bijvoorbeeld.
 
 #### Open-drain en buscompatibiliteit
 
-Wanneer meerdere apparaten een signaallijn delen (I²C, 1-Wire, of een knop die een pin deelt met een statusindicator), is open-drain + pull-up de standaardtopologie. Pull-up past er naadloos in. Pull-down vereist extra niveau-omzetting of een circuitaanpassing.
-
----
+Sommige draden worden door meerdere chips gedeeld, I²C bijvoorbeeld: geen enkele chip trekt ze hoog, alleen laag, en één weerstand trekt ze voor iedereen hoog.
 
 ### Wanneer zou je dan wél voor pull-down kiezen?
 
-Sommige ontwerpen kiezen bewust voor pull-down:
-
-- **Actief-hoog vereiste**: sommige reset- of enable-pinnen van randapparatuur zijn actief-hoog. Voor logische consistentie ontwerp je de knop zo dat hij hoog afgeeft wanneer hij wordt ingedrukt → gebruik pull-down.
-- **Beperkingen van ultra-low-power wake-uppinnen**: sommige ultra-low-power MCU's ondersteunen alleen wake-up op stijgende flank of op hoog niveau. Dan moet je pull-down gebruiken met de knop aan VCC.
+- **De pin is actief-hoog**: sommige reset- en enable-pinnen verwachten een hoog niveau. Sluit de knop dan zo aan dat hij hoog geeft bij indrukken, dus met een pull-down.
+- **De chip wekt alleen op een stijgende flank**: sommige zeer zuinige MCU's wekken alleen als de pin van laag naar hoog gaat, wat een pull-down met de knop aan de voeding dwingt.
 
 ## Verder lezen
 
 ### Interne versus externe pull-up
 
-Interne MCU-pull-ups (20kΩ~50kΩ) besparen componenten, maar ze hebben een hoge waarde en zijn zwak. Bij lange sporen of in rumoerige omgevingen zijn ze niet betrouwbaar genoeg. Industriële producten voegen vaak een externe 10kΩ toe, zelfs als de MCU interne pull-ups ondersteunt; lagere weerstand, sterkere ruisimmuniteit. De ontwerper kiest op basis van spoorlengte, omgevingsruis en vermogensbudget.
+Gebruik de ingebouwde zolang de draad kort en het board rustig is, en een externe 10kΩ als de draad lang of rumoerig is.
 
 ### Debounce-state-machine
 
-Een simpele delay(20ms) is alleen geschikt voor eenvoudige kliks. Interactie op productieniveau vraagt om een state machine:
+20ms wachten dekt één klik. Wil je dubbelklikken en lang indrukken, dan moet je bijhouden waar je bent:
 
-IDLE → indrukking gedetecteerd → DEBOUNCE_PRESS (20ms wachten en bevestigen) → PRESSED (uitvoeren, loslaat-debounce starten) → loslaten gedetecteerd → DEBOUNCE_RELEASE (20ms wachten en bevestigen) → terug naar IDLE.
+IDLE → indrukking gedetecteerd → DEBOUNCE_PRESS (20ms wachten) → PRESSED (uitvoeren, daarna op loslaten letten) → loslaten gedetecteerd → DEBOUNCE_RELEASE (20ms wachten) → terug naar IDLE.
 
-Dit raamwerk voorkomt dat lang indrukken opnieuw triggert en vormt de basis voor dubbelklik, lang indrukken en andere gebaren.
+Die structuur voorkomt dat een lange indrukking steeds opnieuw afgaat.
 
 ### Polling versus interrupt
 
-Polling: de hoofdlus of een timer leest de GPIO periodiek uit. Simpel, maar vreet CPU-tijd en niet geschikt voor een laag verbruik.
+Polling betekent dat de hoofdlus de pin leest bij elke ronde: simpel, maar de CPU is er constant mee bezig.
 
-Interrupt: knop op een interrupt-pin, flankgetriggerde ISR, start in de ISR een timer voor de debounce. Lager verbruik, snellere respons; essentieel voor apparaten op batterijen.
-
-Echte producten combineren vaak beide: de interrupt wekt het systeem, daarna verzorgt polling de debounce.
+Een interrupt doet het omgekeerde. De pinverandering roept zelf een stukje code aan, een interrupt-handler, en de CPU kan tot dan slapen, daarom gebruiken apparaten op batterijen het. Veel ontwerpen doen beide: de interrupt wekt het systeem, polling doet de debounce.
 
 ### Kwantitatief ontwerp van hardware-debounce
 
-RC-filter (10kΩ + 100nF): fc = 1/(2πRC) ≈ 159Hz, ver onder de mechanische stuiterfrequentie (kHz-bereik), dus de filtering is zeer effectief. τ = RC = 1ms. Met een Schmitt-trigger wordt resterende rimpel nog verder onderdrukt. Stem de condensatorwaarde af op de werkelijke stuiterkarakteristiek; balanceer responssnelheid tegen filtering.
+10kΩ en 100nF zijn het gebruikelijke startpunt, en samen geven ze een tijdconstante van 1ms, langer dan één stuiter. Als filter ligt de kantelfrequentie op 1/(2πRC) ≈ 159Hz: lees dat als veranderingen langzamer dan ongeveer 160 keer per seconde komen door, snellere worden vlakgestreken.
 
 ### Ontwerp voor veiligheid en betrouwbaarheid
 
-Bescherming tegen verkeerde GPIO-modusconfiguratie: als de GPIO per ongeluk als push-pull-uitgang op hoog wordt ingesteld en de knop wordt ingedrukt, krijg je kortsluiting. Plaats een beschermingsweerstand van 100Ω~1kΩ tussen de GPIO en het knopknooppunt ; daarmee wordt de foutstroom 3.3V/100Ω = 33mA in plaats van een directe kortsluiting. Controleer de per-pin limiet in de datasheet, want 33mA ligt bij sommige MCU's boven het absolute maximum.
+Zet de firmware de pin per ongeluk als uitgang, dan kortsluit je die uitgang naar aarde als je de knop indrukt. Een weerstand van 100Ω tot 1kΩ in serie met de knop begrenst de foutstroom (3.3V / 100Ω = 33mA). Controleer de per-pin limiet van je chip voor je de lage kant gebruikt, want sommige chips staan minder toe.
 
-ESD-bescherming: een extern bereikbare knop is een direct menselijk aanraakpad en hoort een TVS of speciale ESD-beschermingsdiode naar aarde te hebben; die leidt de ontlading weg voordat die de MCU bereikt.
+Een extern bereikbare knop is ook een pad voor statische elektriciteit van je vinger; een beveiligingsdiode naar aarde geeft die lading een uitweg voor ze de chip bereikt.
 
 ### Meerdere knoppen en GPIO-optimalisatie
 
-Een ontwerp met één knop werkt alleen voor een paar knoppen.
-
-Bij veel knoppen gebruikt de industrie matrixscanning (rij/kolom) of een ADC-weerstandsladder (een keten weerstanden die de spanning verdeelt; één ADC-pin leest verschillende spanningen voor verschillende knoppen) om flink op GPIO-pinnen te besparen.
+Eén pin per knop raakt snel op. De gebruikelijke oplossingen zijn een matrix, waarbij knoppen rijen en kolommen delen, of een weerstandsladder, waarbij één pin per knop een andere spanning leest.
