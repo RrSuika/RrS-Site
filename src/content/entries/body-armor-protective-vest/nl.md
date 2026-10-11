@@ -83,7 +83,7 @@ Ik benaderde modulariteit vanuit twee richtingen:
 
 # Resultaat
 
-Ik deed geen ballistische labtests in mijn werkplaats, maar ik heb het vest wel praktisch gevalideerd:
+Ik heb zoveel getest als ik met mijn eigen spullen kon. Als ik ooit een geoptimaliseerde versie maak, zou ik een lokaal testcentrum voor dit soort testen kunnen benaderen:
 
 <strong style="color:var(--accent)">Pastesten</strong> betekende meerdere draagsessies waarin ik bewegingsvrijheid, drukpunten en het bereik van de verstellingen controleerde; als ik niet comfortabel kon bewegen, deed de ballistische bescherming er niet toe. <strong style="color:var(--accent)">Materiaalcompatibiliteit</strong> moest in de praktijk worden gecontroleerd, want Kevlar op nylon stapelen klinkt in theorie prima, maar aramide is schurend spul en de twee kunnen elkaar tijdens het bewegen afschuren. <strong style="color:var(--accent)">Steekintegriteit</strong> testte ik door harder aan de MOLLE-bevestigingspunten te trekken dan welke pouch ooit zou doen: de bartack-verstevigingen hielden stand, en daar betaalden mijn draadspanningsexperimenten zich terug. <strong style="color:var(--accent)">Het lastigste deel</strong> waren de naadkruisingen, waar op sommige verbindingspunten 6–8 lagen zware stof op elkaar stapelden. Ik moest de naden zorgvuldig trapsgewijs laten uitlopen en van persvoet wisselen om de dikte te verwerken, en dat is het soort ding dat je pas waardeert als je naar een naaimachine staart waar het materiaal fysiek niet onder de voet past.
 

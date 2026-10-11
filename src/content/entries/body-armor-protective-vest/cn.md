@@ -91,7 +91,7 @@ translationKey: body-armor-protective-vest
 
 # 结果
 
-我没有弹道实验室，但该做的测试一样没少：
+能做的测试我都尽量做了。如果以后做优化版本，可以考虑联系一下本地做这类测试的场地：
 
 <strong style="color:var(--accent)">合身度</strong>靠多次穿戴测试来验，检查活动范围、压力点和调节幅度；如果穿上动不了，防弹性能再好也没意义。<strong style="color:var(--accent)">材料兼容性</strong>必须在实际动作里验，因为凯夫拉贴着尼龙在理论上没问题，芳纶本身却有研磨性，穿脱运动中两者可能互相磨损。<strong style="color:var(--accent)">缝线强度</strong>我是靠用力拽 MOLLE 挂载点来测的，力度远超任何附包的实际负载，打结加固扛住了，也正好验证了我之前反复调张力的意义。<strong style="color:var(--accent)">最头疼的是接缝交汇处</strong>，有些连接点叠了 6–8 层厚面料，必须做缝份分级、换专用压脚才过得去；这种事不亲手做一次，永远不会意识到它是个问题。
 

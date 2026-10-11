@@ -91,7 +91,7 @@ I thought about modularity in two directions:
 
 # Result
 
-I wasn't doing ballistic lab testing in my workshop, but I did put the vest through practical validation:
+I did as much testing as I could with the equipment I had. If I ever build an optimized version, I would look into approaching a local facility that does this kind of testing:
 
 <strong style="color:var(--accent)">Fit testing</strong> meant multiple wear sessions, checking range of motion, pressure points and how far the adjustments could go; if I couldn't move comfortably, the ballistic protection didn't matter. <strong style="color:var(--accent)">Material compatibility</strong> had to be checked in practice, because layering Kevlar against nylon sounds fine in theory but aramid is abrasive stuff and the two can wear on each other during movement. <strong style="color:var(--accent)">Stitch integrity</strong> I tested by yanking on the MOLLE attachment points harder than any pouch ever would: the bartack reinforcements held, and that is where my thread tension experiments paid off. <strong style="color:var(--accent)">The hard part</strong> was the seam intersections, where some join points stacked up 6–8 layers of heavy fabric. I had to grade the seams carefully and swap presser feet to handle the bulk, and that is the kind of thing you don't appreciate until you're staring at a sewing machine that physically cannot fit the material under the foot.
 
