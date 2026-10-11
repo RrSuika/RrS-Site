@@ -38,7 +38,7 @@ Ik zit in **Nederland**, dus alles hier is gebaseerd op **NEN 1010**; de Nederla
 
 # Wat ik wilde bereiken
 
-Ik wilde echt in kaart brengen waar de stroom in mijn werkplaats naartoe loopt, en elk veiligheidsrisico vinden waar ik tot dan toe zonder het te merken voorbij was gelopen. Onderweg wilde ik vaststellen welke apparaten de echte stroomvreters waren, een oplossing ontwerpen die zowel veilig als daadwerkelijk uitvoerbaar was in plaats van een theoretisch "herbedraad het hele huis"-plan, en fysieke circuitscheiding aanbrengen tussen de zware machines en de gevoelige elektronica.
+Ik wilde echt in kaart brengen waar de stroom in mijn werkplaats naartoe loopt, en elk veiligheidsrisico vinden waar ik tot dan toe zonder het te merken voorbij was gelopen. Onderweg wilde ik vaststellen welke apparaten de echte stroomvreters waren, een oplossing ontwerpen die zowel veilig als daadwerkelijk uitvoerbaar was (geen theoretisch "herbedraad het hele huis"-plan), en fysieke circuitscheiding aanbrengen tussen de zware machines en de gevoelige elektronica.
 
 # Hoe een Nederlandse huisinstallatie werkt
 
@@ -74,7 +74,7 @@ Automaten beschermen tegen overbelasting en kortsluiting, maar niet alle automat
 
 ## Kabeldoorsnede
 
-De doorsnede van een kabel is niet zomaar een getal op de mantel; die bepaalt hoeveel stroom de kabel veilig kan voeren. Dingen die je marge aantasten:
+De doorsnede van een kabel bepaalt hoeveel stroom die veilig kan voeren. Dingen die je marge aantasten:
 
 ![Massieve vs. soepele draad](./5.png)
 ![Draadvergelijking](./6.png)
@@ -193,7 +193,7 @@ Ik heb het fysieke werk ook echt uitgevoerd:
 
 # Reflectie
 
-Eerlijk gezegd: hiervoor wist ik genoeg over elektrische veiligheid om gevaarlijk te zijn. Ik begreep automaten en aarding in theorie, maar ik had nooit daadwerkelijk elke verbinding in mijn eigen werkruimte nagelopen en gevraagd "wat gebeurt er als dit faalt?"
+Hiervoor wist ik genoeg over elektrische veiligheid om gevaarlijk te zijn. Ik begreep automaten en aarding in theorie, maar ik had nooit daadwerkelijk elke verbinding in mijn eigen werkruimte nagelopen en gevraagd "wat gebeurt er als dit faalt?"
 
 Die oefening (de topologie tekenen, de circuits nalopen, echt controleren wat waar in zat) veranderde hoe ik naar die ruimte kijk. Je ontwikkelt een gezonde vorm van paranoia. Je begint de opgerolde verlengkabel op te merken, de warme stekker, de adapter die er niet helemaal goed in zit. Dat bewustzijn gaat niet meer weg, en eerlijk gezegd hoeft dat ook niet.
 

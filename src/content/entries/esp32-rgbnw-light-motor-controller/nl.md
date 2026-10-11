@@ -138,7 +138,7 @@ Deze strip gedraagt zich fysiek als WRGB. NeoPixelBus serialiseert de logische `
 RgbwColor color(R, W, G, B);
 ```
 
-Met `(R, G, B, W)` werd groen blauwig en de witte kanalen ook. De opmerking in de sketch somt de vier foute mappings op, en daardoor kon ik het symptoom aan de oorzaak koppelen in plaats van aan de bedrading te gaan twijfelen.
+Met `(R, G, B, W)` werd groen blauwig en de witte kanalen ook. De opmerking in de sketch somt de vier foute mappings op, en daardoor kon ik het symptoom direct aan de oorzaak koppelen en hoefde ik de bedrading niet te verdenken.
 
 # Demping op de uitgang
 
@@ -263,9 +263,9 @@ EC11 #3 -> VALUE / NW is web-controlled
 EC11 #4 -> MOTOR
 ```
 
-mDNS staat standaard aan, dus `http://r2s.local` werkt in plaats van zoeken naar het DHCP-adres.
+mDNS staat standaard aan, dus `http://r2s.local` werkt gewoon en je hoeft het DHCP-adres niet op te zoeken.
 
-Wat ik hierna wil: het witte kanaal gaat er nog steeds van uit dat 255 op de witte led en 255 op de rode led evenveel licht geven, en dat is niet zo. Echte calibratie betekent elke kanaal doormeten en schalen, en dat is het verschil tussen een controller en een lamp.
+Wat ik hierna wil: het witte kanaal gaat er nog steeds van uit dat 255 op de witte led en 255 op de rode led evenveel licht geven, en dat is niet zo. Echte calibratie betekent elk kanaal doormeten en schalen.
 
 # Volledige code
 

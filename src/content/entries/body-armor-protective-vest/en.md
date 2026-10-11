@@ -87,7 +87,7 @@ A few things turned up that I had not planned for. <strong style="color:var(--ac
 
 I thought about modularity in two directions:
 
-<strong style="color:var(--accent)">For the wearer</strong>, hook-and-loop closures at the shoulders and sides mean the vest adapts to your body rather than the other way around. <strong style="color:var(--accent)">For the mission</strong>, the MOLLE grid across the front, back and cummerbund lets you attach whatever you need, whether that is pouches, hydration or admin panels, without modifying the carrier itself.
+<strong style="color:var(--accent)">For the wearer</strong>, hook-and-loop closures at the shoulders and sides let the vest adapt to your body. <strong style="color:var(--accent)">For the mission</strong>, the MOLLE grid across the front, back and cummerbund lets you attach whatever you need, whether that is pouches, hydration or admin panels, without modifying the carrier itself.
 
 # Result
 

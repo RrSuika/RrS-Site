@@ -138,7 +138,7 @@ The physical strip here behaves as WRGB. NeoPixelBus serializes the logical `Rgb
 RgbwColor color(R, W, G, B);
 ```
 
-Passing `(R, G, B, W)` gave green that looked blue and a white channel that looked blue as well. The comment in the sketch lists the four wrong mappings, which is what let me match the symptom to the cause instead of guessing at the wiring.
+Passing `(R, G, B, W)` gave green that looked blue and a white channel that looked blue as well. The comment in the sketch lists the four wrong mappings, which is what let me match the symptom to the cause and skip a trip back to the wiring.
 
 # Smoothing on the Output
 
@@ -263,9 +263,9 @@ EC11 #3 -> VALUE / NW is web-controlled
 EC11 #4 -> MOTOR
 ```
 
-mDNS is on by default, so `http://r2s.local` works instead of chasing the DHCP address.
+mDNS is on by default, so `http://r2s.local` just works and there is no need to look up the DHCP address.
 
-What I want to do next: the white channel still assumes that 255 on the white LED and 255 on the red LED are the same amount of light, and they are not. Real calibration would mean measuring each channel and scaling them, which is the difference between a controller and a light.
+What I want to do next: the white channel still assumes that 255 on the white LED and 255 on the red LED are the same amount of light, and they are not. Real calibration would mean measuring each channel and scaling them.
 
 # Full Code
 

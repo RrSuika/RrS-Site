@@ -75,7 +75,7 @@ GND
 Pull-up: weerstand van VCC naar GPIO. Standaard = hoog, ingedrukt = laag (actief-laag).
 Pull-down: weerstand van GPIO naar GND. Standaard = laag, ingedrukt = hoog (actief-hoog).
 
-Simpel gezegd: een weerstand van de voeding naar de GPIO is een pull-up; die klemt de pin standaard op hoog. Een weerstand van de GPIO naar aarde is een pull-down; die klemt de pin op laag. Beide beperken ook de stroom: zonder de weerstand is het indrukken van de knop een directe kortsluiting.
+Een weerstand van de voeding naar de GPIO is een pull-up; die klemt de pin standaard op hoog. Een weerstand van de GPIO naar aarde is een pull-down; die klemt de pin op laag. Beide beperken ook de stroom: zonder de weerstand is het indrukken van de knop een directe kortsluiting.
 
 ![Vergelijking pull-up en pull-down](./02-pullup-pulldown-comparison.png)
 

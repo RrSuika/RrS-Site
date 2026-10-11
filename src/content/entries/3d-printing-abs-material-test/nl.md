@@ -48,7 +48,7 @@ ABS is aantrekkelijk voor functionele onderdelen omdat het beter tegen hitte kan
 - Uitzoeken welke faalwijzen het vaakst voorkomen
 - Testen of thermische stabiliteit belangrijker is dan de absolute temperatuur
 - Begrijpen welke variabelen echt het verschil maken en aan welke ik mijn tijd aan het verspillen was
-- Eindigen met een proces dat ik echt kan herhalen, in plaats van één keer geluk hebben
+- Eindigen met een proces dat ik echt kan herhalen
 
 # Materiaalachtergrond
 
@@ -76,7 +76,7 @@ Het compromis is de hittebestendigheid: beter dan PLA, maar het haalt het niet b
 
 ABS biedt de hittebestendigheid en slagvastheid. Dat is de aantrekkingskracht.
 
-De keerzijde: het trekt krom als de behuizing te koud is, het loopt vast als de hotendkoeling tekortschiet, en over het algemeen straft het je als je beknibbelt op temperatuurbeheersing. Eerlijk gezegd is het een stresstest voor je hele printeropstelling, van extruder tot behuizingsontwerp en thermisch beheer.
+De keerzijde: het trekt krom als de behuizing te koud is, het loopt vast als de hotendkoeling tekortschiet, en over het algemeen straft het je als je beknibbelt op temperatuurbeheersing. Het is een stresstest voor je hele printeropstelling, van extruder tot behuizingsontwerp en thermisch beheer.
 
 ## Het filament dat ik gebruikte
 
@@ -267,7 +267,7 @@ Ik voegde een thermostaatgestuurd stopcontact toe met een eenvoudige aan/uit-log
 - Verwarming AAN onder 48°C
 - Verwarming UIT boven 51°C
 
-Er is nog steeds wat thermische traagheid: nadat de verwarming uitgaat, kruipt de temperatuur nog 2–3°C omhoog voordat hij daalt, maar vergeleken met turen naar een thermometer en een schakelaar omzetten was dit een enorme verbetering.
+Er is nog steeds wat thermische traagheid: nadat de verwarming uitgaat, kruipt de temperatuur nog 2–3°C omhoog voordat hij daalt, maar vergeleken met turen naar een thermometer en zelf een schakelaar omzetten bleef dit veel stabieler.
 
 ## Vergelijking passieve koeling
 
@@ -424,7 +424,7 @@ Instellingen:
 - Materiaalprofiel: Generiek ABS
 - Nozzletemperatuur: 255°C → 260°C
 
-Ik zal eerlijk zijn: dit waren niet de meest gecontroleerde tests. Ik veranderde meerdere dingen tegelijk, wat experimenteel gezien geen nette aanpak is, maar soms wil je gewoon zien of het ding werkt onder eenvoudigere omstandigheden.
+Dit waren niet de meest gecontroleerde tests. Ik veranderde meerdere dingen tegelijk, wat experimenteel gezien geen nette aanpak is, maar soms wil je gewoon zien of het ding werkt onder eenvoudigere omstandigheden.
 
 Resultaten: lichte kromtrekking aan de randen, maar niets catastrofaals. Voor kleinere onderdelen is de behuizingsverwarming dus misschien niet echt verplicht, en dat is goed om te weten. Maar als je iets groots of plats print, zou ik de temperatuurbeheersing toch graag in stand houden.
 
@@ -487,7 +487,7 @@ Het temperatuurvenster bleek smal en onvergevingsgezind. Onder ongeveer 45°C tr
 
 ## Extrusie- en mechanische problemen
 
-De meeste extrudietrouble kwam voort uit het toevoerpad, niet uit de hotend zelf. Het tandwiel vrat in het filament en kon geen consistente grip houden, wat zich uitte als gedeeltelijke verstoppingen die kwamen en gingen. Heat creep maakte het filament in de koude zone zacht, de extrusieweerstand liep hoog op, en het filament waarmee ik begon had waarschijnlijk vocht opgenomen omdat het had liggen staan.
+De meeste extrudietrouble kwam voort uit het toevoerpad. De hotend zelf was in orde. Het tandwiel vrat in het filament en kon geen consistente grip houden, wat zich uitte als gedeeltelijke verstoppingen die kwamen en gingen. Heat creep maakte het filament in de koude zone zacht, de extrusieweerstand liep hoog op, en het filament waarmee ik begon had waarschijnlijk vocht opgenomen omdat het had liggen staan.
 
 ## Hechtingsproblemen
 
@@ -533,7 +533,7 @@ De grote les over methodologie: drie dingen tegelijk veranderen brengt je missch
 
 # Wat ik heb geleerd
 
-Dit project veranderde hoe ik over 3D-printen denk. ABS is niet zomaar PLA in „hard mode": het is een compleet ander beest dat zwakke plekken in je opstelling blootlegt die makkelijkere materialen je laten negeren.
+Dit project veranderde hoe ik over 3D-printen denk. ABS is een compleet ander beest dan PLA in „hard mode": het legt zwakke plekken in je opstelling bloot die makkelijkere materialen je laten negeren.
 
 Ik begon hieraan denkend dat het over slicer-instellingen en temperaturen ging. Ik kwam eruit met het besef dat het om systeemintegratie gaat: hoe het materiaal, de behuizing, de extrudermechanica en de meetinstrumenten allemaal op elkaar inwerken. Een mislukking is niet zomaar een verpeste print: het is een diagnostisch signaal. Kromtrekking vertelt je iets over thermische gradiënten. Schuren vertelt je iets over de weerstand in het toevoerpad. Elke mislukte test bakende verder af wat er echt toe deed.
 

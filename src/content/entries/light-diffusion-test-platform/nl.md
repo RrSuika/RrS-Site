@@ -38,7 +38,7 @@ Dit gebeurt voortdurend in productontwerp: je kiest een doorschijnend materiaal 
 
 Het probleem is dat twee materialen die er onder kamerlicht identiek uitzien, zich totaal anders kunnen gedragen zodra ze van achteren worden belicht. Oppervlakteafwerking, dikte, interne structuur: ze beïnvloeden allemaal hoe licht door het materiaal beweegt, en renders brengen je maar tot zover. Op een gegeven moment moet je het met eigen ogen zien.
 
-Dus bouwde ik een testopstelling, zodat elke CMF-beslissing die ik daarna nam onderbouwd zou zijn met data in plaats van intuïtie.
+Dus bouwde ik een testopstelling, zodat elke CMF-beslissing daarna op een vaste procedure zou rusten.
 
 # Eisen
 
@@ -129,7 +129,7 @@ Elk materiaal doorliep meerdere configuraties (verschillende diktes, verschillen
 
 # Beheersbare variabelen
 
-Het hele doel van het bouwen van een testopstelling in plaats van dingen gewoon voor een lamp te houden, was dat ik één ding tegelijk kon veranderen. Systematisch A/B-testen is alleen mogelijk als je elke variabele kunt vastzetten behalve degene die je onderzoekt.
+Het hele doel van het bouwen van deze testopstelling was dat ik één ding tegelijk kon veranderen. Systematisch A/B-testen is alleen mogelijk als je elke variabele kunt vastzetten behalve degene die je onderzoekt.
 
 <div class="variables-grid">
 

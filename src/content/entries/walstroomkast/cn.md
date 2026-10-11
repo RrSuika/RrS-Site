@@ -126,7 +126,7 @@ translationKey: walstroomkast
 <div class="tab-panel tab-image">
 <h4>连接方式</h4>
 <img src="./solutions-connections.webp" alt="连接方式研究" style="max-width:100%; border-radius:8px; display:block; margin:0 0 8px;" />
-<p>模块之间最终采用上下夹层固定的方式，每个柜子模块可以左右连接。这意味着假设加入新的模块，就需要为它配新的上下夹层：下层需要承载足够的重量，上层（也就是屋顶）需要足够的防水性能。</p>
+<p>模块之间最终采用上下夹层固定的方式，每个柜子模块可以左右连接。加入新的模块，就得为它配新的上下夹层：下层需要承载足够的重量，上层（也就是屋顶）需要足够的防水性能。</p>
 <p><strong>最终选择：</strong>上下夹层固定、模块左右相连。整壳连续的结构比全模块化拼板防水更好。</p>
 </div>
 <div class="tab-panel">

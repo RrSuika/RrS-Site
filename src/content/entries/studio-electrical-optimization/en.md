@@ -38,7 +38,7 @@ I'm in **the Netherlands**, so everything here is grounded in **NEN 1010**: the 
 
 # What I Wanted to Achieve
 
-I wanted to actually map out where power flows in my workshop, and to find every safety risk I had been walking past without noticing. Along the way I wanted to work out which devices were the real power hogs, design a solution that was both safe and genuinely doable rather than a theoretical "rewire the house" plan, and put physical circuit separation between the heavy machinery and the sensitive electronics.
+I wanted to actually map out where power flows in my workshop, and to find every safety risk I had been walking past without noticing. Along the way I wanted to work out which devices were the real power hogs, design a solution that was both safe and genuinely doable (not a theoretical "rewire the whole house" exercise), and put physical circuit separation between the heavy machinery and the sensitive electronics.
 
 # How a Dutch Home Electrical System Works
 
@@ -193,7 +193,7 @@ I actually did the physical work:
 
 # Reflection
 
-I'll be honest: before this, I knew enough about electrical safety to be dangerous. I understood breakers and grounding in theory, but I'd never actually traced every connection in my own workspace and asked "what happens if this fails?"
+Before this, I knew enough about electrical safety to be dangerous. I understood breakers and grounding in theory, but I'd never actually traced every connection in my own workspace and asked "what happens if this fails?"
 
 Doing that exercise: drawing the topology, walking the circuits, actually checking what was plugged into what: changed my relationship with the space. You develop a healthy paranoia. You start noticing the coiled extension cord, the warm plug, the adapter that's not quite seated right. That awareness doesn't go away, and honestly, it shouldn't.
 

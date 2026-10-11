@@ -68,7 +68,7 @@ De prijs is reëel en het loont om die gewoon te benoemen. Deze architectuur is 
 
 - Begon vanuit `X:\Github\RrS-Personal-Website`;
 - Bepaalde de basissecties: wie ik ben, wat ik maak, hoe je contact opneemt;
-- Zette echte inhoud erin in plaats van een lege schil;
+- Zette echte inhoud erin, geen lege schil;
 - Zorgde dat het op een computer in elk geval goed opende.
 
 ## Problemen
@@ -93,7 +93,7 @@ De prijs is reëel en het loont om die gewoon te benoemen. Deze architectuur is 
 - Bepaalde voor wie de site is en welke indruk hij moet achterlaten;
 - Leverde echte ervaringen, projecten, afbeeldingen en contactgegevens;
 - Beoordeelde of de pagina goed voelde;
-- Testte op een echte telefoon in plaats van alleen in een voorbeeld op de computer;
+- Testte op een echte telefoon, niet alleen in een voorbeeld op de computer;
 - Besloot dat V1 niet perfect hoefde te zijn.
 
 ## Wat ik leerde
@@ -122,7 +122,7 @@ De prijs is reëel en het loont om die gewoon te benoemen. Deze architectuur is 
 
 ## Wat AI deed
 
-- Bood meerdere visuele richtingen in plaats van één antwoord;
+- Bood meerdere visuele richtingen, niet één antwoord;
 - Genereerde de eerste versie van de bewegende achtergrond en terminalinteractie;
 - Legde uit waarom de achtergrond naar achteren moest en de tekst naar voren;
 - Stelde lichtere alternatieven voor de prestaties voor;
@@ -132,13 +132,13 @@ De prijs is reëel en het loont om die gewoon te benoemen. Deze architectuur is 
 
 - Bepaalde welke effecten bleven en welke weg gingen;
 - Zette de beweging lager; liever minder effect dan slechter lezen;
-- Testte op echte apparaten in plaats van alleen op de ontwikkelcomputer;
+- Testte op echte apparaten, niet alleen op de ontwikkelcomputer;
 - Controleerde of elke passage duidelijk was;
 - Verwijderde alles wat indrukwekkend leek maar geen echt nut had.
 
 ## Wat ik leerde
 
-> **Stijl is niet meer toevoegen; stijl is herkenbaar zijn zonder in de weg te zitten.**
+> **Stijl is herkenbaar zijn zonder in de weg te zitten.**
 > De echte vooruitgang van V2 was dat de site een persoonlijkheid kreeg.
 
 # V3: Geef het een wereld
@@ -147,7 +147,7 @@ De prijs is reëel en het loont om die gewoon te benoemen. Deze architectuur is 
 
 - Verschoof het visuele thema van “technologie” naar “kosmos”;
 - Voegde NASA punk, neumorfisme en glassmorfisme toe op een retro-futuristische basis;
-- Voegde in één zin een **sterrenveld, een zwart gat en zwaartekrachtlens** toe: licht buigt rond het zwarte gat, en sterren, zwart gat en inhoud delen één scène in plaats van losse lagen te vormen;
+- Voegde in één zin een **sterrenveld, een zwart gat en zwaartekrachtlens** toe: licht buigt rond het zwarte gat, en sterren, zwart gat en inhoud delen één scène en versterken elkaar;
 - Streefde naar een “chimera” die tijd overspant en meerdere technologiestijlen mengt.
 
 ## Problemen
@@ -314,10 +314,8 @@ Er zijn veel referentiesites, en zonder plan verdwaal je snel. Ik heb ze op doel
 
 Deze site groeide van een eenvoudige persoonlijke homepage naar een neuraal netwerk en hackerterminal, en daarna naar een sterrenveld, zwart gat en zwaartekrachtlens.
 
-De visuals zijn alleen het zichtbare deel. Wat het proces me echt leerde, is dat AI me over de drempel van "ik kan niet programmeren" kan tillen, en dat smaak, oordeel, inhoud en verantwoordelijkheid daarna nog steeds bij mij liggen. Een website blijkt een doorlopend verslag van iteratie in plaats van een afgerond object.
+De visuals zijn alleen het zichtbare deel. Wat het proces me echt leerde, is dat AI me over de drempel van "ik kan niet programmeren" kan tillen, en dat smaak, oordeel, inhoud en verantwoordelijkheid daarna nog steeds bij mij liggen. Een website blijkt een doorlopend verslag van iteratie.
 
 AI maakt uitvoering goedkoop, en precies daarom wordt oordeel waardevol.
-
-Als ik het project in één zin moet samenvatten:
 
 > **AI maakt ideeën sneller; ik maak ze de moeite waard.**

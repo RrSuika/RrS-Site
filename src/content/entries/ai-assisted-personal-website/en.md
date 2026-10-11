@@ -68,7 +68,7 @@ The cost is real, and it is worth stating plainly. This architecture is more com
 
 - Started from `X:\Github\RrS-Personal-Website`;
 - Decided on the basic sections: who I am, what I make, how to contact me;
-- Put real content in instead of leaving an empty shell;
+- Put real content in, no empty shell;
 - Made sure it could at least open correctly on a computer.
 
 ## Problems
@@ -93,7 +93,7 @@ The cost is real, and it is worth stating plainly. This architecture is more com
 - Decided who the site was for and what impression it should leave;
 - Provided real experiences, projects, images and contact details;
 - Judged whether the page felt right;
-- Tested it on a real phone instead of only on a desktop preview;
+- Tested it on a real phone, not only a desktop preview;
 - Decided that V1 did not need to be perfect.
 
 ## What I learned
@@ -122,7 +122,7 @@ The cost is real, and it is worth stating plainly. This architecture is more com
 
 ## What AI did
 
-- Offered several visual directions instead of one answer;
+- Offered several visual directions, not a single answer;
 - Generated the first version of the animated background and terminal interaction;
 - Explained why the background should recede and the text should come forward;
 - Proposed lighter alternatives for performance;
@@ -132,13 +132,13 @@ The cost is real, and it is worth stating plainly. This architecture is more com
 
 - Decided which effects stayed and which were removed;
 - Turned the motion down; better less effect than worse reading;
-- Tested on real devices instead of only the development computer;
+- Tested on real devices, not only the development computer;
 - Checked whether every passage was clear;
 - Deleted anything that looked impressive but had no real use.
 
 ## What I learned
 
-> **Style is not about adding more; it is about being memorable without getting in the way.**
+> **Style is about being memorable without getting in the way.**
 > V2’s real progress was that the site began to have a personality.
 
 # V3: Give it a world
@@ -147,7 +147,7 @@ The cost is real, and it is worth stating plainly. This architecture is more com
 
 - Moved the visual theme from “technology” to “cosmos”;
 - Added NASA punk, neumorphism and glassmorphism on top of a retro-futuristic base;
-- Added a **starfield, a black hole and gravitational lensing** in one sentence: light bends around the black hole, and the stars, black hole and content share one scene instead of feeling like separate layers;
+- Added a **starfield, a black hole and gravitational lensing** in one sentence: light bends around the black hole, and the stars, black hole and content share one scene and reinforce each other;
 - Aimed for a “chimera” that spans time and mixes several technology aesthetics.
 
 ## Problems
@@ -314,10 +314,8 @@ There are many reference sites, and browsing them without a plan quickly becomes
 
 This site grew from a simple personal homepage into a neural network and hacker terminal, and then into a starfield, black hole and gravitational lensing.
 
-The visuals are only the visible part. What the process actually taught me is that AI can carry me across the threshold of not knowing how to code, and that once I am across, taste, judgement, content and responsibility are still mine. A website turns out to be an ongoing record of iteration rather than a finished object.
+The visuals are only the visible part. What the process actually taught me is that AI can carry me across the threshold of not knowing how to code, and that once I am across, taste, judgement, content and responsibility are still mine. A website turns out to be an ongoing record of iteration.
 
 AI makes execution cheap, which is exactly what makes judgement valuable.
-
-If I had to summarise the project in one sentence:
 
 > **AI makes ideas faster; I make them worth doing.**

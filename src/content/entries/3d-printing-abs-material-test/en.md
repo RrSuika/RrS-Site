@@ -267,7 +267,7 @@ I added a thermostat-controlled outlet with a simple on/off logic:
 - Heater ON below 48°C
 - Heater OFF above 51°C
 
-There's still some thermal inertia: after the heater cuts off, the temperature creeps up another 2–3°C before cooling down: but compared to me squinting at a thermometer and flipping a switch, this was a massive improvement.
+There's still some thermal inertia: after the heater cuts off, the temperature creeps up another 2–3°C before cooling down, but compared to me squinting at a thermometer and flipping a switch, this held far steadier.
 
 ## Passive Cooling Comparison
 
@@ -424,7 +424,7 @@ Settings:
 - Material profile: Generic ABS
 - Nozzle temperature: 255°C → 260°C
 
-I'll be honest: these weren't the most controlled tests. I was changing multiple things at once, which is bad experimental practice but sometimes you just want to see if the thing works under simpler conditions.
+These weren't the most controlled tests. I was changing multiple things at once, which is bad experimental practice but sometimes you just want to see if the thing works under simpler conditions.
 
 Results: slight edge warping, but nothing catastrophic. This suggests the enclosure heater might not actually be mandatory for smaller parts, which is good to know. But if you're printing something large or flat, I'd still want the temperature control in place.
 
@@ -487,7 +487,7 @@ The thermal window turned out to be narrow and unforgiving. Below about 45°C th
 
 ## Extrusion and mechanical issues
 
-Most of the extrusion trouble traced back to the feed path rather than the hotend. The gear ground into the filament and could not hold a consistent grip, which showed up as partial clogs that came and went. Heat creep softened the filament up in the cold zone, extrusion resistance ran high, and the filament I started with had probably taken on moisture from sitting out.
+Most of the extrusion trouble traced back to the feed path. The hotend itself was fine. The gear ground into the filament and could not hold a consistent grip, which showed up as partial clogs that came and went. Heat creep softened the filament up in the cold zone, extrusion resistance ran high, and the filament I started with had probably taken on moisture from sitting out.
 
 ## Adhesion issues
 

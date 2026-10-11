@@ -38,7 +38,7 @@ Picking a translucent material for a lamp shade, a diffuser panel, or a display 
 
 The trouble is two materials that look identical under room light can behave completely differently once they're backlit. Surface finish, thickness and internal structure all affect how light moves through the material, and renderings can only get you so far. At a certain point, you have to see it with your own eyes.
 
-So I built a test platform, so that every CMF decision after that would be backed by data instead of intuition.
+So I built a test platform, so that every CMF decision after that would rest on a fixed process.
 
 # Requirements
 
@@ -129,7 +129,7 @@ Each material went through multiple configurations: different thicknesses, diffe
 
 # Controllable Variables
 
-The whole point of building this thing instead of just holding materials up to a lamp was to change one thing at a time. Systematic A/B testing is only possible if you can lock every variable except the one you're studying.
+The whole point of building this thing was to change one thing at a time. Systematic A/B testing is only possible if you can lock every variable except the one you're studying.
 
 <div class="variables-grid">
 

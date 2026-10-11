@@ -171,7 +171,7 @@ NL `Doel` / `Wat ik heb gebouwd` / `Achtergrond`。
 
 | 规则 | 触发标记 | 改法 |
 |---|---|---|
-| 1 翻案腔 | 「不是……而是」「并非……而是」「不在于……而在于」「不只是……还有」「看似……实则」；EN `not X, but Y` / `not just X, but Y`；NL `niet X, maar Y` / `Geen X, maar Y` / `niet alleen…maar ook` | 直接正面下判断，先给判断再给依据。**中文这条是零容忍（规则 21①）** |
+| 1 翻案腔 | **中文**：「不是……而是」「并非……而是」「不在于……而在于」「不只是……还有」「看似……实则」，**以及结构相反、更隐蔽的几种**：「A，而不是 B」「是 A，不是 B」「没有 A，而是 B」「不靠 A，靠 B」「那才是 A 和 B 的区别」。**EN**：`not X, but Y` / `not just X, but Y` / `isn't about X, it's about Y` / `Not because A, but because B`，**以及** `A rather than B` / `did X instead of Y` / `the other way around`。**NL**：`niet X, maar Y` / `Geen X, maar Y` / `niet alleen…maar ook`，**以及** `A in plaats van B` / `niet zomaar X: het is Y` | 直接正面下判断，先给判断再给依据。**中文这条是零容忍（规则 21①）**，EN/NL 同等处理。**判据**：被否定的那一半若是「读者以为的错答案」「我没做的那个动作」「先立起来的稻草人」→ 删掉否定项，只留正面陈述；若是**事实、规格或机理本身**→ 保留（见下） |
 | 2 顿号密集 | 一个分句内两个以上顿号连接三项以上并列 | 能概括就概括；必须保留三项以上时打散其中一项的句法 |
 | 3 相邻句同构 | 连续两句以上逗号数相同、成分顺序相同、长度接近 | 打散其中一句的句法 |
 | 4 破折号 | 揭晓式破折号 | 写完整句子，或改逗号句号 |
@@ -191,7 +191,9 @@ NL `Doel` / `Wat ik heb gebouwd` / `Achtergrond`。
 revolutionary）在修辞语境禁用。
 **NL 专属**：句首 echter / bovendien / daarnaast 避免；voorts / derhalve 这类古旧词避免；
 「het is belangrijk om te benadrukken」类模板句不得出现。
-**保留项（三语通用）**：事实性否定（「我没做弹道测试」）、规格注记、代码注释、口语化片语。
+**保留项（三语通用）**：事实性否定（「我没做弹道测试」「实际并不是」「封箱温度已经不是唯一的瓶颈」）、规格注记（`allowed, not required`）、代码注释、口语化片语、教学语境的设问（「那电子是从电池以光速冲到灯泡里的吗？不是，完全不是」）、诚实的局限承认（`niet de meest gecontroleerde tests, maar de trend is duidelijk`）、**物料/机械/电气对比**（`adhesive rather than welded`、`log-spaced rather than linear`、`shunted to earth rather than injected into the rail`、`the gear spun against it instead of feeding it`、`alleen met stof in plaats van spuitgegoten plastic`）、**前后版本的实测差异**（`instead of raw angles each module got a real job`）。判据只有一条：**删掉否定项之后信息有没有变少**。少了就是事实，没少就是腔调。
+
+**复扫方法（2026-10-12 补，这条漏过一轮）**：改完不要只靠人眼，跑一遍正则。中文 `不是[^。；]{1,30}[，,]?(而是|是)` / `[，,]而不是` / `而非` / `才是[^。]{0,20}的区别`；EN `\bnot (just |only )?[^.;]{1,45}\bbut\b` / `\brather than\b` / `\binstead of\b` / `the other way around`；NL `\bniet [^.;]{1,45}\bmaar\b` / `\bgeen [^.;]{1,45}\bmaar\b` / `\bin plaats van\b`。命中逐条按上面的判据过，**不要批量替换**：批量替换会把 `adhesive rather than welded` 这类事实句一起改坏。扫描器本身有两个坑：① 只把 `<div|table|section|style|script|tbody|thead|tr` 当 HTML 块，以 `<strong>`/`<span>` 开头的行是正文，必须扫；② 破折号正则要先排掉 `var(--token)` 和代码里的 `i--`，否则全是假命中。
 
 ---
 
@@ -317,6 +319,7 @@ LOAD 口上、Class T 熔断器分断能力写错 10 倍、用直流布线指南
 | **中文标题与英文含义脱节** | 英文 `What I Built`，中文写 `项目目标` | 逐条对比中英标题 | 按 §3.3 的词表对齐 |
 | **英文拼写混乱** | 同一文件里 colour/color 并存 | 搜英式拼写 | 按 §7 统一为美式 |
 | **目录名与 translationKey 不一致** | `zoem-bike-bakfiets` 目录 vs `zoem-bike-cargo-box` key | 比对两者 | 目前三语都一致所以不坏，但新条目要避免 |
+| **翻案腔漏扫** | 规则 21①/22 早在册，却仍留下「是背心适应人，不是人迁就背心」「ABS is niet zomaar PLA in hard mode: het is…」「works instead of chasing the DHCP address」这类句子 | 按 §5 的复扫正则跑三语全文（扫描器两个坑见 §5） | 按判据逐条改，改完再跑一遍确认归零。**教训：规则在册 ≠ 扫过；每轮收尾必须重跑正则，报告「已清理」之前先看到 0** |
 
 ---
 
@@ -331,7 +334,7 @@ LOAD 口上、Class T 熔断器分断能力写错 10 倍、用直流布线指南
 - [ ] 保留列表的仍是数据；改成散文的没有丢事实
 
 **文笔**
-- [ ] 三语都没有翻案腔
+- [ ] 三语都没有翻案腔（按 §5 复扫正则跑过且命中为 0，不是靠人眼过一遍）
 - [ ] **全文搜过 `—` / `——` / `――`，一个都没有**（`–` 区间保留）
 - [ ] 没有新增段首连接词
 - [ ] 具体数值没有被概括词盖掉

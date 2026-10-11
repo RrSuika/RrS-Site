@@ -75,7 +75,7 @@ GND
 Pull-up: resistor from VCC to GPIO. Default = HIGH, pressed = LOW (active-low).
 Pull-down: resistor from GPIO to GND. Default = LOW, pressed = HIGH (active-high).
 
-Simply put, a resistor from power to GPIO is a pull-up: it clamps the pin HIGH by default. A resistor from GPIO to ground is a pull-down: it clamps the pin LOW. Both also limit current: without the resistor, pressing the button is a dead short.
+A resistor from power to GPIO is a pull-up: it clamps the pin HIGH by default. A resistor from GPIO to ground is a pull-down: it clamps the pin LOW. Both also limit current: without the resistor, pressing the button is a dead short.
 
 ![Pull-Up vs Pull-Down Comparison](./02-pullup-pulldown-comparison.png)
 

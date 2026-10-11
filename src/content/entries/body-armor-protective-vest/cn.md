@@ -87,7 +87,7 @@ translationKey: body-armor-protective-vest
 
 模块化我分了两个方向考虑：
 
-<strong style="color:var(--accent)">面向穿戴者</strong>，肩部和两侧用魔术贴闭合，尺寸可调，是背心适应人，不是人迁就背心。<strong style="color:var(--accent)">面向任务</strong>，正面、背面和腰封满铺 MOLLE 网格，附包、水袋和行政面板随任务挂载，不用动背心本身。
+<strong style="color:var(--accent)">面向穿戴者</strong>，肩部和两侧用魔术贴闭合，尺寸可调，让背心去适应人的体型。<strong style="color:var(--accent)">面向任务</strong>，正面、背面和腰封满铺 MOLLE 网格，附包、水袋和行政面板随任务挂载，不用动背心本身。
 
 # 结果
 
