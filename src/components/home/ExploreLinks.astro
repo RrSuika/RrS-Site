@@ -318,4 +318,28 @@ const notesPath = getLocalizedPath("/notes", language);
       padding: 0 20px;
     }
   }
+
+  /* ═══════════════════════════════════════════
+     TEMPORARY — 首页四个 MODULE 方块被临时隐藏
+     ═══════════════════════════════════════════
+     状态：首页的 MODULE_01 // WORKS、MODULE_02 //
+     EXPERIMENTS、MODULE_03 // VISUAL、MODULE_04 //
+     KNOWLEDGE 四张卡片被临时隐藏（用户要求）。
+     四个卡片的元素本身仍完整存在于本组件中，
+     文案与链接均未被删除。
+
+     ── 如何恢复 ──
+     删除本区块内的整条 .explore-grid { display: none; }
+     规则（即下面这 3 行），四张卡片即恢复显示。
+     无需修改任何其他文件。
+
+     为什么写在这里而不是 global.css：这一组样式是
+     组件级 scoped CSS（.explore-grid[data-astro-cid-*]，
+     特异性 0,2,0），global.css 里的单类选择器
+     （0,1,0）压不过它，只有写在同一个 scoped 块里、
+     且位于 display: grid 之后，才能稳定覆盖。
+     ═══════════════════════════════════════════ */
+  .explore-grid {
+    display: none;
+  }
 </style>

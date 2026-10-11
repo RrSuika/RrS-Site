@@ -60,7 +60,11 @@ const aboutPath = getLocalizedPath("/about", language);
 
     margin: 0 auto;
 
-    background: var(--surface-deep);
+    /* 与 SYS.LOG（LatestUpdates 的 .panel）保持同一半透明效果：
+       复用该处已有的 rgba(8, 8, 12, 0.9)，不是新颜色。
+       亮色主题由下方 :root[data-theme="light"] 覆盖成 var(--paper)，
+       两个区块在亮色下本来就一致。 */
+    background: rgba(8, 8, 12, 0.9);
 
     border: 1px solid var(--border);
 
