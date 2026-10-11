@@ -33,7 +33,7 @@ translationKey: 3d-printing-abs-material-test
 ![ABS 3D Printing Research](./ABS-3D-Printing-Guide-0.png)
 
 # Background
-So I decided to finally tackle ABS. If you've spent any time in 3D printing communities, you know the reputation: it warps, it shrinks, it clogs, and if you so much as breathe on it wrong during a print, it'll peel right off the bed. But I kept coming back to the same question: is it really that hard, or do most people just not spend enough time understanding what's actually going on?
+So I decided to finally tackle ABS. If you've spent any time in 3D printing communities, you know the reputation: it warps, it shrinks, it clogs, and a small change in the enclosure can lift it right off the bed. But I kept coming back to the same question: is it really that hard, or do most people just not spend enough time understanding what's actually going on?
 
 This log is my attempt to answer that. I ran 15 tests on a Bambu Lab A1, messing with enclosure temperatures, heater wattages, fan speeds, print speeds, and whatever else I could tweak. Along the way I jammed my hotend more times than I'd like to admit, learned a lot about heat creep, and eventually got to a workflow that actually works.
 

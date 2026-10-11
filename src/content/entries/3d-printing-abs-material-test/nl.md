@@ -33,7 +33,7 @@ translationKey: 3d-printing-abs-material-test
 ![ABS 3D-printonderzoek](./ABS-3D-Printing-Guide-0.png)
 
 # Achtergrond
-Dus besloot ik om eindelijk serieus met ABS aan de slag te gaan. Als je ooit tijd hebt doorgebracht in 3D-printcommunity's, ken je de reputatie: het trekt krom, het krimpt, het raakt verstopt, en als je er tijdens een print ook maar verkeerd naar kijkt, laat het los van het bed. Maar ik bleef terugkomen bij dezelfde vraag: is het echt zo moeilijk, of nemen de meeste mensen gewoon niet genoeg tijd om te begrijpen wat er eigenlijk gebeurt?
+Dus besloot ik om eindelijk serieus met ABS aan de slag te gaan. Als je ooit tijd hebt doorgebracht in 3D-printcommunity's, ken je de reputatie: het trekt krom, het krimpt, het raakt verstopt, en een kleine verandering in de behuizing kan het zo van het bed lichten. Maar ik bleef terugkomen bij dezelfde vraag: is het echt zo moeilijk, of nemen de meeste mensen gewoon niet genoeg tijd om te begrijpen wat er eigenlijk gebeurt?
 
 Dit logboek is mijn poging om die vraag te beantwoorden. Ik heb 15 tests gedraaid op een Bambu Lab A1, waarbij ik heb geëxperimenteerd met behuizingstemperaturen, verwarmingsvermogens, fansnelheden, printsnelheden en alles wat ik verder kon aanpassen. Onderweg heb ik mijn hotend vaker laten verstoppen dan ik wil toegeven, veel geleerd over heat creep en uiteindelijk een workflow gevonden die echt werkt.
 
