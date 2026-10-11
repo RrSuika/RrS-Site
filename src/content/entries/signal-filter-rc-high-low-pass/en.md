@@ -1,7 +1,7 @@
 ---
 title: "Signal Filtering: RC High-Pass & Low-Pass"
 date: 2026-08-10
-description: "A designer's guide to passive RC filter circuits: cutoff frequency calculation, frequency response characteristics, and practical applications in signal conditioning."
+description: "One resistor, one capacitor and one formula behind anti-aliasing, debounce, PWM smoothing and audio coupling: how fc = 1/(2πRC) behaves in the frequency and the time domain, and where each version shows up."
 
 type: note
 category: Electronics
@@ -32,11 +32,11 @@ RC filters were one of the first things I learned in analog circuits. Just a res
 
 Capacitive reactance: **Xc = 1/(2πfC)**. Higher frequency → lower impedance. Lower frequency → higher impedance. Pair this with a resistor divider and you get different attenuation for different frequencies.
 
-- **At low frequencies**: the capacitor is effectively an open circuit (high impedance). Depending on configuration, signal is either blocked or passes freely.
+- **At low frequencies**: the capacitor is effectively an open circuit (high impedance). What that does to the signal depends on where it sits: in series it blocks, to ground it passes.
 - **At high frequencies**: the capacitor is effectively a short (low impedance).
 - **Cutoff frequency fc**: when |Xc| = R, f = 1/(2πRC), output power drops to half (-3dB).
 
-fc = 1/(2πRC): probably the most-used formula in my notebook. I've calculated it for debounce circuits, audio filters, ADC front-ends... it shows up everywhere.
+That one formula is probably the most-used line in my notebook: debounce circuits, audio filters, ADC front-ends, it shows up everywhere.
 
 ## RC Low-Pass Filter
 
@@ -62,7 +62,7 @@ Resistor in series, capacitor to ground. Low frequencies pass through the resist
 
 - **Anti-aliasing before ADC**: anything above the Nyquist frequency (fs/2) must be eliminated before sampling, or it folds back as aliasing. Stick an RC low-pass right at the ADC input pin.
 - **Power ripple suppression**: DC/DC switching noise: use RC (or LC) low-pass to knock it down.
-- **Hardware button debounce**: 10kΩ + 100nF, fc ≈ 159Hz. Mechanical contact bounce is in the kHz range: an order of magnitude apart, so filtering is very effective. I usually combine hardware and software debounce.
+- **Hardware button debounce**: 10kΩ + 100nF, fc ≈ 159Hz. A switch bounces for roughly 0.1–10ms, and the RC only shaves the edges: a single pole leaves the output creeping through the logic threshold, so I pair it with a Schmitt-trigger input or software debounce.
 - **PWM to analog voltage**: feed PWM square wave through a low-pass with fc well below the PWM frequency, and you get smooth DC proportional to duty cycle. A simple DAC.
 - **Audio bass extraction**: in crossovers and tone controls, the low-pass picks out the low frequencies for the bass path.
 
@@ -108,7 +108,7 @@ Capacitor in series, resistor to ground. High frequencies sail through the capac
 
 ## RC Band-Pass Filter
 
-Cascade a high-pass followed by a low-pass (buffer between them to avoid loading):
+Cascade a high-pass followed by a low-pass, with a buffer between them. The drawing omits that buffer: without it the second stage loads the first and both cutoffs move.
 
 ```
 Vin ── C1 ──┬── R1 ──┬── Vout

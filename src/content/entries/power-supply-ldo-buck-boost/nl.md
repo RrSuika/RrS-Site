@@ -1,7 +1,7 @@
 ---
 title: "Voeding: LDO-, buck- en boost-omzetters"
 date: 2026-08-10
-description: "Een ontwerpersgids voor voedingstopologieën: LDO-lineaire regelaars, buck-/boost-schakelomzetters, batterijopladen, beveiligingscircuits en praktische selectiecriteria."
+description: "De drie vragen die ik stel voordat ik een voedingstopologie kies, wat een LDO je aan warmte kost tegenover wat een buck je aan rimpel kost, en waarom een accu zowel een beschermingsboard als een lader nodig heeft."
 
 type: note
 category: Elektronica
@@ -35,7 +35,7 @@ Deze drie vragen hebben me veel herwerk bespaard.
 
 ## Vermogensarchitectuur: het is een energiedistributiesysteem
 
-Na een tijdje besefte ik: voedingsontwerp gaat niet over "elektriciteit opwekken". Het gaat erom de juiste spanning, de juiste stroom en het juiste ruisniveau naar elke module te brengen, precies daar waar het nodig is. Als ik nu naar een printplaat kijk, is mijn eerste reflex om de voedingsingang te vinden en het vermogenspad stroomafwaarts te volgen.
+Na een tijdje besefte ik: voedingsontwerp draait erom de juiste spanning, de juiste stroom en het juiste ruisniveau naar elke module te brengen, precies daar waar het nodig is. Als ik nu naar een printplaat kijk, is mijn eerste reflex om de voedingsingang te vinden en het vermogenspad stroomafwaarts te volgen.
 
 ## Voedingssystemen zijn ketens van meertrapsomzetting
 
@@ -62,7 +62,7 @@ Wat ik heb geleerd:
 - Plan je spanningsrails zorgvuldig. Gevoelige schakelingen hebben mogelijk extra filtering op hun voeding nodig.
 - Beveiligingscomponenten (zekering, omgekeerde polariteit) zien er eenvoudig uit, maar ze leggen de ondergrens van de veiligheid van je product vast. Bespaar hier nooit op.
 
-Zekeringselectie kent vier checks in de bedradingsgids: stroomwaarde, spanningswaarde, onderbrekingsvermogen en snelheid (FF/F/M/T/TT). Het onderbrekingsvermogen wordt op batterijschaal veiligheidskritisch: LiFePO4 levert veel hogere kortsluitstromen dan loodzuur, en de zekering moet die foutstroom kunnen onderbreken zonder zelf te barsten. Typische waarden: MEGA-zekeringen 2,5kA bij 70V DC, NH-meszekeringen 25kA, Class T 200kA. De board-level-gewoonte om beveiliging te kiezen op basis van wat die moet doorstaan, gaat één-op-één over naar batterijsystemen.
+Zekeringselectie kent vier checks in de bedradingsgids: stroomwaarde, spanningswaarde, onderbrekingsvermogen en snelheid (FF/F/M/T/TT). Het onderbrekingsvermogen wordt op batterijschaal veiligheidskritisch: LiFePO4 levert veel hogere kortsluitstromen dan loodzuur, en de zekering moet die foutstroom kunnen onderbreken zonder zelf te barsten. Typische waarden: MEGA-zekeringen 2,5kA bij 70V DC, NH-meszekeringen 25kA, Class T 20kA bij 125V DC. De gewoonte op printniveau om beveiliging te kiezen op basis van wat die moet doorstaan, gaat één-op-één over naar batterijsystemen.
 
 ## LDO-lineaire regelaars: schoon en simpel, maar ze worden heet
 
@@ -79,7 +79,8 @@ Voordelen van LDO's: doodsimpel circuit (ingangscondensator + LDO + uitgangscond
 Ik grijp naar een LDO wanneer:
 - Ik van 3.6V Li-ion naar 3.3V ga voor een MCU of sensor; slechts 0.3V verschil, nauwelijks warmte.
 - Ik ruisgevoelige analoge/RF-schakelingen voed (audioversterkers, ADC-referenties).
-- Ik zou er GEEN gebruiken voor 12V-naar-5V bij hoog vermogen; dan heb je een enorm koellichaam nodig. Niet de moeite waard.
+
+Voor 12V naar 5V bij hoog vermogen zou ik er geen gebruiken; dan heb je een enorm koellichaam nodig, en dat is de moeite niet waard.
 
 Praktijklessen:
 - Na het berekenen van P_loss geldt: junctietemperatuur = omgevingstemperatuur + P_loss × θJA. Houd die in de veilige zone.
@@ -92,19 +93,18 @@ Een Buck pakt het heel anders aan: in plaats van overtollige spanning te verbran
 
 De keerzijde: de uitgang heeft hoogfrequente rimpel en je hebt meer externe componenten nodig; minimaal een spoel, een vrijloopdiode (of een synchrone gelijkrichter-MOSFET) en in- en uitgangscondensatoren.
 
-De bedradingsgids beschrijft hetzelfde rimpelverschijnsel op systeemschaal: een omvormer trekt een fluctuerende gelijkstroom uit de accu op tweemaal de netfrequentie (100Hz), en de weerstand van de accukabel maakt daarvan rimpelspanning op de hele gelijkstroombus; Victron alarmeert op een 24V-systeem bij 2,25V RMS. De fixlijst uit de gids weerspiegelt de board-level-praktijk: kortere en dikkere geleiders, strakke verbindingen, goede componenten. Dezelfde fysica, andere schaal: rimpel is fluctuerende stroom maal serieweerstand, en het medicijn is altijd een pad met lagere impedantie.
+Dezelfde rekensom van stroom maal serieweerstand komt op systeemschaal terug: een omvormer trekt een fluctuerende gelijkstroom uit de accu op tweemaal de netfrequentie (100Hz), en de weerstand van de accukabel maakt daarvan rimpelspanning op de hele gelijkstroombus; Victron alarmeert op een 24V-systeem bij 2,25V RMS. De fixlijst uit de gids weerspiegelt de board-level-praktijk: kortere en dikkere geleiders, strakke verbindingen, goede componenten. Dezelfde fysica, andere schaal: rimpel is fluctuerende stroom maal serieweerstand, en het medicijn is een pad met lagere impedantie.
 
 Ik kies standaard voor Buck wanneer het spanningsverschil groter is dan ~3V en de stroom boven ~0.3A komt, zoals bij 12V-systemen, of bij het omlaag brengen van batterijspanning voor hoogvermogenbelastingen. De LM2596-module is mijn vaste prototyping-module; instelbare uitgang, goedkoop, betrouwbaar.
 
 Lessen die ik op de harde manier heb geleerd:
-- De keuze van de spoel is cruciaal: de verzadigingsstroom moet boven de maximale belastingsstroom liggen. Zodra een spoel verzadigt, is het in feite een draad; en je MOSFET sterft onmiddellijk.
+- De keuze van de spoel is cruciaal: de verzadigingsstroom moet boven de maximale belastingsstroom liggen. Zodra een spoel verzadigt, is het in feite een draad, en je MOSFET kan sneuvelen.
 - Houd het spoor van het schakelknooppunt kort en breed om EMI te minimaliseren.
 - Voeg voor gevoelige schakelingen een LDO of een π-filter na de Buck toe om de rimpel te onderdrukken.
 
 ## Boost en Buck-Boost
 
-- **Boost**: verhoogt de spanning. Eén Li-ion-cel van 3.7V → 5V of 12V. Principe: schakelaar AAN slaat energie op in de spoel; schakelaar UIT geeft die vrij in serie met de ingang, waardoor Vout > Vin wordt.
-- **Buck-Boost**: vangt het geval op waarin Vin boven of onder Vout kan liggen. Een Li-ion-batterij loopt van 4.2V vol tot 2.7V bijna leeg, maar je hebt een stabiele 3.3V nodig; een Buck-Boost schakelt automatisch tussen de modi.
+Een Boost verhoogt de spanning, bijvoorbeeld één Li-ion-cel van 3.7V naar 5V of 12V: als de schakelaar aan staat slaat de spoel energie op, en als hij weer opent geeft de spoel die energie vrij in serie met de ingang, waardoor Vout > Vin wordt. Een Buck-Boost vangt het geval op waarin Vin boven of onder Vout kan liggen; een Li-ion-batterij loopt van 4.2V vol tot 2.7V bijna leeg, terwijl je een stabiele 3.3V nodig hebt, en de Buck-Boost schakelt zelf tussen de modi.
 
 Praktische aantekeningen:
 - Boost-circuits kunnen bij het opstarten inschakelstroom hebben; soft-start is eigenlijk standaard.
@@ -116,9 +116,9 @@ Praktische aantekeningen:
 Je kunt een Li-ion-cel absoluut niet opladen door er rechtstreeks 5V op te zetten. Je hebt een laadbeheer-IC nodig.
 
 - **TP4056**: lineair laden, eerst CC en daarna CV (4.2V), overtollige spanning wordt warmte. Dat grote vrijliggende pad aan de onderkant is voor warmteafvoer; stort koper en verbind met via's, anders raakt hij tijdens het laden oververhit.
-- **Beveiligingsprint** (DW01+8205A): bewaakt overladen (>4.25V), te diep ontladen (<2.5V), overstroom en kortsluiting. Schakelt het circuit bij een fout onmiddellijk uit.
+- **Beveiligingsprint** (DW01+8205A): bewaakt overladen (≈4.30V), te diep ontladen (≈2.40V), overstroom en kortsluiting. Schakelt het circuit bij een fout uit.
 
-Mijn beeld: de TP4056 handhaaft de laadregels. De beveiligingsprint is het vangnet. Beide zijn niet-onderhandelbaar.
+Mijn beeld: de TP4056 handhaaft de laadregels. De beveiligingsprint is het vangnet.
 
 Complete keten voor één Li-ion-cel:
 
@@ -152,12 +152,6 @@ Mijn ervaring:
 
 ## De drie vragen opnieuw bekeken, met een casestudy
 
-Laat me die drie vragen herhalen; ze werken echt:
-
-1. Spanningsverschil tussen in- en uitgang? >3V en >0.3A → sla de LDO over, gebruik Buck.
-2. Is het systeem ruisgevoelig? Draadloze modules, precisie-analoog → LDO of extra filtering.
-3. Ruimte en thermiek? Afgesloten, kleine behuizing → ga voor schakelend, voorkom warmteopbouw.
-
 ### Twee vergelijkingscases
 
 - LM7805 (lineair): 9V ingang → 7805 → uitgang naar Arduino. Laat hem 5 minuten draaien en raak de chip aan; merkbaar heet. ~55.6% efficiëntie.
@@ -177,22 +171,18 @@ Belangrijkste component: de optocoupler overbrugt de barrière tussen hoog- en l
 
 ## Kerninzichten
 
-- Voedingsontwerp is energiedistributie, geen "elektriciteit maken".
-- LDO en Buck zijn geen concurrenten; de LDO is de ruisarme, laagvermogenoplossing, de Buck verwerkt hoog vermogen met efficiëntie.
-- Schakelende voedingen zijn efficiënt, maar de absolute verliezen zijn nog steeds aanzienlijk; thermisch ontwerp is verplicht.
-- Ontwerpketen: energiestroom → spanningsomzetting → thermisch pad → mechanische integratie. Hier komen EE en industrieel ontwerp samen.
-- Laadbeheer (TP4056) bepaalt de laadregels, de beveiligingsprint is het vangnet, DC/DC zet de spanning om.
+De ontwerpketen loopt van energiestroom → spanningsomzetting → thermisch pad → mechanische integratie. Hier komen EE en industrieel ontwerp samen.
 
 ## FAQ
 
 ### Waarom moet de beveiligingsprint in de batterij zitten?
-De beveiligingsprint moet de celspanning en -stroom direct en zonder vertraging kunnen bewaken; doorgaans wordt hij met nikkelstrips rechtstreeks op de celpolen puntgelast. Als hij met draden en connectoren ertussen op de hoofdprint zit, tasten weerstand en losse verbindingen de betrouwbaarheid van de beveiliging ernstig aan.
+De beveiligingsprint moet de celspanning en -stroom direct kunnen bewaken; doorgaans wordt hij met nikkelstrips rechtstreeks op de celpolen puntgelast. Als hij met draden en connectoren ertussen op de hoofdprint zit, komen er extra weerstand en extra contactpunten in het stroompad te liggen.
 
 ### Kan ik een beveiligde batterij rechtstreeks met een TP4056 opladen?
 Ja, dit is de standaardaanpak. De TP4056 voert het CC/CV-laadprofiel uit; de beveiligingsprint fungeert als laatste verdedigingslinie en schakelt het circuit uit als de spanning abnormaal hoog wordt.
 
 ### Waarom wordt mijn Buck-circuit nog steeds heet?
-Zelfs 1–2W werkelijk verlies laat de junctietemperatuur zonder adequate koeling pieken. Controleer de verzadigingsstroom van de spoel, de R_DS(on) van de MOSFET, het koperoppervlak op de PCB en het thermische pad.
+Zelfs 1–2W werkelijk verlies laat de junctietemperatuur zonder adequate koeling stijgen. Controleer de verzadigingsstroom van de spoel, de R_DS(on) van de MOSFET, het koperoppervlak op de PCB en het thermische pad.
 
 ## Kennisbank: referentiekaarten voor modules
 
@@ -230,21 +220,15 @@ Zelfs 1–2W werkelijk verlies laat de junctietemperatuur zonder adequate koelin
 - Nog hoger vermogen, veel gebruikt in het bereik 1000W–5000W.
 
 **LLC (resonant)**
-- Alle moderne pc-voedingen gebruiken dit. Typische ATX-PSU-architectuur: PFC → LLC → synchrone gelijkrichting → 12V, 90%–96% efficiëntie.
+- Moderne pc-voedingen gebruiken dit. Typische ATX-PSU-architectuur: PFC → LLC → synchrone gelijkrichting → 12V, 90%–96% efficiëntie.
 
 ### Rimpelonderdrukking bij schakelende voedingen
 
-Voeg voor gevoelige schakelingen een LDO of een π-filter (C-L-C) na de Buck toe. De combinatie Buck+LDO geeft je zowel efficiëntie als weinig ruis.
+De combinatie Buck+LDO geeft je zowel efficiëntie als weinig ruis.
 
 **DC-ingang → Buck → LDO → Belasting**
 
-1. **De Buck verzorgt de "efficiënte, grove step-down"**
-   - De Buck neemt het grote spanningsverschil (bijv. 12V→5.5V) voor zijn rekening met 90%+ efficiëntie en produceert heel weinig warmte.
-   - Converteert omlaag tot net boven de uiteindelijke LDO-uitgang (doorgaans 0.3–0.5V hoofdruimte).
-
-2. **De LDO verzorgt de "precisieregeling en opschoning"**
-   - Klein spanningsverschil (0.3–0.5V), dus P_loss is verwaarloosbaar; geen warmteprobleem.
-   - De hoge PSRR van de LDO verplettert elke rimpel die de Buck heeft overleefd. De uitgang is uitzonderlijk schone DC.
+De Buck neemt het grote spanningsverschil (bijv. 12V→5.5V) voor zijn rekening met 90%+ efficiëntie en heel weinig warmte, en stopt net boven de uiteindelijke LDO-uitgang, doorgaans met 0.3–0.5V hoofdruimte. De LDO doet daarna de precisiergegling en het opschonen: met zo weinig spanning erover is P_loss verwaarloosbaar, en zijn hoge PSRR drukt weg wat er aan schakelrimpel overbleef. De uitgang is uitzonderlijk schone DC.
 
 ### Batterijselectie en planning van de vermogensboom
 

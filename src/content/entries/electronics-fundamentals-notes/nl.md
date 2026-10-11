@@ -1,7 +1,7 @@
 ---
 title: "Elektronica-fundamenten: zelfstudienotities"
 date: 2026-05-14
-description: Een gestructureerd studielogboek over spanning- en stroomtheorie, de wetten van Kirchhoff en de principes van elementaire elektronische componenten, waaronder weerstanden, condensatoren, diodes en voedingen.
+description: "Mijn zelfstudienotities over elektronica-fundamenten: wat er echt gebeurt als je een schakelaar omzet, de wetten van Kirchhoff, en hoe weerstanden, condensatoren, spoelen en diodes zich gedragen."
 
 type: note
 category: Elektronica
@@ -29,17 +29,15 @@ translationKey: electronics-fundamentals-notes
 
 # Elektronica-fundamenten: mijn zelfstudienotities
 
-Dit zijn de aantekeningen die ik heb opgebouwd terwijl ik mezelf systematisch hardware en analoge elektronica aanleerde. Beginnend bij de absolute basis, wat spanning eigenlijk is, hoe stroom werkt, hoe een weerstand er vanbinnen uitziet, met als doel een printplaat te kunnen bekijken en te begrijpen wat elke component doet. Ik kom regelmatig terug op deze aantekeningen, en elke keer ontdek ik iets nieuws.
+Ik wilde naar een printplaat kunnen kijken en kunnen zeggen wat elk onderdeel doet. Dit zijn de aantekeningen die ik heb opgebouwd terwijl ik mezelf hardware en analoge elektronica aanleerde, vanaf de absolute basis: wat spanning eigenlijk is, hoe stroom werkt, hoe een weerstand er vanbinnen uitziet. Ik kom er regelmatig op terug, en elke keer ontdek ik iets nieuws.
 
 > **Opmerking:** de afbeeldingen zijn uitsluitend bedoeld voor educatieve doeleinden en zelfstudie.
-
-## Spanning en stroom
 
 ## De wateranalogie: een prima startpunt
 
 Voordat je in de natuurkundige vergelijkingen duikt, kun je waterleidingen gebruiken om intuïtie op te bouwen:
 
-- **Spanning (V):** vergelijkbaar met waterdruk; de "duw" die ladingen door een circuit drijft, oftewel het verschil in potentiële energie
+- **Spanning (V):** vergelijkbaar met waterdruk; de "duw" die ladingen door een circuit drijft, oftewel het verschil in potentiële energie per eenheid lading
 - **Stroom (I):** vergelijkbaar met de waterstroomsnelheid; de daadwerkelijke beweging van ladingen door de geleider
 - **Weerstand (R):** vergelijkbaar met de diameter van de buis; een smallere buis betekent meer weerstand
 
@@ -55,40 +53,31 @@ Zet een schakelaar om en de lamp brandt meteen. Dus de elektronen moeten met lic
 
 In koperdraad vullen vrije elektronen het hele kristalrooster van het metaal; samen vormen ze de zogenoemde **"elektronenzee"**; ze zijn al overal in de draad.
 
-- **Driftsnelheid**: leg een spanning aan, het elektrische veld duwt elektronen vooruit. Maar ze botsen voortdurend met het rooster van koperatomen, waardoor hun netto voorwaartse snelheid ongelooflijk laag is; doorgaans slechts **enkele micrometers tot millimeters per seconde**. Langzamer dan een slak.
+- **Driftsnelheid**: leg een spanning aan, het elektrische veld duwt elektronen vooruit. Maar ze botsen voortdurend met het rooster van koperatomen, waardoor hun netto voorwaartse snelheid ongelooflijk laag is; doorgaans slechts **tientallen micrometers per seconde**. Langzamer dan een slak.
 
-- **Waarom brandt de lamp dan meteen?** Omdat de energie niet door de elektronen zelf wordt getransporteerd, maar door het **elektromagnetische veld**. Zodra de schakelaar sluit, plant het elektrische veld zich langs de draad voort met **bijna de lichtsnelheid** (~3 × 10⁸ m/s). De elektronen zijn al overal in de draad; het veld geeft ze allemaal tegelijk de duw (F = qE), en ze beginnen allemaal samen te driften.
+- **Waarom brandt de lamp dan meteen?** Omdat de energie niet door de elektronen zelf wordt getransporteerd, maar door het **elektromagnetische veld**. Zodra de schakelaar sluit, stelt het veld zich over de hele kring in met een grote fractie van de lichtsnelheid (ongeveer 0,6–0,9c in gewone geïsoleerde kabel). De elektronen zijn al overal in de draad; het veld geeft ze allemaal tegelijk de duw (F = qE), en ze beginnen allemaal samen te driften.
 
-Dit was voor mij een echt "aha-moment"; elektronen bewegen nauwelijks, maar het veld reist met lichtsnelheid. Wat wij "elektriciteit" noemen, is eigenlijk veldvoortplanting.
+Elektronen bewegen nauwelijks, maar het veld reist met bijna de lichtsnelheid. Wat wij "elektriciteit" noemen, is eigenlijk veldvoortplanting.
 
-### De essentie van spanning: ruimtelijke accumulatie van elektrische veldkracht
+### De essentie van spanning: hoe de veldkracht zich over afstand opbouwt
 
 In de natuurkunde is spanning een **elektrisch potentiaalverschil**. Een batterij gebruikt chemische energie om positieve en negatieve ladingen uit elkaar te halen, waardoor er een **elektrisch veld** in de ruimte ontstaat. Op elektronen die door dit veld bewegen, verricht de veldkracht arbeid. Spanning is die arbeid, per eenheid lading.
 
-Spanning is dus geen mysterieuze gasdruk; het is de **"onzichtbare duw" van het elektrische veld op ladingen, opgebouwd over een ruimtelijke afstand**.
-
 ## De wetten van Kirchhoff
 
-Deze twee wetten zijn niet zomaar handige hulpmiddelen voor circuitanalyse. Erachter staan twee fundamentele behoudswetten van het universum: **behoud van lading** en **behoud van energie**.
+Achter deze twee wetten staan twee fundamentele behoudswetten van het universum: **behoud van lading** en **behoud van energie**.
 
 ## De stroomwet van Kirchhoff (KCL)
 
 ### Waarom elektronen zich niet zomaar op een knooppunt kunnen opstapelen
 
-- **Formule**: Σ I_in = Σ I_out
-- **De natuurkunde**: elektronen dragen een negatieve lading. Volgens de **wet van Coulomb** stoten gelijke ladingen elkaar met enorme kracht af. Als er meer elektronen een knooppunt binnenstromen dan er vertrekken, zou zich daar negatieve lading ophopen.
-- **Zelfcorrigerend mechanisme**: zodra lading zich begint op te bouwen, duwt de afstotende kracht binnenkomende elektronen weg en versnelt ze de vertrekkende. Deze microscopische zelfbalancering gebeurt in nanoseconden. Onder stationaire omstandigheden kan **geen enkel knooppunt een netto overtollige lading vasthouden**. Wat erin gaat, komt eruit, exact.
+De stroomwet van Kirchhoff zegt dat de stromen die een knooppunt binnenkomen gelijk zijn aan de stromen die eruit gaan, Σ I_in = Σ I_out. De reden is dat elektronen een negatieve lading dragen, en volgens de **wet van Coulomb** stoten gelijke ladingen elkaar met enorme kracht af: als er meer elektronen binnenkwamen dan er vertrokken, zou zich daar negatieve lading ophopen. Zodra die zich begint op te bouwen, duwt de afstotende kracht binnenkomende elektronen weg en versnelt ze de vertrekkende, en die zelfbalancering is vrijwel onmiddellijk. Onder stationaire omstandigheden kan **geen enkel knooppunt een netto overtollige lading vasthouden**, dus wat erin gaat komt eruit, exact.
 
 ## De spanningswet van Kirchhoff (KVL)
 
 ### Waarom een volledige lus altijd op nul uitkomt
 
-- **Formule**: Σ V = 0
-- **De natuurkunde**: in de elektrostatica en in laagfrequente schakelingen is het elektrische veld een **conservatief veld** (rotatievrij). De arbeid die de veldkracht verricht, hangt alleen af van het begin- en eindpunt, niet van de afgelegde weg.
-
-- **Het energiebeeld**: zie de voedingsbron als een "ladingenlift"; die verbruikt chemische energie om elektronen van laag potentiaal naar hoog potentiaal te tillen. Terwijl elektronen door weerstanden stromen, geven ze al die potentiële energie af via botsingen met het atoomrooster, en zetten die om in **warmte** of **licht**. Tegen de tijd dat een elektron terugkeert bij de negatieve pool van de batterij, is alle gewonnen energie weer afgestaan. Energie kan niet worden gecreëerd of vernietigd; dat is KVL in de kern.
-
-## Elementaire elektronische componenten
+De spanningswet van Kirchhoff zegt dat de spanningen rond een lus op nul uitkomen, Σ V = 0. In de elektrostatica en in laagfrequente schakelingen is het elektrische veld een **conservatief veld** (rotatievrij): de arbeid die het verricht hangt alleen af van het begin- en eindpunt, niet van de afgelegde weg. Zie de voedingsbron als een "ladingenlift" die chemische energie verbruikt om elektronen terug naar een hogere potentiële energie te tillen. Stromen ze door weerstanden, dan staan ze die energie weer af via botsingen met het atoomrooster, als **warmte** of **licht**. Tegen de tijd dat een elektron terug is bij de negatieve pool, is alles wat het won weer afgestaan.
 
 ## Weerstand
 
@@ -104,7 +93,7 @@ Weerstanden zijn passieve componenten die de stroomdoorgang belemmeren. Twee hoo
 4. **Eindkappen en aansluitdraden**: metalen kapjes worden op beide uiteinden geperst, vertinde koperdraden worden op de kapjes gelast.
 5. **Beschermende coating en kleurbanden**: isolerende lak met gekleurde strepen die de weerstandswaarde en tolerantie coderen.
 
-De weerstand van een bepaalde geometrie schaalt met de soortelijke weerstand ρ van het materiaal. De geleidbaarheidstabel uit de bedradingsgids zet koper op 1,7 × 10⁻⁸ Ω·m, koolstofstaal op 16,9 × 10⁻⁸ Ω·m en titanium op 41,7 × 10⁻⁸ Ω·m. Die spreiding is dezelfde fysica die koolstoffilm- van metaalfilmweerstanden scheidt; het filmmateriaal bepaalt hoeveel spiraal er voor een streefwaarde nodig is, en daarmee ook het temperatuurgedrag en de ruisvloer.
+De weerstand van een bepaalde geometrie schaalt met de soortelijke weerstand ρ van het materiaal. Dat is dezelfde fysica die koolstoffilm- van metaalfilmweerstanden scheidt; het filmmateriaal bepaalt hoeveel spiraal er voor een streefwaarde nodig is, en daarmee ook het temperatuurgedrag en de ruisvloer.
 
 ![Kleurbanden van weerstanden](./21.png)
 
@@ -114,17 +103,17 @@ De weerstand van een bepaalde geometrie schaalt met de soortelijke weerstand ρ 
 
 Waarschijnlijk het eerste weerstandscircuit dat iedereen bouwt: LED + serieweerstand. Zonder de weerstand trekt de LED zoveel stroom als de voeding kan leveren, tot hij zichzelf vernietigt.
 
-### Spanningsdeler
-
-In een serieschakeling is de spanningsval over elke weerstand evenredig met zijn weerstand (grotere R = groter spanningsaandeel).
-
-**Praktijkberekening: een serieweerstand voor een LED dimensioneren:**
+**Serieweerstand dimensioneren:**
 De LED werkt op 3V en trekt 13.5mA (0.0135A), met een 5V-voeding.
 
 - V_drop = V_source - V_LED = 5V - 3V = 2V
 - R = V_drop / I = 2V / 0.0135A = 148.15Ω → **gebruik een weerstand van 150Ω**
 
 Nog één controle voordat je gaat solderen: de weerstand verbrandt P = I² × R = 0,0135² × 150 ≈ 27mW, dus een standaard ¼W-weerstand draait op ongeveer 11% van zijn vermogen. Hetzelfde antwoord komt uit P = V × I (2V × 0,0135A = 27mW). Bij hogere stromen klimt het vermogen met I², en daarom doet het wattage van een weerstand er net zo veel toe als de weerstandswaarde.
+
+### Spanningsdeler
+
+In een serieschakeling is de spanningsval over elke weerstand evenredig met zijn weerstand (grotere R = groter spanningsaandeel).
 
 ### Kan een LED als weerstand dienen?
 
@@ -165,7 +154,7 @@ Spoelen slaan energie op in een magnetisch veld wanneer er stroom doorheen loopt
 
 In voedingscircuits werken spoelen en condensatoren samen als LC-filters. Nadat de gelijkrichtbrug wisselspanning heeft omgezet in pulserende gelijkspanning, onderdrukt de spoel de rimpelstroom en maakt de condensator de spanning glad. De resulterende gelijkspanning is veel schoner dan bij filtering met alleen een condensator.
 
-Dezelfde rimpelfysica duikt op systeemschaal op in de bedradingsgids: een omvormer trekt een fluctuerende gelijkstroom uit de accu op tweemaal de netfrequentie (100Hz), en de weerstand van de accukabel maakt daarvan rimpelspanning op de gelijkstroombus; Victron alarmeert op een 24V-systeem bij 2,25V RMS. Kleine filtercomponenten of dikke accukabels, het mechanisme is hetzelfde: rimpel is fluctuerende stroom maal serieweerstand.
+Dezelfde rimpelfysica duikt op systeemschaal op in de bedradingsgids: een omvormer trekt een fluctuerende gelijkstroom uit de accu op tweemaal de netfrequentie (100Hz), en de weerstand van de accukabel maakt daarvan rimpelspanning op de gelijkstroombus; Victron alarmeert op een 24V-systeem bij 2,25V RMS. Of het nu om een kleine filtercomponent of een dikke accukabel gaat, het patroon is hetzelfde: een fluctuerende stroom maal de impedantie die hij tegenkomt, verschijnt als rimpelspanning.
 
 ## Diode
 

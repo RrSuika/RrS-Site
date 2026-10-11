@@ -1,7 +1,7 @@
 ---
 title: "Electronics Fundamentals: Self-Study Notes"
 date: 2026-05-14
-description: A structured study log covering voltage and current theory, Kirchhoff's laws, and the principles of basic electronic components including resistors, capacitors, diodes, and power supplies.
+description: "My self-study notes on electronics fundamentals: what actually happens when you flip a switch, Kirchhoff's laws, and how resistors, capacitors, inductors and diodes behave."
 
 type: note
 category: Electronics
@@ -29,17 +29,15 @@ translationKey: electronics-fundamentals-notes
 
 # Electronics Fundamentals: My Self-Study Notes
 
-These are the notes I've built up while systematically teaching myself hardware and analog electronics. Starting from the absolute basics: what voltage actually is, how current works, what a resistor looks like inside: with the goal of being able to look at a circuit board and understand what every component is doing. I come back to these notes regularly, and each time I find something new.
+I wanted to be able to look at a circuit board and say what each component is doing. These are the notes I built up teaching myself hardware and analog electronics, starting from the absolute basics: what voltage actually is, how current works, what a resistor looks like inside. I come back to them regularly, and each time I find something new.
 
 > **Note:** Images are for educational and self-study purposes only.
-
-## Voltage and Current
 
 ## The Water Analogy: A Decent Starting Point
 
 Before diving into physics equations, use water pipes to build intuition:
 
-- **Voltage (V):** equivalent to water pressure: the "push" that drives charges through a circuit, i.e., the potential energy difference
+- **Voltage (V):** equivalent to water pressure: the "push" that drives charges through a circuit, i.e., the potential energy difference per unit charge
 - **Current (I):** equivalent to water flow rate: the actual movement of charges through the conductor
 - **Resistance (R):** equivalent to pipe diameter: narrower pipe, more resistance
 
@@ -55,40 +53,31 @@ Flip a switch, the bulb lights instantly. So electrons must race from the batter
 
 Inside copper wire, free electrons fill the entire metal's crystal lattice, forming what's called an **"electron sea"**: they're already everywhere in the wire.
 
-- **Drift velocity**: apply a voltage, the electric field pushes electrons forward. But they constantly crash into the copper atom lattice, so their net forward speed is incredibly slow: typically only **a few micrometers to millimeters per second**. Slower than a snail.
+- **Drift velocity**: apply a voltage, the electric field pushes electrons forward. But they constantly crash into the copper atom lattice, so their net forward speed is incredibly slow: typically only **tens of micrometers per second**. Slower than a snail.
 
-- **So why does the bulb light instantly?** Because energy isn't carried by the electrons themselves: it's carried by the **electromagnetic field**. The moment the switch closes, the electric field propagates along the wire at **nearly the speed of light** (~3 × 10⁸ m/s). The electrons are already everywhere in the wire; the field gives all of them the push (F = qE) simultaneously, and they all start drifting together.
+- **So why does the bulb light instantly?** Because energy isn't carried by the electrons themselves: it's carried by the **electromagnetic field**. The moment the switch closes, the field establishes itself along the whole circuit at a large fraction of the speed of light (0.6–0.9c in ordinary insulated cable). The electrons are already everywhere in the wire; the field gives all of them the push (F = qE) simultaneously, and they all start drifting together.
 
-This was a real "aha moment" for me: electrons barely move, but the field travels at light speed. What we call "electricity" is really field propagation.
+Electrons barely move, but the field travels close to the speed of light. What we call "electricity" is really field propagation.
 
-### The Essence of Voltage: the Electric Field's Invisible Push
+### The Essence of Voltage: the Field's Push, Accumulated Over Distance
 
 In physics, voltage is **electrical potential difference**. A battery uses chemical energy to forcibly separate positive and negative charges, creating an **electric field** in space. As electrons move through this field, the field does work on them. Voltage is that work, per unit charge.
 
-So voltage isn't some mysterious gas pressure: it's the **"invisible push" the electric field exerts on charges, adding up over distance**.
-
 ## Kirchhoff's Laws
 
-These two laws aren't just handy circuit analysis tools. Behind them stand two fundamental conservation laws of the universe: **conservation of charge** and **conservation of energy**.
+Behind these two laws stand two fundamental conservation laws of the universe: **conservation of charge** and **conservation of energy**.
 
 ## Kirchhoff's Current Law (KCL)
 
 ### Why Electrons Can't Just Pile Up at a Node
 
-- **Formula**: Σ I_in = Σ I_out
-- **The physics**: electrons carry negative charge. According to **Coulomb's Law**, like charges repel each other with enormous force. If more electrons flowed into a node than left, negative charge would accumulate there.
-- **Self-correcting mechanism**: the instant charge starts building up, the repulsive force pushes away incoming electrons and accelerates outgoing ones. This microscopic self-balancing happens in nanoseconds. Under steady-state conditions, **no node can hold excess net charge**. What goes in comes out: exactly.
+Kirchhoff's current law says the currents into a node equal the currents out, Σ I_in = Σ I_out. The reason is that electrons carry negative charge, and by **Coulomb's Law** like charges repel each other with enormous force: if more electrons flowed in than left, negative charge would pile up at the node. The instant it starts to build, the repulsive force pushes away incoming electrons and accelerates the outgoing ones, and this self-balancing is effectively instantaneous. Under steady-state conditions **no node can hold excess net charge**, so what goes in comes out, exactly.
 
 ## Kirchhoff's Voltage Law (KVL)
 
 ### Why a Full Loop Always Sums to Zero
 
-- **Formula**: Σ V = 0
-- **The physics**: in electrostatics and low-frequency circuits, the electric field is a **conservative field** (irrotational). The work done by the field force depends only on the start and end points, not the path taken.
-
-- **The energy picture**: think of the power source as a "charge elevator": it consumes chemical energy to lift electrons from low potential to high potential. As electrons flow through resistors, they give up all that potential energy through collisions with the atomic lattice, converting it into **heat** or **light**. By the time an electron returns to the battery's negative terminal, all the energy it gained has been surrendered. Energy can't be created or destroyed: that's KVL at its core.
-
-## Basic Electronic Components
+Kirchhoff's voltage law says the voltages around a loop sum to zero, Σ V = 0. In electrostatics and low-frequency circuits the electric field is a **conservative field** (irrotational): the work it does depends only on the start and end points, not the path. Think of the power source as a "charge elevator" that spends chemical energy to lift electrons back up to a higher potential energy; as they flow through resistors they give that energy up again through collisions with the atomic lattice, as **heat** or **light**. By the time an electron is back at the negative terminal, everything it gained has been surrendered.
 
 ## Resistor
 
@@ -104,7 +93,7 @@ Resistors are passive components whose job is to impede current flow. Two main u
 4. **End caps and leads**: metal caps press-fit onto both ends, tinned copper leads welded to the caps.
 5. **Protective coating and color bands**: insulating lacquer with colored stripes encoding the resistance value and tolerance.
 
-The resistance of a given geometry scales with the material's resistivity ρ. The wiring guide's conductivity table puts copper at 1.7 × 10⁻⁸ Ω·m, carbon steel at 16.9 × 10⁻⁸ Ω·m and titanium at 41.7 × 10⁻⁸ Ω·m. That spread is the same physics that separates carbon-film from metal-film resistors: the film material sets how much spiral is needed for a target value, along with the temperature behavior and noise floor.
+The resistance of a given geometry scales with the material's resistivity ρ. That is the same physics that separates carbon-film from metal-film resistors: the film material sets how much spiral is needed for a target value, along with the temperature behavior and noise floor.
 
 ![Resistor Color Bands](./21.png)
 
@@ -114,17 +103,17 @@ The resistance of a given geometry scales with the material's resistivity ρ. Th
 
 Probably the first resistor circuit everyone builds: LED + series resistor. Without the resistor, the LED pulls as much current as the supply can give until it destroys itself.
 
-### Voltage Divider
-
-In a series circuit, voltage drop across each resistor is proportional to its resistance (bigger R = larger share of the voltage).
-
-**Practical calculation: sizing a series resistor for an LED:**
+**Sizing the series resistor:**
 LED operates at 3V, draws 13.5mA (0.0135A), using a 5V supply.
 
 - V_drop = V_source - V_LED = 5V - 3V = 2V
 - R = V_drop / I = 2V / 0.0135A = 148.15Ω → **use a 150Ω resistor**
 
 One more check before soldering: the resistor burns P = I² × R = 0.0135² × 150 ≈ 27mW, so a standard ¼W resistor runs at about 11% of its rating. The same answer falls out of P = V × I (2V × 0.0135A = 27mW). At higher currents the power climbs with I², which is why a resistor's wattage rating matters as much as its resistance value.
+
+### Voltage Divider
+
+In a series circuit, voltage drop across each resistor is proportional to its resistance (bigger R = larger share of the voltage).
 
 ### Can an LED Work as a Resistor?
 
@@ -165,13 +154,13 @@ Inductors store energy in a magnetic field when current flows through them. It's
 
 In power supply circuits, inductors and capacitors work together as LC filters. After the bridge rectifier converts AC to pulsating DC, the inductor suppresses ripple current and the capacitor smooths the voltage. The resulting DC is much cleaner than filtering with a capacitor alone.
 
-The same ripple physics shows up at system scale in the wiring guide: an inverter pulls a fluctuating DC current from the battery at twice the grid frequency (100Hz), and the battery-cable resistance turns that into ripple voltage on the DC bus, with Victron alarming at 2.25V RMS on a 24V system. Small filter components or fat battery cables, the mechanism is the same: ripple equals fluctuating current times series resistance.
+The same ripple physics shows up at system scale in the wiring guide: an inverter pulls a fluctuating DC current from the battery at twice the grid frequency (100Hz), and the battery-cable resistance turns that into ripple voltage on the DC bus, with Victron alarming at 2.25V RMS on a 24V system. Whether it is a small filter or a fat battery cable, the pattern is the same: a fluctuating current multiplied by whatever impedance it crosses shows up as ripple voltage.
 
 ## Diode
 
 ![Diode Overview](./30.png)
 
-Diodes only let current flow in one direction: anode to cathode. They're the foundation of rectification (AC→DC), reverse-polarity protection, and all kinds of signal processing. Forward voltage drop: ~0.7V for silicon diodes, ~0.2-0.4V for Schottky diodes.
+Diodes conduct in one direction: anode to cathode. They're the foundation of rectification (AC→DC), reverse-polarity protection, and all kinds of signal processing. Forward voltage drop: ~0.7V for silicon diodes, ~0.2-0.4V for Schottky diodes.
 
 ### Practical Case: Rectifier Bridge
 
@@ -202,7 +191,7 @@ Power supplies convert input power into regulated DC output. Two main topologies
 ![SMPS Analysis 2](./33.png)
 ![SMPS Analysis 3](./34.png)
 
-Walking through an SMPS schematic stage by stage: input filtering, bridge rectifier, switching controller, transformer, output rectification, feedback loop: is a great way to understand real power supply design.
+Walking through an SMPS schematic stage by stage (input filtering, bridge rectifier, switching controller, transformer, output rectification, feedback loop) is a great way to understand real power supply design.
 
 ## Practical Skills
 

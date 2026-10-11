@@ -1,7 +1,7 @@
 ---
 title: "Signal Amplification: Op-Amp & Voltage Comparator"
 date: 2026-08-10
-description: "Core principles, classic circuit analysis, and industrial applications of operational amplifiers and voltage comparators: non-inverting/inverting amps, adder, subtractor, integrator, differentiator, differential amplifier, and sensor interface circuits."
+description: "Op-amps and comparators from the two rules that define them: the gain configurations, the classic circuits (adder, subtractor, integrator, differentiator, differential amp) derived by hand, and the sensor front-ends they turn up in."
 
 type: note
 category: Electronics
@@ -30,21 +30,21 @@ translationKey: signal-amplifier-opamp-comparator
 
 Sources: [Bilibili](https://www.bilibili.com/video/BV1VeQdYUELe) [Zhihu](https://zhuanlan.zhihu.com/p/1928161464247620032)
 
-An **operational amplifier** is fundamentally a differential amplifier with extremely high gain. It relies on an external feedback network to achieve precise, controllable voltage amplification. In real projects, its main job is to take weak analog signals from sensors, amplify them, filter them, condition them, and turn them into something the MCU can reliably read.
+When I first truly understood the two characteristics below, a whole bunch of circuits suddenly clicked. An **operational amplifier** is fundamentally a differential amplifier with extremely high gain. It relies on an external feedback network to achieve precise, controllable voltage amplification. In real projects, its main job is to take weak analog signals from sensors, amplify them, filter them, condition them, and turn them into something the MCU can reliably read.
 
 ## Core Characteristics
 
-- **Virtual open**: op-amp inputs have extremely high impedance (1MΩ+), drawing virtually no current. Think of them as probes that touch the signal line without altering it. In analysis, just treat both inputs as open circuits. This is called the virtual open: short for "false open circuit."
-- **Virtual short**: with negative feedback present, the op-amp fights hard to force the inverting input (-) voltage to match the non-inverting input (+). Every gain calculation traces back to this. When I first truly understood this, a whole bunch of circuits suddenly clicked.
+- **Virtual open**: op-amp inputs have a very high impedance and draw almost no current. Think of them as probes that touch the signal line without altering it. In analysis, just treat both inputs as open circuits. This is called the virtual open: short for "false open circuit."
+- **Virtual short**: with negative feedback present, the op-amp fights hard to force the inverting input (-) voltage to match the non-inverting input (+). Every gain calculation traces back to this.
 
 ## Other Characteristics
 
-- **Output saturation**: the output can't exceed the supply rails, and in practice it's always slightly below them. If the theoretical amplified value exceeds the supply, the output clips and you're no longer linear.
+- **Output saturation**: the output is bounded by the supply rails, and how close it gets depends on the op-amp. If the theoretical amplified value exceeds the supply, the output clips and you're no longer linear.
 - **Voltage follower** is the special case where Rf=0, Rg=∞, giving gain = 1. It doesn't amplify voltage: instead it transforms a weak, high-impedance sensor signal into a strong, low-impedance drive signal, buffering one stage from the next.
 
 ## Non-Inverting Amplifier
 
-Signal enters at the (+) input. Feedback resistor Rf (R2) connects output to (-), and Rg (R1) goes from (-) to ground. The output actively rises until the voltage divider formed by Rf and Rg matches the input voltage.
+Signal enters at the (+) input. Feedback resistor Rf (R1) connects output to (-), and Rg (R2) goes from (-) to ground. The output actively rises until the voltage divider formed by Rf and Rg matches the input voltage.
 
 ### Formula: Vout = Vin × (1 + Rf/Rg)
 
@@ -87,33 +87,21 @@ Solving together: Vout = (-R2/R1) × Vi
 
 ## Non-Inverting Amp in Real Products
 
-- **Electronic scales / pressure sensors**: bridge sensor's weak differential signal gets amplified through an instrumentation amp (or three-op-amp structure), then fed to ADC. Range design must avoid clipping.
-- **Temperature controllers**: thermocouple microvolt signals get amplified, then one path goes to the display, another to a comparator against a set threshold, driving a relay.
-- **PIR infrared motion sensors**: the PIR outputs a tiny AC signal, amplified through an op-amp bandpass filter, then detected by a comparator to trigger lighting.
-- **Motor current sensing**: millivolt drop across a shunt resistor gets amplified and sent to the MCU for overcurrent protection.
-- **Audio products**: electret microphone signal gets AC-amplified and filtered, then fed to a power amp or ADC.
+Electronic scales and pressure sensors, temperature controllers, PIR motion sensors, motor current sensing and audio gear all use the non-inverting stage the same way. The weak differential signal from a bridge sensor goes through an instrumentation amp (or a three-op-amp structure) and then to the ADC, with the range designed so it never clips. A thermocouple's microvolt signal is amplified and then split: one path to the display, another to a comparator against a set threshold that drives a relay. A PIR outputs a tiny AC signal, which an op-amp bandpass filter amplifies before a comparator detects it and triggers the lighting. A millivolt drop across a shunt resistor is amplified and sent to the MCU for overcurrent protection. An electret microphone signal is AC-amplified and filtered, then fed to a power amp or an ADC.
 
 ## Inverting Amp in Real Products
 
-- **Audio mixers**: multiple audio channels each go through their own Rin, all summed at the inverting op-amp's virtual ground point. Channels don't interfere with each other. This is the classic "adder" application.
-- **Sensor signal inversion**: some sensors output in the opposite direction from the physical quantity (e.g., pressure up → voltage down). One inverting stage flips it right-side-up before the MCU.
-- **Current-to-voltage conversion**: remove Rin entirely, feed the sensor current directly into the inverting input, use Rf to linearly convert current to voltage. Photodiode detection circuits almost always do this.
-- **Differential amplifier building block**: combine inverting and non-inverting stages to extract weak differential signals from noisy common-mode environments. Industrial sensor front-ends use this heavily.
+Audio mixers are the classic case: several channels each go through their own Rin and are summed at the virtual ground point, and the channels don't interfere with each other. The same stage inverts a sensor whose output runs opposite to the physical quantity (pressure up, voltage down) before the MCU sees it, and it converts current to voltage when Rin is removed entirely and the sensor current is fed straight into the inverting input, with Rf setting the linear conversion (photodiode detection almost always works this way). Combining inverting and non-inverting stages is also how you build the differential amplifier that pulls a weak signal out of a noisy common-mode environment, which industrial sensor front-ends use heavily.
 
 ## Design Notes: Things I've Learned
 
-- **Supply rail headroom**: standard op-amps (like LM358) can't swing all the way to the rails. On 5V supply, max output ≈ VCC-1.5V = 3.5V. If your MCU's ADC reference is 3.3V, that lines up nicely. If you need rail-to-rail swing, get a rail-to-rail op-amp.
-- **Input common-mode range**: LM358 inputs go down to ground but only up to VCC-1.5V. If your input is 6V on a 5V supply, you're outside the common-mode range and the op-amp misbehaves.
-- **Gain-bandwidth product**: LM358 is only ~1MHz. Fine for thermal, optical, and slow signals: not for high-frequency stuff.
-- **Bias current path**: the inverting input needs a DC path to ground through a resistor. The input bias current has to go somewhere: without a path, "virtual open" breaks down and the output drifts.
-- **Decoupling**: 0.1μF cap at the op-amp supply pins to ground. Never skip this.
-- **Comparator hysteresis**: when the input hovers near the threshold, a bare comparator oscillates wildly. Add positive feedback (large resistor from output to (+) input) to create a hysteresis window. Clean switching. Mandatory for any production circuit.
+Standard op-amps like the LM358 can't swing all the way to the rails. On a 5V supply the output tops out around VCC-1.5V = 3.5V, and the inputs only work from ground up to the same 3.5V, so a 6V input sits above the supply rail itself and the op-amp misbehaves. With a 3.3V ADC reference the op-amp can drive past full scale, so the ADC sets the top of the usable range. Its gain-bandwidth product is about 1MHz, which is fine for thermal, optical and other slow signals and not for high-frequency work.
 
-A **comparator** is fundamentally different from an op-amp: it doesn't pursue linearity, it makes instant binary decisions. V+ > V- → output HIGH (or pulled HIGH by external resistor), V+ < V- → output LOW. Only two results: yes or no.
+Two support details are easy to forget. The input bias current has to go somewhere, so give each input a DC path to ground (through a resistor, or through the source itself); without one, "virtual open" breaks down and the output drifts. And 0.1μF from each supply pin to ground is not optional. If the part on the other end is a comparator, remember that a bare comparator oscillates wildly when the input hovers near the threshold, so add positive feedback (a large resistor from the output to the (+) input) to create a hysteresis window, which gives clean switching; any circuit comparing a slow or noisy signal needs it.
 
 ## Classic Circuits: Derived By Hand
 
-### Adder 1
+### Adder (inverting, at the virtual ground)
 ![Adder 1](./05-adder-circuit-1.png)
 
 From virtual short: V- = V+ = 0 …(a)
@@ -122,7 +110,7 @@ From virtual open and Kirchhoff's law, the sum of currents through R2 and R1 equ
 Substituting (a): V1/R1 + V2/R2 = -Vout/R3
 If R1 = R2 = R3, then: -Vout = V1 + V2
 
-### Adder 2
+### Adder (non-inverting input)
 ![Adder 2](./06-adder-circuit-2.png)
 
 Due to virtual open, no current flows into the non-inverting input. Current through R1 equals current through R2. Similarly, current through R4 equals current through R3:
@@ -156,7 +144,7 @@ Therefore: Vout = (-1/(R1 × C1)) ∫ V1 dt
 Output voltage is proportional to the integral of the input voltage over time. If V1 is a constant voltage U:
 Vout = -U × t / (R1 × C1)
 
-t is time, and Vout is a straight line ramping linearly from 0 toward the negative supply.
+t is time, and Vout is a straight line ramping linearly from 0 toward the negative supply, until the output reaches that rail and clips.
 
 ### Differentiator
 ![Differentiator](./09-differentiator-circuit.png)
@@ -193,7 +181,7 @@ From virtual open, no current flows into op-amp inputs. Current through R3 equal
 (V2 - Vy) / R3 = Vy / R5 …(a)
 (V1 - Vx) / R2 = (Vx - Vout) / R4 …(b)
 From virtual short: Vx = Vy …(c)
-As current varies from 0~20mA: V1 = V2 + (0.4~2) …(d)
+As the loop current varies from 4~20mA: V1 = V2 + (0.4~2) …(d)
 Substituting (c), (d) into (b): (V2 + (0.4~2) - Vy) / R2 = (Vy - Vout) / R4 …(e)
 If R3 = R2 and R4 = R5, then (e) - (a) gives: Vout = -(0.4~2)R4/R2 …(f)
 Here R4/R2 = 22k/10k = 2.2, so: Vout = -(0.88~4.4)V
@@ -229,14 +217,14 @@ V7 = 2 × (Rx + 2R0) / (R15 + Rx + 2R0) …(e)
 From virtual short: V1 = V2 …(f)
 From (a) through (f): (V5 - V7) / 100 = (V7 - V3) / 2.2
 Simplifying: V5 = (102.2 × V7 - 100V3) / 2.2
-i.e.: V5 = 204.4(Rx + 2R0) / (1000 + Rx + 2R0) - 200/11 …(g)
+i.e.: V5 = [204.4(Rx + 2R0) / (1000 + Rx + 2R0) - 200/11] / 2.2 …(g)
 
 Now for lead resistance. The voltage drop across the bottom lead resistance feeds through the middle lead wire, Z2, and R22 to U8C pin 10.
 
-From virtual open: V5 = V8 = V9 = 2 × R0 / (R15 + Rx + 2R0) …(a')
+From virtual open: V8 = V9 = 2 × R0 / (R15 + Rx + 2R0) …(a')
 (V6 - V10) / R25 = V10 / R26 …(b')
-From virtual short: V10 = V5 …(c')
-From (a'), (b'), (c'): V6 = (102.2/2.2)V5 = 204.4R0 / [2.2(1000 + Rx + 2R0)] …(h)
+From virtual short: V10 = V8 …(c')
+From (a'), (b'), (c'): V6 = (102.2/2.2)V8 = 204.4R0 / [2.2(1000 + Rx + 2R0)] …(h)
 
 From the system of equations (g) and (h), measuring V5 and V6 lets you solve for Rx and R0. Knowing Rx, look up the PT100 table to get the temperature.
 
@@ -246,6 +234,8 @@ From the system of equations (g) and (h), measuring V5 and V6 lets you solve for
 ![Analog Computer 1](./14-analog-computer-1.png)![Analog Computer 2](./15-analog-computer-2.png)
 
 ## Summary: Op-Amp vs Comparator
+
+A **comparator** is fundamentally different from an op-amp: it doesn't pursue linearity, it makes instant binary decisions. V+ > V- → output HIGH (or pulled HIGH by external resistor), V+ < V- → output LOW. Only two results: yes or no.
 
 **Op-amps (like LM358)** operate in the **linear region**. With negative feedback, they fight to keep both inputs equal (virtual short holds), and the output is a continuously varying analog voltage proportional to the input. They're built for **amplification**: precision, fidelity, low distortion. Taking a 0.2V photodiode signal to 2V with the waveform intact: that's an op-amp's job. You can temporarily use an op-amp open-loop as a comparator, but it's not what they're designed for.
 

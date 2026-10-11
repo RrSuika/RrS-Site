@@ -1,7 +1,7 @@
 ---
 title: "Signaalfiltering: RC-hoogdoorlaat- en laagdoorlaatfilters"
 date: 2026-08-10
-description: "Een ontwerpersgids voor passieve RC-filtercircuits: berekening van de kantelfrequentie, kenmerken van de frequentierespons en praktische toepassingen in signaalconditionering."
+description: "Eén weerstand, één condensator en één formule achter anti-aliasing, debounce, PWM-afvlakking en audiokoppeling: hoe fc = 1/(2πRC) zich gedraagt in het frequentie- en het tijddomein, en waar elke variant opduikt."
 
 type: note
 category: Elektronica
@@ -32,11 +32,11 @@ RC-filters waren een van de eerste dingen die ik leerde bij analoge schakelingen
 
 Capacitieve reactantie: **Xc = 1/(2πfC)**. Hogere frequentie → lagere impedantie. Lagere frequentie → hogere impedantie. Combineer dit met een weerstandsdeler en je krijgt per frequentie een andere demping.
 
-- **Bij lage frequenties**: de condensator gedraagt zich effectief als een open circuit (hoge impedantie). Afhankelijk van de configuratie wordt het signaal geblokkeerd of gaat het vrij door.
+- **Bij lage frequenties**: de condensator gedraagt zich effectief als een open circuit (hoge impedantie). Wat dat met het signaal doet, hangt af van waar hij zit: in serie blokkeert hij, naar aarde laat hij door.
 - **Bij hoge frequenties**: de condensator is effectief een kortsluiting (lage impedantie).
 - **Kantelfrequentie fc**: wanneer |Xc| = R, geldt f = 1/(2πRC) en zakt het uitgangsvermogen naar de helft (-3dB).
 
-fc = 1/(2πRC); waarschijnlijk de formule die het vaakst terugkomt in mijn schrift. Ik heb hem berekend voor debouncecircuits, audiofilters, ADC-front-ends... hij duikt overal op.
+Die ene formule is waarschijnlijk de regel die het vaakst terugkomt in mijn schrift: debouncecircuits, audiofilters, ADC-front-ends, hij duikt overal op.
 
 ## RC-laagdoorlaatfilter
 
@@ -62,7 +62,7 @@ Weerstand in serie, condensator naar aarde. Lage frequenties gaan door de weerst
 
 - **Anti-aliasing vóór de ADC**: alles boven de Nyquistfrequentie (fs/2) moet vóór het samplen worden geëlimineerd, anders vouwt het terug als aliasing. Plaats een RC-laagdoorlaat direct op de ADC-ingangspin.
 - **Onderdrukking van voedingsrimpel**: schakelruis van DC/DC; gebruik een RC- (of LC-) laagdoorlaat om die omlaag te krijgen.
-- **Hardware-knopdebounce**: 10kΩ + 100nF, fc ≈ 159Hz. Mechanisch contactstuiteren ligt in het kHz-bereik; meer dan een orde van grootte verschil, dus de filtering is zeer effectief. Ik combineer meestal hardware- en software-debounce.
+- **Hardware-knopdebounce**: 10kΩ + 100nF, fc ≈ 159Hz. Een schakelaar stuitert ruwweg 0,1–10ms, en het RC-filter vlakt alleen de flanken af: één pool laat de uitgang nog steeds langzaam door de logische drempel kruipen, dus ik combineer het met een Schmitt-trigger-ingang of software-debounce.
 - **PWM naar analoge spanning**: stuur een PWM-blokgolf door een laagdoorlaat met fc ver onder de PWM-frequentie en je krijgt een gladde gelijkspanning, evenredig met de dutycycle. Een simpele DAC.
 - **Baspad in audio**: in crossovers en toonregelaars pikt de laagdoorlaat de lage frequenties eruit voor de bas.
 
@@ -108,7 +108,7 @@ Condensator in serie, weerstand naar aarde. Hoge frequenties zeilen door de cond
 
 ## RC-banddoorlaatfilter
 
-Cascadeer een hoogdoorlaat gevolgd door een laagdoorlaat (met een buffer ertussen om belasting te voorkomen):
+Cascadeer een hoogdoorlaat gevolgd door een laagdoorlaat, met een buffer ertussen. De tekening laat die buffer weg: zonder hem belast de tweede trap de eerste en verschuiven beide kantelfrequenties.
 
 ```
 Vin ── C1 ──┬── R1 ──┬── Vout

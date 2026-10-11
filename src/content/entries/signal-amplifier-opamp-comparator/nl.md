@@ -1,7 +1,7 @@
 ---
 title: "Signaalversterking: op-amp en spanningscomparator"
 date: 2026-08-10
-description: "Kernprincipes, klassieke circuitanalyses en industriële toepassingen van operationele versterkers en spanningscomparators: niet-inverterende en inverterende versterkers, opteller, aftrekker, integrator, differentiator, differentiële versterker en sensorinterfacecircuits."
+description: "Op-amps en comparatoren vanuit de twee regels die ze definiëren: de versterkconfiguraties, de klassieke schakelingen (opteller, aftrekker, integrator, differentiator, differentiële versterker) met de hand afgeleid, en de sensorfront-ends waarin ze opduiken."
 
 type: note
 category: Elektronica
@@ -30,21 +30,21 @@ translationKey: signal-amplifier-opamp-comparator
 
 Bronnen: [Bilibili](https://www.bilibili.com/video/BV1VeQdYUELe) [Zhihu](https://zhuanlan.zhihu.com/p/1928161464247620032)
 
-Een **operationele versterker** is in wezen een differentiële versterker met een extreem hoge versterkingsfactor. Hij vertrouwt op een extern terugkoppelingsnetwerk om precieze, beheersbare spanningsversterking te bereiken. In echte projecten is zijn belangrijkste taak om zwakke analoge signalen van sensoren op te nemen, te versterken, te filteren, te conditioneren en om te zetten in iets dat de MCU betrouwbaar kan uitlezen.
+Toen ik de twee eigenschappen hieronder voor het eerst echt begreep, vielen ineens een heleboel schakelingen op hun plaats. Een **operationele versterker** is in wezen een differentiële versterker met een extreem hoge versterkingsfactor. Hij vertrouwt op een extern terugkoppelingsnetwerk om precieze, beheersbare spanningsversterking te bereiken. In echte projecten is zijn belangrijkste taak om zwakke analoge signalen van sensoren op te nemen, te versterken, te filteren, te conditioneren en om te zetten in iets dat de MCU betrouwbaar kan uitlezen.
 
 ## Kernkenmerken
 
-- **Virtueel open**: de ingangen van een op-amp hebben een extreem hoge impedantie (1MΩ+), waardoor er vrijwel geen stroom loopt. Zie ze als probes die de signaallijn aanraken zonder die te beïnvloeden. In de analyse behandel je beide ingangen gewoon als open circuits. Dit wordt het virtueel open genoemd; een afkorting voor "schijnbaar open circuit".
-- **Virtuele kortsluiting**: bij aanwezigheid van negatieve terugkoppeling doet de op-amp zijn uiterste best om de spanning op de inverterende ingang (-) gelijk te maken aan die op de niet-inverterende ingang (+). Elke versterkingsberekening is hierop terug te voeren. Toen ik dit voor het eerst echt begreep, vielen ineens een heleboel schakelingen op hun plaats.
+- **Virtueel open**: de ingangen van een op-amp hebben een zeer hoge impedantie en trekken vrijwel geen stroom. Zie ze als probes die de signaallijn aanraken zonder die te beïnvloeden. In de analyse behandel je beide ingangen gewoon als open circuits. Dit wordt het virtueel open genoemd, een afkorting voor "schijnbaar open circuit".
+- **Virtuele kortsluiting**: bij aanwezigheid van negatieve terugkoppeling doet de op-amp zijn uiterste best om de spanning op de inverterende ingang (-) gelijk te maken aan die op de niet-inverterende ingang (+). Elke versterkingsberekening is hierop terug te voeren.
 
 ## Overige kenmerken
 
-- **Uitgangsverzadiging**: de uitgang kan de voedingsrails niet overschrijden; de uitgang van een op-amp wordt altijd begrensd door de voedingsrails, meestal net eronder. Als de theoretisch versterkte waarde de voeding overschrijdt, clipt de uitgang en ben je niet meer lineair.
+- **Uitgangsverzadiging**: de uitgang wordt begrensd door de voedingsrails, en hoe dicht hij daarbij komt hangt van de op-amp af. Als de theoretisch versterkte waarde de voeding overschrijdt, clipt de uitgang en ben je niet meer lineair.
 - De **spanningsvolger** is het speciale geval met Rf=0, Rg=∞, wat een versterking van 1 geeft. Hij versterkt de spanning niet; in plaats daarvan zet hij een zwak, hoogimpedant sensorsignaal om in een sterk, laagimpedant stuursignaal, en buffert hij de ene trap ten opzichte van de volgende.
 
 ## Niet-inverterende versterker
 
-Het signaal komt binnen op de (+) ingang. De terugkoppelingsweerstand Rf (R2) verbindt de uitgang met (-), en Rg (R1) loopt van (-) naar aarde. De uitgang stijgt actief totdat de spanningsdeler gevormd door Rf en Rg gelijk is aan de ingangsspanning.
+Het signaal komt binnen op de (+) ingang. De terugkoppelingsweerstand Rf (R1) verbindt de uitgang met (-), en Rg (R2) loopt van (-) naar aarde. De uitgang stijgt actief totdat de spanningsdeler gevormd door Rf en Rg gelijk is aan de ingangsspanning.
 
 ### Formule: Vout = Vin × (1 + Rf/Rg)
 
@@ -87,33 +87,21 @@ De **virtuele aarde** is vooral belangrijk in de inverterende configuratie. Omda
 
 ## Niet-inverterende versterker in echte producten
 
-- **Elektronische weegschalen / druksensoren**: het zwakke differentiële signaal van een brugsensor wordt versterkt via een instrumentatieversterker (of een structuur met drie op-amps) en daarna naar de ADC gevoerd. Het bereikontwerp moet clippen voorkomen.
-- **Temperatuurregelaars**: microvoltsignalen van thermokoppels worden versterkt; daarna gaat het ene pad naar het display en het andere naar een comparator die met een ingestelde drempel vergelijkt en een relais aanstuurt.
-- **PIR-infrarood-bewegingssensoren**: de PIR geeft een minuscuul AC-signaal af, dat via een op-amp-banddoorlaatfilter wordt versterkt en vervolgens door een comparator wordt gedetecteerd om verlichting te triggeren.
-- **Motorstroommeting**: de millivoltdaling over een shuntweerstand wordt versterkt en naar de MCU gestuurd voor overstroombeveiliging.
-- **Audioproducten**: het signaal van een elektreetmicrofoon wordt AC-versterkt en gefilterd en daarna naar een eindversterker of ADC gevoerd.
+Elektronische weegschalen en druksensoren, temperatuurregelaars, PIR-bewegingssensoren, motorstroommeting en audioproducten gebruiken allemaal dezelfde trap. Het zwakke differentiële signaal van een brugsensor gaat via een instrumentatieversterker (of een structuur met drie op-amps) naar de ADC, waarbij het bereik zo gekozen wordt dat er niets clipt. Het microvoltsignaal van een thermokoppel wordt versterkt en splitst zich daarna: het ene pad naar het display, het andere naar een comparator die met een ingestelde drempel vergelijkt en een relais aanstuurt. Een PIR geeft een minuscuul AC-signaal af, dat door een op-amp-banddoorlaatfilter wordt versterkt voordat een comparator het detecteert en de verlichting triggert. De millivoltdaling over een shuntweerstand wordt versterkt en naar de MCU gestuurd voor overstroombeveiliging. Het signaal van een elektreetmicrofoon wordt AC-versterkt en gefilterd en daarna naar een eindversterker of ADC gevoerd.
 
 ## Inverterende versterker in echte producten
 
-- **Audiomixers**: meerdere audiokanalen gaan elk door hun eigen Rin en worden allemaal opgeteld op het virtuele aardpunt van de inverterende op-amp. Kanalen storen elkaar niet. Dit is de klassieke "opteller"-toepassing.
-- **Inversie van sensorsignalen**: sommige sensoren geven in de tegengestelde richting van de fysieke grootheid uit (bijv. druk omhoog → spanning omlaag). Eén inverterende trap draait het signaal weer goed voordat het bij de MCU komt.
-- **Stroom-naar-spanningomzetting**: laat Rin helemaal weg, stuur de sensorstroom rechtstreeks de inverterende ingang in en gebruik Rf om stroom lineair naar spanning om te zetten. Fotodiodedetectiecircuits doen dit bijna altijd.
-- **Bouwsteen voor differentiële versterkers**: combineer inverterende en niet-inverterende trappen om zwakke differentiële signalen uit rumoerige common-mode-omgevingen te halen. Industriële sensor-front-ends maken hier veelvuldig gebruik van.
+Audiomixers zijn het klassieke geval: meerdere audiokanalen gaan elk door hun eigen Rin en worden opgeteld op het virtuele aardpunt, zonder dat de kanalen elkaar storen. Dezelfde trap draait een sensorsignaal dat tegengesteld aan de fysieke grootheid loopt (druk omhoog, spanning omlaag) weer goed voordat de MCU het ziet, en zet stroom om in spanning wanneer Rin helemaal wegvalt en de sensorstroom rechtstreeks de inverterende ingang in gaat, met Rf die de lineaire omzetting bepaalt (fotodiodedetectie werkt bijna altijd zo). Door inverterende en niet-inverterende trappen te combineren bouw je bovendien de differentiële versterker die een zwak signaal uit een rumoerige common-mode-omgeving haalt, iets waar industriële sensor-front-ends veelvuldig gebruik van maken.
 
 ## Ontwerpaantekeningen: wat ik heb geleerd
 
-- **Hoofdruimte ten opzichte van de voedingsrails**: standaard op-amps (zoals de LM358) kunnen niet tot aan de rails uitslaan. Bij een 5V-voeding is de maximale uitgang ≈ VCC-1.5V = 3.5V. Als de ADC-referentie van je MCU 3.3V is, sluit dat mooi aan. Heb je een rail-to-rail-uitslag nodig, neem dan een rail-to-rail op-amp.
-- **Common-mode-bereik van de ingang**: de ingangen van de LM358 gaan tot aan aarde, maar slechts tot VCC-1.5V omhoog. Is je ingang 6V bij een 5V-voeding, dan zit je buiten het common-mode-bereik en gedraagt de op-amp zich onvoorspelbaar.
-- **Versterkings-bandbreedteproduct**: de LM358 haalt slechts ~1MHz. Prima voor thermische, optische en langzame signalen; niet voor hoogfrequente zaken.
-- **Biasstroompad**: de inverterende ingang heeft via een weerstand een DC-pad naar aarde nodig. De ingangsbiasstroom moet ergens heen; zonder pad stort het "virtueel open" in en drift de uitgang.
-- **Ontkoppeling**: een condensator van 0.1μF op de voedingspinnen van de op-amp naar aarde. Sla dit nooit over.
-- **Comparatorhysterese**: wanneer de ingang in de buurt van de drempel zweeft, oscilleert een kale comparator wild. Voeg positieve terugkoppeling toe (grote weerstand van de uitgang naar de (+) ingang) om een hysteresisvenster te creëren. Schoon schakelgedrag. Verplicht voor elk productiecircuit.
+Standaard op-amps zoals de LM358 kunnen niet tot aan de rails uitslaan. Bij een 5V-voeding komt de uitgang niet hoger dan ongeveer VCC-1.5V = 3.5V, en de ingangen werken alleen van aarde tot diezelfde 3.5V, dus een ingang van 6V zit boven de voedingsrail zelf en de op-amp gedraagt zich onvoorspelbaar. Met een ADC-referentie van 3.3V kan de op-amp voorbij full scale sturen, dus het bereik wordt aan de bovenkant door de ADC bepaald. Het versterkings-bandbreedteproduct is ongeveer 1MHz; prima voor thermische, optische en andere langzame signalen, niet voor hoogfrequente zaken.
 
-Een **comparator** is fundamenteel anders dan een op-amp: hij streeft geen lineariteit na, hij neemt direct binaire beslissingen. V+ > V- → uitgang hoog (of door een externe weerstand naar hoog getrokken), V+ < V- → uitgang laag. Slechts twee uitkomsten: ja of nee.
+Twee dingen rond de op-amp zelf zijn makkelijk te vergeten. De ingangsbiasstroom moet ergens heen, dus geef elke ingang een DC-pad naar aarde (via een weerstand, of via de bron zelf); zonder pad stort het "virtueel open" in en drift de uitgang. En 0.1μF van elke voedingspin naar aarde is niet optioneel. Staat er een comparator aan de andere kant, onthoud dan dat een kale comparator wild oscilleert wanneer de ingang in de buurt van de drempel zweeft; voeg positieve terugkoppeling toe (een grote weerstand van de uitgang naar de (+) ingang) voor een hysteresisvenster, dat geeft schoon schakelgedrag. Elke schakeling die een langzaam of rumoerig signaal vergelijkt heeft het nodig.
 
 ## Klassieke schakelingen: met de hand afgeleid
 
-### Opteller 1
+### Opteller (inverterend, virtuele aarde)
 ![Opteller 1](./05-adder-circuit-1.png)
 
 Uit de virtuele kortsluiting: V- = V+ = 0 …(a)
@@ -122,7 +110,7 @@ Uit virtueel open en de wet van Kirchhoff volgt dat de som van de stromen door R
 (a) invullen: V1/R1 + V2/R2 = -Vout/R3
 Als R1 = R2 = R3, dan: -Vout = V1 + V2
 
-### Opteller 2
+### Opteller (niet-inverterende ingang)
 ![Opteller 2](./06-adder-circuit-2.png)
 
 Door het virtueel open loopt er geen stroom de niet-inverterende ingang in. De stroom door R1 is gelijk aan de stroom door R2. Evenzo is de stroom door R4 gelijk aan de stroom door R3:
@@ -156,7 +144,7 @@ Dus: Vout = (-1/(R1 × C1)) ∫ V1 dt
 De uitgangsspanning is evenredig met de integraal van de ingangsspanning over de tijd. Is V1 een constante spanning U, dan:
 Vout = -U × t / (R1 × C1)
 
-t is de tijd en Vout is een rechte lijn die lineair van 0 richting de negatieve voeding oploopt.
+t is de tijd en Vout is een rechte lijn die lineair van 0 richting de negatieve voeding oploopt, tot de uitgang die rail bereikt.
 
 ### Differentiator
 ![Differentiator](./09-differentiator-circuit.png)
@@ -182,7 +170,7 @@ Uit (d), (h): Vout = (Vy - Vx)(R1 + R2 + R3) / R2
 
 De term (R1+R2+R3)/R2 is een constante die de versterkingsfactor voor het verschil (Vy - Vx) bepaalt. Dit is de differentiële versterker.
 
-### Stroomdetectie (4-20mA)
+### Stroomdetectie (4~20mA)
 ![Stroomdetectie](./11-current-detection.png)
 
 Veel controllers accepteren een stroom van 0~20mA of 4~20mA van instrumentatie. Dit circuit zet die stroom om in een spanning voor de ADC.
@@ -193,7 +181,7 @@ Uit virtueel open volgt dat er geen stroom de op-amp-ingangen in loopt. De stroo
 (V2 - Vy) / R3 = Vy / R5 …(a)
 (V1 - Vx) / R2 = (Vx - Vout) / R4 …(b)
 Uit de virtuele kortsluiting: Vx = Vy …(c)
-Naarmate de stroom varieert van 0~20mA: V1 = V2 + (0.4~2) …(d)
+Naarmate de stroom varieert van 4~20mA: V1 = V2 + (0.4~2) …(d)
 (c) en (d) in (b) invullen: (V2 + (0.4~2) - Vy) / R2 = (Vy - Vout) / R4 …(e)
 Als R3 = R2 en R4 = R5, dan geeft (e) - (a): Vout = -(0.4~2)R4/R2 …(f)
 Hier geldt R4/R2 = 22k/10k = 2.2, dus: Vout = -(0.88~4.4)V
@@ -229,14 +217,14 @@ V7 = 2 × (Rx + 2R0) / (R15 + Rx + 2R0) …(e)
 Uit de virtuele kortsluiting: V1 = V2 …(f)
 Uit (a) tot en met (f): (V5 - V7) / 100 = (V7 - V3) / 2.2
 Vereenvoudigd: V5 = (102.2 × V7 - 100V3) / 2.2
-Oftewel: V5 = 204.4(Rx + 2R0) / (1000 + Rx + 2R0) - 200/11 …(g)
+Oftewel: V5 = [204.4(Rx + 2R0) / (1000 + Rx + 2R0) - 200/11] / 2.2 …(g)
 
 Nu de leidingweerstanden. De spanningsval over de onderste leidingweerstand loopt via de middelste leidingdraad, Z2 en R22 naar pin 10 van U8C.
 
-Uit virtueel open: V5 = V8 = V9 = 2 × R0 / (R15 + Rx + 2R0) …(a')
+Uit virtueel open: V8 = V9 = 2 × R0 / (R15 + Rx + 2R0) …(a')
 (V6 - V10) / R25 = V10 / R26 …(b')
-Uit de virtuele kortsluiting: V10 = V5 …(c')
-Uit (a'), (b'), (c'): V6 = (102.2/2.2)V5 = 204.4R0 / [2.2(1000 + Rx + 2R0)] …(h)
+Uit de virtuele kortsluiting: V10 = V8 …(c')
+Uit (a'), (b'), (c'): V6 = (102.2/2.2)V8 = 204.4R0 / [2.2(1000 + Rx + 2R0)] …(h)
 
 Met het stelsel vergelijkingen (g) en (h) kun je door V5 en V6 te meten Rx en R0 oplossen. Met Rx bekend zoek je in de PT100-tabel de temperatuur op.
 
@@ -246,6 +234,8 @@ Met het stelsel vergelijkingen (g) en (h) kun je door V5 en V6 te meten Rx en R0
 ![Analoge computer 1](./14-analog-computer-1.png)![Analoge computer 2](./15-analog-computer-2.png)
 
 ## Samenvatting: op-amp versus comparator
+
+Een **comparator** is fundamenteel anders dan een op-amp: hij streeft geen lineariteit na, hij neemt direct binaire beslissingen. V+ > V- → uitgang hoog (of door een externe weerstand naar hoog getrokken), V+ < V- → uitgang laag. Slechts twee uitkomsten: ja of nee.
 
 **Op-amps (zoals de LM358)** werken in het **lineaire gebied**. Met negatieve terugkoppeling doen ze hun best om beide ingangen gelijk te houden (de virtuele kortsluiting houdt stand), en de uitgang is een continu variërende analoge spanning, evenredig met de ingang. Ze zijn gebouwd voor **versterking**; precisie, getrouwheid, lage vervorming. Een 0.2V-fotodiodesignaal naar 2V brengen met behoud van de golfvorm, dat is het werk van een op-amp. Je kunt een op-amp tijdelijk open-loop als comparator gebruiken, maar daar is hij niet voor ontworpen.
 

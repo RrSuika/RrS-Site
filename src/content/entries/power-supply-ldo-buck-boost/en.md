@@ -1,7 +1,7 @@
 ---
 title: "Power Supply: LDO, Buck & Boost Converters"
 date: 2026-08-10
-description: "A designer's guide to power supply topologies: LDO linear regulators, Buck/Boost switching converters, battery charging, protection circuits, and practical selection criteria."
+description: "The three questions I ask before picking a power topology, what an LDO costs you in heat versus what a Buck costs you in ripple, and why a battery needs a protection board as well as a charger."
 
 type: note
 category: Electronics
@@ -62,7 +62,7 @@ What I've learned:
 - Plan your voltage rails thoughtfully. Sensitive circuits may need extra filtering on their supply.
 - Protection devices (fuse, reverse-polarity) look basic but define your product's safety floor. Never cheap out here.
 
-Fuse selection gets four checks in the wiring guide: current rating, voltage rating, interrupt rating and speed (FF/F/M/T/TT). The interrupt rating becomes safety-critical at battery scale: LiFePO₄ delivers far higher short-circuit currents than lead-acid, and the fuse has to break that fault current without rupturing itself. Typical values: MEGA fuses 2.5kA at 70V DC, NH blade fuses 25kA, Class T 200kA. The board-level habit of picking protection for what it has to survive carries straight over to battery systems.
+Fuse selection gets four checks in the wiring guide: current rating, voltage rating, interrupt rating and speed (FF/F/M/T/TT). The interrupt rating becomes safety-critical at battery scale: LiFePO₄ delivers far higher short-circuit currents than lead-acid, and the fuse has to break that fault current without rupturing itself. Typical values: MEGA fuses 2.5kA at 70V DC, NH blade fuses 25kA, Class T 20kA at 125V DC. The board-level habit of picking protection for what it has to survive carries straight over to battery systems.
 
 ## LDO Linear Regulators: Clean and Simple, But They Get Hot
 
@@ -72,14 +72,15 @@ An LDO essentially burns excess voltage as heat. The math is clear:
 P_loss = (Vin - Vout) × I
 ```
 
-But LDOs aren't always inefficient: it depends on the scenario. Small voltage drop: 5.5V to 5V at 1A, P_loss = 0.5W, ~91% efficient: totally fine. Large drop: 12V to 5V at 1A, P_loss = 7W, only 42% efficient: terrible.
+But LDOs aren't always inefficient: it depends on the scenario. Small voltage drop: 5.5V to 5V at 1A, P_loss = 0.5W, ~91% efficient, which is fine. Large drop: 12V to 5V at 1A, P_loss = 7W, only 42% efficient, which is terrible.
 
 LDO advantages: dead simple circuit (input cap + LDO + output cap, that's it), low cost, low noise, stable output.
 
 I reach for an LDO when:
 - Dropping 3.6V Li-ion to 3.3V for an MCU or sensor: only 0.3V dropout, barely any heat.
 - Feeding noise-sensitive analog/RF circuits (audio amps, ADC references).
-- I would NOT use one for 12V-to-5V at high power: you'd need a massive heatsink. Not worth it.
+
+I would not use one for 12V-to-5V at high power; you'd need a massive heatsink, and it is not worth it.
 
 Practical lessons:
 - After calculating P_loss, junction temp = ambient + P_loss × θJA. Keep it in the safe zone.
@@ -92,19 +93,18 @@ A Buck takes a completely different approach: instead of burning excess voltage,
 
 The trade-off: output has high-frequency ripple, and you need more external components: at minimum an inductor, a freewheeling diode (or synchronous rectifier MOSFET), and input/output caps.
 
-The wiring guide describes the same ripple phenomenon at system scale: an inverter pulls a fluctuating DC current from the battery at twice the grid frequency (100Hz), and the battery-cable resistance turns that into ripple voltage on the whole DC bus, with Victron alarming at 2.25V RMS on a 24V system. Its fix list mirrors board-level practice: shorter and thicker conductors, tight connections, quality parts. Same physics, different scale: ripple is fluctuating current times series resistance, and the cure is always a lower-impedance path.
+The same current-times-resistance arithmetic shows up at system scale: an inverter pulls a fluctuating DC current from the battery at twice the grid frequency (100Hz), and the battery-cable resistance turns that into ripple voltage on the whole DC bus, with Victron alarming at 2.25V RMS on a 24V system. Its fix list mirrors board-level practice: shorter and thicker conductors, tight connections, quality parts. Same physics, different scale: ripple is fluctuating current times series resistance, and the cure is a lower-impedance path.
 
 I default to Buck when the voltage drop exceeds ~3V and current is above ~0.3A: like 12V systems, or stepping battery voltage down for high-power loads. The LM2596 module is my prototyping staple: adjustable output, cheap, reliable.
 
 Lessons learned the hard way:
-- Inductor selection is critical: saturation current must exceed max load current. Once an inductor saturates, it's basically a wire, and your MOSFET dies instantly.
+- Inductor selection is critical: saturation current must exceed max load current. Once an inductor saturates it behaves like a wire, and the MOSFET can fail.
 - Keep the switching node trace short and wide to minimize EMI.
 - For sensitive circuits, add an LDO or π filter after the Buck to suppress ripple.
 
 ## Boost and Buck-Boost
 
-- **Boost**: Steps voltage up. Single Li-ion cell 3.7V → 5V or 12V. Principle: switch ON stores energy in the inductor; switch OFF releases it in series with the input, making Vout > Vin.
-- **Buck-Boost**: Handles the case where Vin might be above or below Vout. A Li-ion battery ranges from 4.2V full to 2.7V near empty, but you need steady 3.3V: Buck-Boost automatically switches between modes.
+A Boost steps up: one Li-ion cell at 3.7V to 5V or 12V. The switch stores energy in the inductor while it is on, and releases it in series with the input when it opens, so Vout > Vin. A Buck-Boost covers the case where Vin can sit above or below Vout; a Li-ion cell runs from 4.2V full to 2.7V near empty, and behind a steady 3.3V rail it switches between modes by itself.
 
 Practical notes:
 - Boost circuits can have inrush current at startup: soft-start is basically standard.
@@ -115,10 +115,10 @@ Practical notes:
 
 You absolutely cannot charge a Li-ion cell by connecting 5V directly. You need a charge management IC.
 
-- **TP4056**: Linear charging, CC then CV (4.2V), excess voltage becomes heat. That big exposed pad on the bottom is for thermal relief: pour copper, stitch vias, or it'll overheat while charging.
-- **Protection board** (DW01+8205A): monitors overcharge (>4.25V), over-discharge (<2.5V), overcurrent, and short circuit. Cuts the circuit instantly on fault.
+- **TP4056**: Linear charging, CC then CV (4.2V), excess voltage becomes heat. That big exposed pad on the bottom carries heat into the copper: pour copper, stitch vias, or it'll overheat while charging.
+- **Protection board** (DW01+8205A): monitors overcharge (≈4.30V), over-discharge (≈2.40V), overcurrent, and short circuit. Cuts the circuit on fault.
 
-My understanding: TP4056 is the charging-rules enforcer. The protection board is the safety net. Both are non-negotiable.
+My understanding: TP4056 is the charging-rules enforcer. The protection board is the safety net.
 
 Complete single-cell Li-ion chain:
 
@@ -152,12 +152,6 @@ My experience:
 
 ## The Three Questions Revisited, With a Case Study
 
-Let me repeat those three questions: they really work:
-
-1. Input-output voltage difference? >3V and >0.3A → skip LDO, use Buck.
-2. System noise-sensitive? Wireless modules, precision analog → LDO or extra filtering.
-3. Space and thermals? Sealed tiny enclosure → go switching, avoid heat buildup.
-
 ### Two Comparison Cases
 
 - LM7805 (linear): 9V input → 7805 → output to Arduino. Run for 5 minutes, touch the chip: noticeably hot. ~55.6% efficiency.
@@ -167,7 +161,7 @@ Conclusion: portable, battery-powered products should default to switching suppl
 
 ### Teardown: Tracing Power in an Old Phone Charger
 
-I tore down an old charger and traced the power path on the PCB: deeply satisfying:
+I tore down an old charger and traced the power path on the PCB. Deeply satisfying.
 
 ```
 AC 220V → fuse resistor → common-mode choke → bridge rectifier → 400V bulk electrolytic → transformer primary → switching IC → transformer secondary → Schottky rectifier → electrolytic filter → 5V USB output
@@ -177,22 +171,18 @@ Key component: the optocoupler straddles the high/low-voltage barrier, feeding b
 
 ## Core Takeaways
 
-- Power design is energy distribution, not "making electricity."
-- LDO and Buck aren't competitors: LDO is the low-noise, low-power solution; Buck handles high power with efficiency.
-- Switching supplies are efficient, but absolute losses are still significant: thermal design is mandatory.
-- Design chain: energy flow → voltage conversion → thermal path → mechanical integration. This is where EE and industrial design meet.
-- Charge management (TP4056) sets the charging rules, the protection board is the safety net, DC/DC translates the voltage.
+The design chain runs energy flow → voltage conversion → thermal path → mechanical integration. This is where EE and industrial design meet.
 
 ## FAQ
 
 ### Why must the protection board be integrated with the battery?
-The protection board needs direct, zero-latency monitoring of cell voltage and current, usually spot-welded with nickel strips right onto the cell terminals. If placed on the main board with wires and connectors in between, resistance and loose connections seriously compromise protection reliability.
+The protection board needs direct monitoring of cell voltage and current, usually spot-welded with nickel strips right onto the cell terminals. If placed on the main board, extra resistance and extra connection points sit inside the current path.
 
 ### Can I charge a protected battery directly with TP4056?
 Yes, this is the standard approach. TP4056 executes the CC/CV charge profile; the protection board acts as the last line of defense, cutting the circuit if voltage goes abnormally high.
 
 ### Why is my Buck circuit still getting hot?
-Even 1–2W of real loss will spike junction temperature without adequate cooling. Check inductor saturation current, MOSFET R_DS(on), PCB copper area, and the thermal path.
+Even 1–2W of real loss will raise the junction temperature without adequate cooling. Check inductor saturation current, MOSFET R_DS(on), PCB copper area, and the thermal path.
 
 ## Knowledge Base: Module Reference Cards
 
@@ -230,21 +220,15 @@ Even 1–2W of real loss will spike junction temperature without adequate coolin
 - Even higher power, widely used in the 1000W–5000W range.
 
 **LLC (Resonant)**
-- Modern PC power supplies all use this. Typical ATX PSU architecture: PFC → LLC → synchronous rectification → 12V, 90%–96% efficiency.
+- Modern PC power supplies use this. Typical ATX PSU architecture: PFC → LLC → synchronous rectification → 12V, 90%–96% efficiency.
 
 ### Switching Supply Ripple Mitigation
 
-For sensitive circuits, add an LDO or π filter (C-L-C) after the Buck. The Buck+LDO combo gives you both efficiency and low noise.
+The Buck+LDO combo gives you both efficiency and low noise.
 
 **Input DC → Buck → LDO → Load**
 
-1. **Buck handles the "efficient rough step-down"**
-   - Buck takes the big drop (e.g., 12V→5.5V) at 90%+ efficiency, generates very little heat.
-   - Steps down to just above the LDO's final output (typically 0.3–0.5V headroom).
-
-2. **LDO handles "precision regulation and cleanup"**
-   - Tiny dropout (0.3–0.5V), so P_loss is negligible: no heat problem.
-   - The LDO's high PSRR crushes whatever ripple survived the Buck. Output is exceptionally clean DC.
+The Buck takes the big drop (12V→5.5V) at 90%+ efficiency and very little heat, stopping just above the LDO's output, usually with 0.3–0.5V of headroom. The LDO then does the precision regulation and cleanup: with only that much across it, P_loss is negligible, and its high PSRR knocks down whatever switching ripple survived. The output is exceptionally clean DC.
 
 ### Battery Selection and Power Tree Planning
 

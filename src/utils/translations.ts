@@ -266,7 +266,7 @@ export const translations = {
       },
       notes: {
         title: "Notes",
-        description: "Research, learning and technical notes.",
+        description: "Working notes on electronics: the fundamentals, and the circuits I keep running into in real projects.",
       },
       about: {
         pageTag: "PERSONNEL_DOSSIER // PROFILE_MODULE",
@@ -854,7 +854,7 @@ export const translations = {
       },
       notes: {
         title: "笔记",
-        description: "研究、学习与技术记录",
+        description: "给自己写的电子学笔记：基础原理，以及在实际项目里反复撞到的那些电路。",
       },
 
       about: {
@@ -1416,7 +1416,7 @@ export const translations = {
       },
       notes: {
         title: "Notities",
-        description: "Onderzoek, leren en technische notities.",
+        description: "Werknotities over elektronica: de basis, en de schakelingen die ik in echte projecten steeds tegenkom.",
       },
       about: {
         pageTag: "PERSONEELSDOSSIER // PROFIELMODULE",
