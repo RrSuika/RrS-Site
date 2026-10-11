@@ -32,16 +32,14 @@ translationKey: 3d-printing-abs-material-test
 
 ![ABS 3D-printonderzoek](./ABS-3D-Printing-Guide-0.png)
 
-# Overzicht
-
+# Achtergrond
 Dus besloot ik om eindelijk serieus met ABS aan de slag te gaan. Als je ooit tijd hebt doorgebracht in 3D-printcommunity's, ken je de reputatie: het trekt krom, het krimpt, het raakt verstopt, en als je er tijdens een print ook maar verkeerd naar kijkt, laat het los van het bed. Maar ik bleef terugkomen bij dezelfde vraag: is het echt zo moeilijk, of nemen de meeste mensen gewoon niet genoeg tijd om te begrijpen wat er eigenlijk gebeurt?
 
 Dit logboek is mijn poging om die vraag te beantwoorden. Ik heb 15 tests gedraaid op een Bambu Lab A1, waarbij ik heb geëxperimenteerd met behuizingstemperaturen, verwarmingsvermogens, fansnelheden, printsnelheden en alles wat ik verder kon aanpassen. Onderweg heb ik mijn hotend vaker laten verstoppen dan ik wil toegeven, veel geleerd over heat creep en uiteindelijk een workflow gevonden die echt werkt.
 
-Ik schrijf dit niet op als een gepolijste gids, maar als de echte reis: mislukkingen, doodlopende wegen en de momenten waarop het kwartje eindelijk viel.
+Ik schrijf dit op als de echte reis: mislukkingen, doodlopende wegen en de momenten waarop het kwartje eindelijk viel.
 
-# Wat ik wilde uitzoeken
-
+# Doel
 Ik wilde begrijpen _waarom_ ABS zich gedraagt zoals het doet, en of een consumentenprinter zoals de A1 (die niet bepaald als ABS-machine op de markt wordt gezet) het met de juiste opstelling betrouwbaar aankan.
 
 ABS is aantrekkelijk voor functionele onderdelen omdat het beter tegen hitte kan dan PLA, beter tegen stoten kan dan PETG en lang meegaat. Maar de printomgeving doet er veel meer toe dan alleen de slicer-instellingen. Ik wilde:
@@ -428,7 +426,7 @@ Instellingen:
 
 Ik zal eerlijk zijn: dit waren niet de meest gecontroleerde tests. Ik veranderde meerdere dingen tegelijk, wat experimenteel gezien geen nette aanpak is, maar soms wil je gewoon zien of het ding werkt onder eenvoudigere omstandigheden.
 
-Resultaten: lichte kromtrekking aan de randen, maar niets catastrofaals. Dit suggereert dat de behuizingsverwarming voor kleinere onderdelen misschien niet echt verplicht is, en dat is goed om te weten. Maar als je iets groots of plats print, zou ik de temperatuurbeheersing toch graag in stand houden.
+Resultaten: lichte kromtrekking aan de randen, maar niets catastrofaals. Voor kleinere onderdelen is de behuizingsverwarming dus misschien niet echt verplicht, en dat is goed om te weten. Maar als je iets groots of plats print, zou ik de temperatuurbeheersing toch graag in stand houden.
 
 ## De evenwichtsoefening met temperatuur
 
@@ -485,58 +483,33 @@ Oplossing voor de lange termijn: het standaard kunststof tandwiel vervangen door
 
 ## Koelings- en thermische problemen
 
-- Behuizing onder ~45°C: kromtrekking vrijwel gegarandeerd
-- Behuizing boven ~55°C: heat creep wordt een reëel risico
-- Hoge temperaturen tasten de effectiviteit van de hotendkoelfan aan
-- Een te hard draaiende koelfan maakt al je behuizingswerk ongedaan
-- De bedtemperatuur was niet altijd optimaal
-- Tocht en koude luchtstromen verpestten de hechting van de eerste laag
-- Handmatige behuizingstemperatuurbeheersing was in feite nutteloos
-- Passief warmteverlies door ongeïsoleerde wanden was veel te hoog
+Het temperatuurvenster bleek smal en onvergevingsgezind. Onder ongeveer 45°C trekt het werkstuk vrijwel altijd krom; boven ongeveer 55°C begint heat creep en komt de extrusietrouble erachteraan. Hoge behuizingstemperaturen knagen ook aan de werking van de hotendkoelfan, en die fan hard laten draaien maakt je behuizingswerk weer ongedaan. De bedtemperatuur was niet altijd waar hij moest zijn, en tocht of koude lucht was op zichzelf al genoeg om de hechting van de eerste laag te verpesten. Handmatige temperatuurbeheersing was in de praktijk nutteloos, en ongeïsoleerde wanden lekten veel te snel warmte weg om een setpoint vast te houden.
 
 ## Extrusie- en mechanische problemen
 
-- Filament dat schuurt bij het extruder-tandwiel
-- Het tandwiel kon geen consistente grip behouden
-- Gedeeltelijke hotendverstoppingen die kwamen en gingen
-- Heat creep die het filament in de koude zone zacht maakte
-- Overmatige extrusieweerstand
-- Mogelijk vocht in oud filament
+De meeste extrudietrouble kwam voort uit het toevoerpad, niet uit de hotend zelf. Het tandwiel vrat in het filament en kon geen consistente grip houden, wat zich uitte als gedeeltelijke verstoppingen die kwamen en gingen. Heat creep maakte het filament in de koude zone zacht, de extrusieweerstand liep hoog op, en het filament waarmee ik begon had waarschijnlijk vocht opgenomen omdat het had liggen staan.
 
 ## Hechtingsproblemen
 
-- De eerste laag hechtte niet altijd, zelfs niet op een schoon bed
-- Lijm hielp niet betrouwbaar
-- Het bed schoonmaken moest grondiger dan ik deed
+De hechting van de eerste laag was onbetrouwbaar, zelfs op een schoon bed. Lijm hielp soms wel en soms niet, en de echte oplossing bleek het bed veel grondiger schoonmaken dan ik deed.
 
 # Wat daadwerkelijk hielp
 
 ![Overzicht oplossingen](./ABS-3D-Printing-Guide-7.png)
 
-Dit is het praktische spul dat het verschil maakte, in ruwe volgorde van impact:
+Dit is het praktische spul dat het verschil maakte, in ruwe volgorde van impact.
 
-# Hardware-upgrades die de moeite waard zijn
+## Hardware-upgrades die de moeite waard zijn
 
-- Isoleer de behuizing goed (het 10mm-schuim maakte een enorm verschil)
-- Voeg thermostaatgestuurde verwarming toe (handmatige beheersing is tijdverspilling)
-- Overweeg een gehard stalen extruder-tandwiel
-- De hotend zelf was prima: ik heb hem uiteindelijk nooit hoeven vervangen
+De behuizing goed isoleren was de grootste winst, en het 10mm-schuim maakte een duidelijk verschil. Thermostaatgestuurde verwarming kwam daarna, want handmatige beheersing is tijdverspilling. Een gehard stalen extruder-tandwiel is de upgrade die ik nog steeds zou doen. De hotend zelf was prima; ik heb hem uiteindelijk nooit hoeven vervangen.
 
-# Procesaanpassingen die ertoe doen
+## Procesaanpassingen die ertoe doen
 
-- Maak de printplaat zorgvuldiger schoon dan je denkt dat nodig is
-- Houd de koelfan zo laag mogelijk
-- Gebruik een brim: eenvoudiger en vaak effectiever dan een volledig tochtschild
-- Stem de snelheid af op wat het materiaal aankan
-- Als ABS blijft tegenwerken, is ASA een legitiem alternatief dat het testen waard is
-- Beter filament doet ertoe: oud, slecht opgeslagen ABS vecht met één hand op de rug gebonden
+Maak de printplaat zorgvuldiger schoon dan je denkt dat nodig is. Houd de koelfan zo laag als hij kan, en gebruik een brim, wat eenvoudiger is en meestal effectiever dan een volledig tochtschild. Stem de snelheid af op wat het materiaal echt aankan. Als ABS blijft tegenwerken, is ASA een legitiem alternatief dat het testen waard is. En beter filament doet ertoe: oud, slecht opgeslagen ABS vecht met één hand op de rug gebonden.
 
-# Oplossingen voor extrusiebetrouwbaarheid
+## Oplossingen voor extrusiebetrouwbaarheid
 
-- Controleer het extruder-tandwiel regelmatig op ophoping van filamentstof
-- Verhelp gedeeltelijke verstoppingen voordat het volledige verstoppingen worden
-- Wees niet bang om handmatig te helpen bij de aanvoer als het tandwiel moeite heeft
-- Een iets hogere nozzletemperatuur (255→260°C) maakte een merkbaar verschil
+Controleer het extruder-tandwiel regelmatig op filamentstof, en verhelp gedeeltelijke verstoppingen voordat ze volledige verstoppingen worden. Als het tandwiel moeite heeft, is er niets mis met de aanvoer met de hand een handje helpen. De nozzle van 255°C naar 260°C bracht op zichzelf al een merkbaar verschil.
 
 # Gedachten over het extruder-tandwiel
 
@@ -544,7 +517,7 @@ Ik overwoog het standaardtandwiel te vervangen door een messing exemplaar, maar 
 
 Een gehard stalen tandwiel lijkt de veiligere keuze. Meer grip, minder thermische geleiding, en het slijt niet op dezelfde manier.
 
-## Vervolgwerk
+# Volgende stap
 
 Dingen die ik wil testen wanneer ik eraan toekom:
 
@@ -558,7 +531,7 @@ Dingen die ik wil testen wanneer ik eraan toekom:
 
 De grote les over methodologie: drie dingen tegelijk veranderen brengt je misschien sneller bij een oplossing, maar je weet niet _welk_ ding het heeft opgelost. Volgende ronde wil ik gedisciplineerder zijn in het isoleren van variabelen.
 
-## Zelfreflectie
+# Wat ik heb geleerd
 
 Dit project veranderde hoe ik over 3D-printen denk. ABS is niet zomaar PLA in „hard mode": het is een compleet ander beest dat zwakke plekken in je opstelling blootlegt die makkelijkere materialen je laten negeren.
 
@@ -570,20 +543,20 @@ De eerste tests waren rommelig: ik veranderde meerdere variabelen, raakte gefrus
 
 Al met al ben ik blij dat ik heb doorgezet. Van „ABS is onmogelijk op deze printer" naar een herhaalbaar proces is oprecht bevredigend.
 
-## Filament- en printeropstelling
+# Filament- en printeropstelling
 
-### Printer
+## Printer
 
 - Printer: Bambu Lab A1
 - Nozzle: Bambu Lab roestvrij staal 0.4mm
 - Printplaat: Bambu Lab PEI-printplaat
 
-### Materiaal
+## Materiaal
 
 - Filament: ABS
 - Diameter: 1.75mm
 
-### Extrusiesysteem
+## Extrusiesysteem
 
 Oorspronkelijke opstelling:
 
@@ -593,9 +566,7 @@ Waar ik naar zou overstappen:
 
 - Gehard stalen extruder-tandwiel
 
-Het standaardtandwiel werkt prima voor PLA en PETG, maar onder de hogere weerstand die ABS veroorzaakt, is de grip niet altijd voldoende. Ik overwoog een volledig metalen messing tandwiel, maar de hogere thermische geleiding zou meer warmte het filamentpad in duwen: waarschijnlijk niet wat je wilt wanneer heat creep al op je lijst met problemen staat.
-
-### Printomgeving
+## Printomgeving
 
 Kamertemperatuur: 18–24°C
 
@@ -605,7 +576,7 @@ Waar ik op zou mikken: 45–50°C
 
 Boven de 55°C hielp het wel tegen kromtrekking, maar bracht het vaker heat creep en extrusieproblemen met zich mee. Onder de 45°C begon ik hoeken te zien loskomen. Het is een smal venster, maar zodra je het gevonden hebt, is het herhaalbaar.
 
-## Referenties
+# Referenties
 
 1. Bambu Lab Basic Maintenance  
    https://wiki.bambulab.com/en/a1/maintenance/basic-maintenance

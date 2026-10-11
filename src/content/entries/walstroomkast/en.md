@@ -3,7 +3,7 @@ title: "Shore Power Cabinet"
 spineTitle: "SHORE POWER CABINET"
 date: 2026-06-15
 dateLabel: "Jun 15"
-description: "A shore power setup for Dutch inland vessels; batteries carry the peaks so a limited 3×80A grid connection can serve a 3×250A load, in a modular cabinet that grows with demand."
+description: "A shore power setup for Dutch inland vessels: batteries carry the peaks so a limited 3×80A grid connection can serve a 3×250A load, in a modular cabinet that grows with demand."
 type: projects
 category: Industrial Design / Electrical Systems
 cover: cover.webp
@@ -30,13 +30,13 @@ translationKey: walstroomkast
 
 Inland vessels can no longer run diesel generators while moored alongside; they have to plug into shore power. A ship's demand is large and swings hard, peaking around 3×250A. The quay can only supply 3×80A, which is more than three times short.
 
-This was a project from Hogeschool Rotterdam, working with Endenburg as the client. Five of us: my design partner and I as the two Industrial Product Design students, and three Electrical Engineering students on the electrical verification and deliverables. My partner and I had already built a complete cargo box for a painter's bakfiets together during our internship at ZOEM Bike, so we kept the same division of labour. I took the research, the material analysis, writing the conclusions up as design decisions, and the documentation, visuals and final presentation; my partner mainly did the 3D modelling, the renders and the technical drawings.
+This was a project from Hogeschool Rotterdam, working with Endenburg as the client. Five of us: my design partner and I as the two Industrial Product Design students, and three Electrical Engineering students on the electrical verification and deliverables. My partner and I had already built a complete cargo box for a painter's bakfiets together during our internship at ZOEM Bike, so we kept the same division of labour. I took the research, the material analysis, writing the conclusions up as design decisions, and the documentation, visuals and final presentation; my partner mainly did the 3D modeling, the renders and the technical drawings.
 
 # Design brief
 
 The job on the physical side was a modular cabinet that can carry a 3×250A peak off a 3×80A grid connection and grow along with the demand.
 
-The project set five critical success factors, and every design decision afterwards had to answer to them:
+We set five critical success factors, and every design decision afterwards had to answer to them:
 
 | Critical success factor | What it asks for |
 | --- | --- |
@@ -92,7 +92,7 @@ The project set five critical success factors, and every design decision afterwa
 </div>
 </div>
 
-We went through the standards documentation first, then analysed the shore power products already in service, then mapped the possible user scenarios and the variables inside them. Four variables drive the configuration:
+We went through the standards documentation first, then analyzed the shore power products already in service, then mapped the possible user scenarios and the variables inside them. Four variables drive the configuration:
 
 1. **Power**: the required kVA decides the configuration.
 2. **Supply**: coupled straight to a transformer, or straight onto the grid.
@@ -115,9 +115,9 @@ We went through the standards documentation first, then analysed the shore power
 <tbody>
 <tr><td>Perforated profiles / Strut Channel<br />(25mm pitch)</td><td><span class="plus">+</span>flexible component placement<br /><span class="plus">+</span>modular expansion<br /><span class="plus">+</span>standard parts, easy to source</td><td><span class="minus">−</span>sealing is awkward</td></tr>
 <tr><td>Profile system</td><td><span class="plus">+</span>high stiffness and mechanical strength<br /><span class="plus">+</span>standard parts, easy to source<br /><span class="plus">+</span>modular expansion</td><td><span class="minus">−</span>limited sealing</td></tr>
-<tr><td>Glass fibre reinforced plastic profiles</td><td>—</td><td><span class="minus">−</span>short service life<br /><span class="minus">−</span>questionable reliability in the operating environment</td></tr>
-<tr><td>Tongue-and-groove sandwich panel</td><td>—</td><td><span class="minus">−</span>limited expandability<br /><span class="minus">−</span>insufficient sealing</td></tr>
-<tr><td>Modular pipe and rail</td><td>—</td><td><span class="minus">−</span>too many connection points<br /><span class="minus">−</span>insufficient sealing</td></tr>
+<tr><td>Glass fiber reinforced plastic profiles</td><td>None</td><td><span class="minus">−</span>short service life<br /><span class="minus">−</span>questionable reliability in the operating environment</td></tr>
+<tr><td>Tongue-and-groove sandwich panel</td><td>None</td><td><span class="minus">−</span>limited expandability<br /><span class="minus">−</span>insufficient sealing</td></tr>
+<tr><td>Modular pipe and rail</td><td>None</td><td><span class="minus">−</span>too many connection points<br /><span class="minus">−</span>insufficient sealing</td></tr>
 <tr class="verdict"><td colspan="3"><strong>Chosen:</strong> perforated strut channel on a 25mm pitch, with a side gasket and a roof cap for the sealing.</td></tr>
 </tbody>
 </table>
@@ -132,7 +132,7 @@ We went through the standards documentation first, then analysed the shore power
 <h4>Expandability options</h4>
 <img src="./studies-expandability.webp" alt="Expandability options" style="max-width:100%; border-radius:8px; display:block; margin:0 0 14px;" />
 <p><strong>Batteries</strong>: an internal battery pack absorbs current peaks and large power demand; a separate external input takes emergency power or a generator.</p>
-<p><strong>Form</strong>: in the city, a natural treatment (planting bed, muted colours) so it blends into its surroundings; in a port environment, keep the functional industrial character.</p>
+<p><strong>Form</strong>: in the city, a natural treatment (planting bed, muted colors) so it blends into its surroundings; in a port environment, keep the functional industrial character.</p>
 <p><strong>Modular</strong>: a 5G tower for future drones and autonomous vehicles in the port; an emergency supply point for charging small devices like phones.</p>
 <p><strong>Chosen:</strong> all three directions, batteries, form and modularity.</p>
 </div>
@@ -226,9 +226,9 @@ The materials were compared in two blocks: the sheet metal grade for the enclosu
 <table class="mat-table">
 <thead><tr><th>Material</th><th>Advantages</th><th>Disadvantages</th></tr></thead>
 <tbody>
-<tr><td>HDPE<br />(with UV stabilisers; extrusion/injection moulding)</td><td><span class="plus">+</span>good corrosion resistance<br /><span class="plus">+</span>high impact resistance<br /><span class="plus">+</span>cheap and easy to produce<br /><span class="plus">+</span>recyclable</td><td><span class="minus">−</span>only moderate UV stability<br /><span class="minus">−</span>low stiffness, so it cannot act as a structural profile<br /><span class="minus">−</span>creeps and deforms under sustained load<br /><span class="minus">−</span>high thermal expansion</td></tr>
-<tr><td>ASA<br />(extrusion/injection moulding)</td><td><span class="plus">+</span>good corrosion resistance<br /><span class="plus">+</span>good UV stability<br /><span class="plus">+</span>better suited to long-term outdoor use than HDPE<br /><span class="plus">+</span>good dimensional stability and better heat resistance than HDPE</td><td><span class="minus">−</span>low stiffness, so it cannot carry load<br /><span class="minus">−</span>more expensive than HDPE</td></tr>
-<tr><td>GFRP<br />(glass fibre reinforced polymer; pultrusion)</td><td><span class="plus">+</span>good UV stability and corrosion resistance<br /><span class="plus">+</span>high stiffness, so it works as a structural profile<br /><span class="plus">+</span>long service life</td><td><span class="minus">−</span>more expensive than HDPE and ASA<br /><span class="minus">−</span>harder to produce</td></tr>
+<tr><td>HDPE<br />(with UV stabilisers; extrusion/injection molding)</td><td><span class="plus">+</span>good corrosion resistance<br /><span class="plus">+</span>high impact resistance<br /><span class="plus">+</span>cheap and easy to produce<br /><span class="plus">+</span>recyclable</td><td><span class="minus">−</span>only moderate UV stability<br /><span class="minus">−</span>low stiffness, so it cannot act as a structural profile<br /><span class="minus">−</span>creeps and deforms under sustained load<br /><span class="minus">−</span>high thermal expansion</td></tr>
+<tr><td>ASA<br />(extrusion/injection molding)</td><td><span class="plus">+</span>good corrosion resistance<br /><span class="plus">+</span>good UV stability<br /><span class="plus">+</span>better suited to long-term outdoor use than HDPE<br /><span class="plus">+</span>good dimensional stability and better heat resistance than HDPE</td><td><span class="minus">−</span>low stiffness, so it cannot carry load<br /><span class="minus">−</span>more expensive than HDPE</td></tr>
+<tr><td>GFRP<br />(glass fiber reinforced polymer; pultrusion)</td><td><span class="plus">+</span>good UV stability and corrosion resistance<br /><span class="plus">+</span>high stiffness, so it works as a structural profile<br /><span class="plus">+</span>long service life</td><td><span class="minus">−</span>more expensive than HDPE and ASA<br /><span class="minus">−</span>harder to produce</td></tr>
 <tr class="verdict"><td colspan="3"><strong>Chosen:</strong> GFRP pultrusion. HDPE stays behind on long-term UV and creep even with a UV stabiliser, and ASA is not stiff enough to carry the structure. GFRP wins on weathering, corrosion resistance, tensile strength and long-term structural stability.</td></tr>
 </tbody>
 </table>: UV Stability &amp; Weather Resistance in Upcycled Projects ／ ABS &amp; ASA Extrusions - Condale Plastics ／ Glass Fiber Reinforced Polymer (GFRP) | Definition, Advantage ／ HDPE vs FRP Pipe：Strength, Lifespan, Density Comparative ／ Marine Application of Fiber Reinforced Composites: A Review</p>
@@ -251,7 +251,7 @@ The materials were compared in two blocks: the sheet metal grade for the enclosu
   </div>
 </div>
 
-We got the RFID reader and the authorisation logic running on a breadboard first, then wired the cabinet and checked voltages and circuits point by point with a multimeter, and finally assembled the scale model to the drawings: real components wired into the zones they occupy in the full-size cabinet, powered up and debugged for the final defence.
+We got the RFID reader and the authorisation logic running on a breadboard first, then wired the cabinet and checked voltages and circuits point by point with a multimeter, and finally assembled the scale model to the drawings: real components wired into the zones they occupy in the full-size cabinet, powered up and debugged for the final defense.
 
 # Technical drawings
 
@@ -269,7 +269,7 @@ We got the RFID reader and the authorisation logic running on a breadboard first
 
 The modularity is a door left open. The central unit handles control and connections; when more capacity is needed, an identically shaped battery unit clips onto the side. Further down the line the same frame can carry heat recovery, a 5G tower, a drone landing platform or an external power input. On top, the standard green roof can be swapped for solar panels to power the displays and sensors on the cabinet.
 
-# The real thing
+# Result
 
 <div class="process-scroll">
   <div class="process-track" data-copies="3" data-unique="5">
@@ -297,7 +297,7 @@ The handover was a scale model (all the electronics mounted in their real positi
 
 The project never quite lined up with what the client expected. The first few weeks went into waiting for additional information and user scenarios from them; once it became clear that they wanted an electrical calculation and that this kind of assignment sits outside industrial design, the two directions had already drifted apart. After talking to both coaches we reshaped the project into our own design brief: a modular, expandable shore power cabinet. That turned out to be the right call, and it is where the project finally lined up with our learning goals.
 
-# What this project taught me
+# What I Learned
 
 - <strong style="color:var(--accent)">Material research only counts when it lands as a decision</strong>: comparing 316, 316L and 2205 duplex stainless, weighing HDPE against GFRP, all of it has to end in "so we pick this one". The research is not the hard part; collapsing it into a choice that can be questioned is.
 - <strong style="color:var(--accent)">Electrical standards are design input, not background reading</strong>: IP ratings, IK10, C5 coating, 1 Ω earthing, mounting height. These fixed how the cabinet could look.

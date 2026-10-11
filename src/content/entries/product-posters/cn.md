@@ -33,11 +33,11 @@ gallery:
   - file: 04-powerdrill.jpg
     title: Powerdrill
   - file: 05-powerdrill-variant.png
-    title: Powerdrill — 变体
+    title: Powerdrill (变体)
   - file: 06-zoem-bike.png
     title: Zoem Bike
   - file: 07-zoem-bike-variant.png
-    title: Zoem Bike — 变体
+    title: Zoem Bike (变体)
 ---
 
 产品海报设计，用于品牌视觉呈现与商业展示。

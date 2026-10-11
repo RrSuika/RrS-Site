@@ -36,7 +36,7 @@ translationKey: esp32-rgbnw-light-motor-controller
 
 # Wat ik heb gebouwd
 
-Dit project tilt het prototype met meerdere OLEDs en knoppen naar iets dat echt apparatuur aanstuurt. Dat prototype bewees dat één ESP32 meerdere knoppen en schermen op één I2C-bus aankan. Hier zijn het er vier van elk, en elke knop heeft een echte taak.
+Ik bouwde dat prototype met meerdere OLEDs en knoppen om uit te zoeken of één ESP32 meerdere knoppen en schermen op één I2C-bus aankan. Dat kan. Dus gaf ik het deze keer iets echts om aan te sturen: vier van elk, en elke knop met een echte taak.
 
 Eén ESP32 doet vier dingen:
 
@@ -82,7 +82,7 @@ De EC11-modules zijn hetzelfde aangesloten als in de versie met drie knoppen: TR
 
 # Eén interruptafhandeling voor vier knoppen
 
-De vorige sketch had per encoder een eigen ISR, overgekopieerd. Vier kopieën lopen uit elkaar. `attachInterruptArg` geeft de index van de encoder mee, dus er blijft één functie over en alleen de pintabellen veranderen:
+Mijn vorige sketch had per encoder een eigen ISR, vier keer overgekopieerd. Kopieën lopen uit elkaar. `attachInterruptArg` geeft de index van de encoder mee, dus ik heb ze samengevoegd tot één functie en nu verandert alleen de pintabel nog:
 
 ```cpp
 void IRAM_ATTR isrEncoder(void *arg)
@@ -105,7 +105,7 @@ attachInterruptArg(digitalPinToInterrupt(ENC_A_PIN[i]), isrEncoder,
 
 # RGBNW: twee witten, niet één
 
-De strip heeft vier kanalen, en de vierde is de interessante. Neutral white wordt onafhankelijk van de helderheid gemengd, en samen verdelen ze de totale helderheid:
+De strip heeft vier kanalen, en de vierde is de interessante. Ik meng neutral white onafhankelijk van de helderheid, en samen verdelen ze de totale helderheid:
 
 ```cpp
 const float nwMix = constrain(outputWhite, 0.0f, 1.0f);
@@ -142,7 +142,7 @@ Met `(R, G, B, W)` werd groen blauwig en de witte kanalen ook. De opmerking in d
 
 # Demping op de uitgang
 
-Commando's uit de webpagina komen niet met een gelijkmatig ritme binnen. Tijdens het slepen gaan de updates zo snel als de cursor beweegt, daarna kan het even stil zijn, en de strip ververst op een vaste 16ms. Het doel direct naar de strip schrijven maakt die ongelijkheid zichtbaar als stappen, dus de uitgang volgt het doel met een exponentieel filter:
+Commando's uit de webpagina komen niet met een gelijkmatig ritme binnen. Tijdens het slepen gaan de updates zo snel als de cursor beweegt, daarna kan het even stil zijn, en de strip ververst op een vaste 16ms. Het doel direct naar de strip schrijven maakt die ongelijkheid zichtbaar als stappen, dus ik laat de uitgang het doel volgen met een exponentieel filter:
 
 ```cpp
 const float alpha = 1.0f - expf(-((float)dtMs / LIGHT_SMOOTHING_MS));
@@ -161,9 +161,9 @@ De kleurtoon interpoleert via de kortste boog, dus van 350 naar 10 gaat vooruit 
 
 # Webpagina en synchronisatie in twee richtingen
 
-De pagina komt uit PROGMEM en heeft een kleurenring, een SV-vlak op een canvas, de vier schuifregelaars, vijf scènepresets, een kleurgeschiedenis van 15 vakken en de motoruitlezing met CCW- en CW-knoppen. Het thema en de kleurgeschiedenis staan in `localStorage`, en de geschiedenis bewaart `[h, s, v, w]` met een migratiepad voor de oudere `[r, g, b]`-regels.
+De pagina komt uit PROGMEM en ik gaf hem een kleurenring, een SV-vlak op een canvas, de vier schuifregelaars, vijf scènepresets, een kleurgeschiedenis van 15 vakken en de motoruitlezing met CCW- en CW-knoppen. Het thema en de kleurgeschiedenis staan in `localStorage`, en de geschiedenis bewaart `[h, s, v, w]` met een migratiepad voor de oudere `[r, g, b]`-regels.
 
-De knoppen en de pagina het eens laten blijven kostte meer werk dan de interface zelf:
+De knoppen en de pagina het eens laten blijven kostte mij meer werk dan de interface zelf:
 
 - **Pagina naar board**: commando's gaan door een kleine wachtrij met minimaal 20ms ertussen en nooit meer dan één verzoek onderweg. Een sleepbeweging stuurt veel updates, en zonder die wachtrij stapelen ze op en komen ze in de verkeerde volgorde aan.
 - **Board naar pagina**: `/get` geeft kleurtoon, verzadiging, helderheid, wit, een `rev`-revisieteller en de huidige en doeltrede van de motor terug. De pagina pollt dat elke 180ms.
@@ -174,7 +174,7 @@ Het board gaat er niet van uit dat de pagina de enige gesprekspartner is, en de 
 
 # Vijf scènes
 
-Sunset, Ocean, Sky, Forest en Neon. Elke scène is een set sinus-termen over H, S, V en de witmix, per frame berekend:
+Het werden er vijf: Sunset, Ocean, Sky, Forest en Neon. Elke scène is een set sinus-termen over H, S, V en de witmix, per frame berekend:
 
 ```js
 case "sunset":

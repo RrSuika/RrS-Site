@@ -2,7 +2,7 @@
 title: Home Low-Load Solar Panel Circuit Design
 spineTitle: "HOME SOLAR PANEL CIRCUIT DESIGN"
 date: 2026-09-03
-description: "DIY off-grid solar storage: 600W portable panels, 2×12V LiFePO₄ in series for 24V, 6-port MPPT with built-in bus feeding LED lighting and a pure-sine inverter. "
+description: "DIY off-grid solar storage: 600W portable panels, 2×12V LiFePO₄ in series for 24V, an MPPT controller feeding LED lighting and a pure-sine inverter. "
 
 type: projects
 category: Electrical Engineering
@@ -28,11 +28,11 @@ lang: en
 translationKey: home-solar-storage-design
 ---
 
-# Overview
+# Background
 
-This is a DIY project: a solar storage system built around low-power flexible panels. In its current form it exists to run LED lighting off-grid. If the system later expands, or needs to feed high-load household devices, the panels upgrade to fixed rooftop modules.
+I'm building a solar storage system around low-power flexible panels. In its current form it exists to run LED lighting off-grid. If the system later expands, or needs to feed high-load household devices, the panels upgrade to fixed rooftop modules.
 
-The interesting engineering problem here is a voltage-matching constraint: a battery can only be charged when the solar array's operating voltage sits comfortably above it, and that single rule decides almost everything downstream: panel configuration, battery voltage, controller choice. Everything in this design follows from that rule.
+The engineering problem I found most interesting is a voltage-matching constraint: a battery can only be charged when the solar array's operating voltage sits comfortably above it, and that single rule decides almost everything downstream: panel configuration, battery voltage, controller choice. Everything in this design follows from that rule.
 
 # Requirements
 
@@ -58,9 +58,9 @@ On the market side: 12V packs dominate the Dutch camper/boat market, so the stor
 
 ![System architecture diagram](./solar-concept-design.png)
 
-The controller is a 6-port MPPT (PV / BAT / LOAD), which means the busbar is built into the controller: solar connects to the PV terminals, the battery reaches the BAT terminals through a 2P DC breaker, and loads hang directly off the LOAD terminals; no external busbar needed. At any instant the battery current equals load current minus solar current; the battery is the only bidirectional device, absorbing the surplus or covering the deficit automatically.
+The controller is a single MPPT unit with three terminal groups: PV, BAT and LOAD. Solar lands on PV, the battery reaches BAT through a 2P DC breaker, and the LED lighting hangs off LOAD through its own switch. Anything that draws real current, the inverter above all, comes off the battery instead. The battery is the only bidirectional device in the system, so at any instant its current equals load current minus solar current: it absorbs the surplus or covers the deficit on its own.
 
-The two 12V batteries are wired in **series** for 24V: this keeps the inverter branch at a 100A-class current (24V × 100A = 2400W theoretical output). Paralleling at 12V would need 200A, beyond what the MPPT supports. Each battery carries its own built-in BMS.
+The two 12V batteries are wired in **series** for 24V: this keeps the inverter branch at a 100A-class current (24V × 100A = 2400W theoretical output). Paralleling at 12V would need 200A for the same power, which doubles the copper on that branch and quadruples the heat it sheds. Each battery carries its own built-in BMS.
 
 ### Voltage Drop Check: the Inverter Branch
 
@@ -81,7 +81,7 @@ The series decision matches the guide's advice on large battery banks. It recomm
 | ---------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | Battery    | 2 × 12V 100Ah LiFePO₄ in series = 24V (100A BMS each, built-in) | Series keeps the inverter branch at 100A class (24V×100A=2400W); same model & batch; confirm BMS supports series |
 | Panels     | 2 × 300W semi-flexible in series                                | Portable-first; series is mandatory for 20V panels; rooftop panels are the future upgrade                        |
-| Controller | 6-port MPPT (PV / BAT / LOAD)                                   | Load output built in, the busbar lives inside the controller; BAT terminals take max 16mm²                       |
+| Controller | MPPT (PV / BAT / LOAD terminals)                                 | Single unit, three terminal groups; BAT terminals take max 16mm²                                                |
 | Inverter   | Pure-sine inverter (24V input)                                  | 2400W theoretical, short-time                                                                                    |
 | Protection | DC-only non-polarized breakers + isolator switch                | Breakers sized to cable ampacity; DC-rated only, AC breakers cannot quench DC arcs                               |
 
@@ -118,7 +118,7 @@ The guide points to one more loss mechanism that the efficiency chain doesn't sh
 The guide reduces fuse selection to four criteria: current rating, voltage rating, interrupt rating and speed. Two of them deserve attention here:
 
 - Speed: DC circuits with capacitive loads (an inverter charges its input capacitors at power-on) want a slow-blow (T) fuse; a fast fuse will nuisance-trip on inrush.
-- Interrupt rating: LiFePO₄ delivers far higher short-circuit currents than lead-acid, and the fuse has to break that fault current without rupturing itself. Typical ratings: MEGA fuses 2.5kA at 70V DC, MRBF 2kA at 58V, NH blade fuses 25kA, Class T 200kA. The 100A DC breaker on the MPPT-to-battery line needs this checked against the battery's short-circuit spec before commissioning. For lithium systems the guide calls at least one DC-line fuse or breaker with an adequate interrupt rating a mandatory safety requirement.
+- Interrupt rating: LiFePO₄ delivers far higher short-circuit currents than lead-acid, and the fuse has to break that fault current without rupturing itself. Typical ratings: MEGA fuses 2.5kA at 70V DC, MRBF 2kA at 58V, NH blade fuses 25kA, Class T 20kA at 125V DC (the 200kA figure often quoted for Class T is its AC rating). The 100A DC breaker on the MPPT-to-battery line needs this checked against the battery's short-circuit spec before commissioning. For lithium systems the guide calls at least one DC-line fuse or breaker with an adequate interrupt rating a mandatory safety requirement.
 
 ## 06 Cross-Check Against the Wiring Guide
 
@@ -133,7 +133,7 @@ The guide reduces fuse selection to four criteria: current rating, voltage ratin
 
 # BOM Overview
 
-Sourcing strategy: the solar panels and the battery come from Dutch shops (warranty and shipping logic); everything else, MPPT, inverter, breakers, isolator, cables, terminals and accessories, comes from Taobao cross-border. Prices converted at €1 = ¥7.81. The full spec with the wiring list lives in the project folder; this is the condensed version.
+I'm sourcing the solar panels and the battery from Dutch shops (warranty and shipping logic); everything else, MPPT, inverter, breakers, isolator, cables, terminals and accessories, comes from Taobao cross-border. Prices converted at €1 = ¥7.81. The full spec with the wiring list lives in the project folder; this is the condensed version.
 
 | #   | Item                           | Spec                                              | Qty     | Est. price   | Source         |
 | --- | ------------------------------ | ------------------------------------------------- | ------- | ------------ | -------------- |
@@ -157,7 +157,7 @@ Budget ≈ €1000–1400 all-in. Build phases: (1) order long-lead parts, (2) D
 
 # Current Status
 
-Done: requirements, architecture, protection scheme, BOM draft. Next: procurement and build. The project documentation is maintained alongside this page and updated as the build progresses.
+The design is finished: requirements, architecture, the protection scheme and a draft BOM. I'm sourcing parts now, so nothing is built yet. I'll keep this page updated as the build moves.
 
 # References
 

@@ -35,23 +35,11 @@ lang: nl
 translationKey: ai-assisted-personal-website
 ---
 
-# Eerst de kern
+# Achtergrond
 
-Dit is geen verhaal over “met één klik een website door AI laten maken”.
+Ik heb deze site samen met AI gebouwd, en hij heeft zich nooit gedragen als een generator die met één klik een website maakt. De verdeling was elke keer hetzelfde: ik bepaal waarom de site bestaat, voor wie hij is, wat belangrijk is en wat weg mag; AI verandert die beslissingen in schetsen, code, alternatieven en duidelijkere uitleg; ik test, kijk, schrap, herstel en draag het resultaat.
 
-Het is eerder een langdurig experiment tussen mij en AI:
-
-- Ik bepaal waarom de site bestaat, voor wie hij is, wat belangrijk is en wat weg mag.
-- AI verandert ideeën in schetsen, code, alternatieven en duidelijkere uitleg.
-- Ik test, kijk, schrap, herstel en neem verantwoordelijkheid voor het resultaat.
-
-De site heeft tot nu toe drie duidelijke iteraties gehad:
-
-1. **V1: laat het bestaan**
-2. **V2: geef het een persoonlijkheid**
-3. **V3: geef het een wereld**
-
-Hieronder staat de tijdlijn: wat ik deed, wat fout ging, waar AI hielp en wat AI nog steeds niet kan vervangen.
+De site heeft tot nu toe drie iteraties gehad: V1 om hem te laten bestaan, V2 om hem een persoonlijkheid te geven, V3 om hem een wereld te geven. Hieronder staat de tijdlijn: wat ik deed, wat fout ging, waar AI hielp en wat het nog steeds niet kan vervangen.
 
 <div class="project-gallery-slot"></div>
 
@@ -68,33 +56,11 @@ Hieronder staat de tijdlijn: wat ik deed, wat fout ging, waar AI hielp en wat AI
 
 In het begin zetten we alleen een enkele pagina live: één bestand met de homepage, biografie, het portfolio en contactgegevens.
 
-Mijn werkwijze was simpel: ik kopieerde duizenden regels code naar AI, vroeg om nieuwe inhoud toe te voegen en kopieerde het resultaat daarna terug naar mijn computer.
+Mijn werkwijze was simpel. Ik kopieerde duizenden regels code naar AI, vroeg om iets toe te voegen en kopieerde het resultaat terug naar mijn computer. Al snel kwamen er twee problemen boven. Bij elke wijziging moest AI het hele bestand opnieuw lezen, wat tijd kostte; en het bestand bleef groeien tot ik een bepaald stuk niet meer terugvond.
 
-Al snel kwamen er twee problemen:
+Wat ik echt wilde was een **meertalige site met een persoonlijke database en een portfolio** erachter. Daarom stapte ik over op de huidige architectuur, waarin inhoud, pagina's, stijlen en componenten apart worden beheerd. Tekst aanpassen betekent niet meer zoeken in duizenden regels. Elk project heeft een eigen map voor artikelen, omslag, versiebeelden en vertalingen. Chinees, Engels en Nederlands delen dezelfde paginastructuur, en het portfolio kan blijven groeien zonder in chaos te veranderen: om een project aan te passen ga ik naar die map.
 
-1. **Kopiëren en plakken kostte te veel tijd.** Bij elke wijziging moest AI het hele bestand opnieuw lezen.
-2. **Het bestand werd veel te groot.** Hoe meer inhoud erbij kwam, hoe langer de code werd, tot ik een bepaald stuk niet meer terugvond.
-
-Wat ik echt wilde was geen “steeds langere pagina”, maar een **meertalige site + persoonlijke database + portfolio**.
-
-Daarom stapten we over op de huidige architectuur: inhoud, pagina’s, stijlen en componenten worden apart beheerd.
-
-In gewone taal heeft de huidige aanpak deze voordelen:
-
-- Inhoud, stijlen en paginastructuur zijn gescheiden; tekst aanpassen betekent niet meer zoeken in duizenden regels.
-- Elk project heeft een eigen map voor artikelen, omslag, versiebeelden en vertalingen.
-- Chinees, Engels en Nederlands delen dezelfde paginastructuur.
-- Het portfolio en de persoonlijke database kunnen blijven groeien zonder chaos.
-- Onderhoud is duidelijker: wil je een project aanpassen, dan ga je naar die map.
-
-De nadelen zijn:
-
-- Het is complexer dan “één los bestand”; nieuwe projecten moeten de mapstructuur en frontmatter volgen.
-- Vertalingen moeten handmatig worden bijgehouden, dus een taal kan snel vergeten worden.
-- Algemene stijlen aanpassen kan alle projecten beïnvloeden; dat vraagt meer zorg.
-- De leercurve is in het begin hoger; het is niet zo direct als kopiëren en plakken.
-
-Maar voor mij is het beter voor onderhoud op de lange termijn, en het past bij het doel van een **persoonlijke database + portfolio**.
+De prijs is reëel en het loont om die gewoon te benoemen. Deze architectuur is complexer dan één los bestand, elk nieuw project moet de mapstructuur en het frontmatter-format volgen, vertalingen worden handmatig bijgehouden dus een taal is snel vergeten, een aanpassing aan algemene stijlen kan alle projecten raken, en de leercurve is in het begin steiler. Voor onderhoud op de lange termijn is het nog steeds de betere ruil, en het is precies wat een persoonlijke database plus portfolio nodig heeft.
 
 # V1: Laat het bestaan
 
@@ -182,7 +148,7 @@ Maar voor mij is het beter voor onderhoud op de lange termijn, en het past bij h
 - Verschoof het visuele thema van “technologie” naar “kosmos”;
 - Voegde NASA punk, neumorfisme en glassmorfisme toe op een retro-futuristische basis;
 - Voegde in één zin een **sterrenveld, een zwart gat en zwaartekrachtlens** toe: licht buigt rond het zwarte gat, en sterren, zwart gat en inhoud delen één scène in plaats van losse lagen te vormen;
-- Streefde niet naar één stijl, maar naar een “chimera” die tijd overspant en meerdere technologiestijlen mengt.
+- Streefde naar een “chimera” die tijd overspant en meerdere technologiestijlen mengt.
 
 ## Problemen
 
@@ -219,16 +185,9 @@ Maar voor mij is het beter voor onderhoud op de lange termijn, en het past bij h
 
 # Nu: Blijven itereren
 
-V3 is niet het einde. Op dit moment ben ik:
+V3 is niet het einde. Op dit moment maak ik de site stabieler op meer apparaten; maak ik de tekst duidelijker en offer ik minder leesbaarheid op aan effecten; documenteer ik het proces zodat het project ook als gids bruikbaar is; houd ik de Chinese, Engelse en Nederlandse tekst gelijk; verzamel ik feedback om te zien wat bezoekers echt willen; en blijf ik schuiven tussen prestaties, esthetiek en inhoud.
 
-- De site stabieler maken op meer apparaten;
-- De tekst duidelijker maken en minder leesbaarheid opofferen aan effecten;
-- Het proces documenteren, zodat het project niet alleen een resultaat is, maar ook een gids;
-- De projecttekst ordenen in het Chinees, Engels en Nederlands;
-- Feedback verzamelen om te zien wat bezoekers echt willen;
-- Blijven schuiven tussen prestaties, esthetiek en inhoud.
-
-Het doel is niet “nog flitsender”. Het is:
+Het doel is makkelijker te benoemen dan te halen:
 
 > **Makkelijker te lezen, makkelijker te gebruiken, makkelijker te onderhouden.**
 
@@ -250,14 +209,9 @@ Resolutie is een van de meest onderschatte problemen in dit project.
 
 Hetzelfde zwarte gat kan op een 2K-scherm precies goed lijken, op 1080p te groot worden en op een telefoon de tekst bedekken of de pagina laten haperen.
 
-Daarom gebruiken we uiteindelijk deze principes:
+Dus pas ik grootte, positie en helderheid apart aan voor 2K en 1080p, bepaal ik op mobiel welke effecten het behouden waard zijn en welke verborgen of verminderd moeten worden, en bouwde ik een debugvenster om de weergave op 2K en 1080p handmatig af te stellen. Het punt is om één effect niet meer op elk apparaat te forceren.
 
-- Pas grootte, positie en helderheid van het zwarte gat apart aan voor 2K en 1080p;
-- Bepaal op mobiel welke effecten het behouden waard zijn en welke verborgen of verminderd moeten worden;
-- Bouw een debugvenster voor het zwarte gat om de weergave op 2K en 1080p handmatig af te stellen;
-- Forceer één effect niet op elk apparaat; geef elk apparaat een versie die past.
-
-> Goede visuals forceren hetzelfde effect niet op elk scherm; ze zorgen dat elk scherm goed voelt.
+> **Beoordeel het effect op het apparaat, niet in het abstracte.** Een compositie die op 2K werkt, is niet de compositie die op een telefoon werkt.
 
 # Wat AI en mensen doen
 
@@ -272,10 +226,8 @@ Daarom gebruiken we uiteindelijk deze principes:
 | Auteursrecht | Referenties en bronvermelding ordenen | Toestemming controleren en verantwoordelijkheid nemen |
 | Onderhoud | Updatelijsten genereren | Blijven updaten, reageren en keuzes maken |
 
-Eén zin:
-
-> **AI is een accelerator, niet de verantwoordelijke.**
-> Het helpt sneller te gaan, maar het kan niet bepalen wat dit is, waarom het bestaat of wie verantwoordelijk is.
+> **AI versnelt het werk; het neemt geen enkele beslissing.**
+> Het gaat sneller dan ik, maar het kan niet zeggen wat dit is, waarom het bestaat of wie ervoor verantwoordelijk is.
 
 # Gids voor beginners
 
@@ -305,7 +257,7 @@ Eén zin:
 De visuals zijn niet uit het niets ontstaan. Deze bronnen gaven belangrijke referenties en inspiratie:
 
 - **Sterrenveld-referentie**: [OpenAI GPT-6 Astra-pagina](https://openai.com/index/gpt-6-astra/)
-- **Zwart gat-implementatie**: [Shadertoy — lstSRS](https://www.shadertoy.com/view/lstSRS)
+- **Zwart gat-implementatie**: [Shadertoy (lstSRS)](https://www.shadertoy.com/view/lstSRS)
 - **Zwaartekrachtlens-referentie**: [BH+disk](https://guitrj.github.io/BH+disk/)
 - **Cassetteplank-referentie**: het rek met cassettebandjes waar je in de Agent Story-hoofdstukken van Zenless Zone Zero een verhaal kiest ([officiële site](https://zenless.hoyoverse.com/en-us/)). Het eindresultaat wijkt inmiddels ver van het origineel af; de beweging van de bandjes komt daarvandaan.
 - **Intro-referentie**: de opening op de site van Arknights: Endfield ([officiële site](https://endfield.gryphline.com/en-us/)). De kleuren, de layout en het rustige tempo van de readout komen daarvandaan; alle elementen en teksten zijn opnieuw geschreven.
@@ -358,17 +310,13 @@ Er zijn veel referentiesites, en zonder plan verdwaal je snel. Ik heb ze op doel
 > Een kleine herinnering: inspiratiesites zijn een menu, geen takenlijst.  
 > Kies 2–3 referenties die echt passen; anders blijf je kijken en begin je nooit te bouwen.
 
-# Conclusie
+# Wat ik heb geleerd
 
 Deze site groeide van een eenvoudige persoonlijke homepage naar een neuraal netwerk en hackerterminal, en daarna naar een sterrenveld, zwart gat en zwaartekrachtlens.
 
-Maar belangrijker dan de visuals is wat het proces me leerde:
+De visuals zijn alleen het zichtbare deel. Wat het proces me echt leerde, is dat AI me over de drempel van "ik kan niet programmeren" kan tillen, en dat smaak, oordeel, inhoud en verantwoordelijkheid daarna nog steeds bij mij liggen. Een website blijkt een doorlopend verslag van iteratie in plaats van een afgerond object.
 
-- AI helpt me over de drempel van “ik kan niet programmeren”;
-- Na die drempel blijven smaak, oordeel, inhoud en verantwoordelijkheid bij de mens;
-- Een website is geen eenmalig object, maar een doorlopend verslag van iteratie.
-
-AI maakt uitvoering goedkoop, en daardoor wordt oordeel juist waardevol.
+AI maakt uitvoering goedkoop, en precies daarom wordt oordeel waardevol.
 
 Als ik het project in één zin moet samenvatten:
 

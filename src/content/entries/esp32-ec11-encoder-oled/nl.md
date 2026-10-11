@@ -19,6 +19,7 @@ tools:
   - ESP32
   - EC11 rotatie-encoder ×2
   - SH1106 1.3" OLED
+  - TCA9548A I2C-multiplexer
   - FreeRTOS
   - AsyncWebServer
 
@@ -36,7 +37,7 @@ translationKey: esp32-ec11-encoder-oled
 Dit is het eerste opstapje richting een volledige motorsturingsopstelling. Voordat ik steppers en drivers op de werkbank schroefde, wilde ik bewijzen dat de ESP32 meerdere dingen tegelijk kan jongleren zonder over zijn eigen benen te struikelen. Dus bouwde ik een testplatform dat het volgende aankan:
 
 1. **Dubbele EC11 rotatie-encoder-invoer**: beide encoders worden tegelijk uitgelezen, met richtingsdetectie, incrementeel tellen en ontdendering van de drukknoppen. Geen gemiste stappen.
-2. **SH1106 OLED-display**: beide OLED's delen dezelfde I2C-bus (0x3C) en verversen de hoekgegevens op 10 Hz zonder flikkering of busconflicten.
+2. **SH1106 OLED-display**: beide OLED's antwoorden op 0x3C en hangen daarom elk aan een eigen kanaal van een TCA9548A aan de gedeelde I2C-bus. Beide schermen verversen hun hoekgegevens op 10 Hz zonder flikkering of busconflicten.
 3. **WiFi WebSocket-server**: een dashboard in de browser dat beide hoeken in realtime toont. WebSocket wint het van polling voor dit soort UI met lage latentie, en ik heb heartbeat-pakketten toegevoegd zodat de verbinding niet verloopt.
 4. **FreeRTOS multitask-architectuur**: drie taken vastgezet op Core 1: Encoder Task op 1000 Hz, Motor Task op 100 Hz en OLED Task op 10 Hz. Core 0 handelt de webserver af. Een mutex op de motorstruct houdt de gedeelde toestand consistent.
 
@@ -87,7 +88,7 @@ Het doel was niet om iets opvallends te bouwen: het ging erom te valideren dat d
 | BAK    | GPIO19    | Terugknop |
 | CON    | GPIO23    | Bevestigknop |
 
-> Beide OLED-modules delen dezelfde I2C-bus (GPIO21/22). De knoppen en encoder van elke module gebruiken onafhankelijke GPIO-pinnen.
+> Beide OLED-modules delen dezelfde I2C-bus (GPIO21/22) en hetzelfde adres 0x3C, dus ertussen zit een TCA9548A met elk scherm op een eigen kanaal. De multiplexer kost geen extra GPIO's: hij wordt over diezelfde bus geselecteerd. De knoppen en encoder van elke module gebruiken onafhankelijke GPIO-pinnen.
 
 # Webinterface
 
@@ -438,9 +439,6 @@ void loop() {
 
 Alles klopt:
 
-- Beide EC11-encoders volgen betrouwbaar met richtingsdetectie: geen gemiste tikken, zelfs niet wanneer ik ze snel ronddraai.
-- De SH1106-OLED ververst op 10 Hz zonder flikkering, en de gedeelde I2C-bus kan beide modules prima aan. De aanroep `display.begin(0x3C, true)` was de sleutel: door `true` voor de reset door te geven, loste ik het probleem „OLED toont alleen een horizontale lijn" op waar ik een uur lang mijn hoofd over brak.
-- De WebSocket-server streamt hoekgegevens naar de browser met een verzendbeperking van 50ms. De heartbeat-pakketten houden de verbinding in leven, zelfs als er een tijdje niets verandert.
-- De FreeRTOS-taken op Core 1 verhongeren elkaar niet: de mutex-verwervingstijden zijn bij deze frequenties verwaarloosbaar.
+Alles klopt. Beide EC11-encoders volgen betrouwbaar met richtingsdetectie, zonder gemiste tikken, zelfs niet wanneer ik ze snel ronddraai. De SH1106-OLED ververst op 10 Hz zonder flikkering, en met de TCA9548A ervoor gedragen beide 0x3C-modules zich netjes. De aanroep `display.begin(0x3C, true)` was de sleutel: door `true` voor de reset door te geven loste ik het probleem op waarbij de OLED alleen een horizontale lijn toonde, waar ik een uur op heb zitten puzzelen. De WebSocket-server streamt hoekgegevens naar de browser met een verzendbeperking van 50ms, en de heartbeat-pakketten houden de verbinding in leven, zelfs als er een tijdje niets verandert. De FreeRTOS-taken op Core 1 verhongeren elkaar niet, en de mutex-verwervingstijden zijn bij deze frequenties verwaarloosbaar.
 
 Dit prototype bewees dat de softwarestack werkt. Volgende stap: een echte DM430-stappenmotordriver aansluiten en die virtuele „motor"-hoekwaarden vervangen door echte stappulsen.

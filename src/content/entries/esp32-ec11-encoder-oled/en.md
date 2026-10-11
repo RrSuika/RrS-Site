@@ -19,6 +19,7 @@ tools:
   - ESP32
   - EC11 Rotary Encoder ×2
   - SH1106 1.3" OLED
+  - TCA9548A I2C Multiplexer
   - FreeRTOS
   - AsyncWebServer
 
@@ -36,7 +37,7 @@ translationKey: esp32-ec11-encoder-oled
 This is the first stepping stone toward a full motor control rig. Before bolting steppers and drivers onto the bench, I wanted to prove the ESP32 could juggle a few things at once without tripping over itself. So I set out to build a test platform that handles:
 
 1. **Dual EC11 rotary encoder input**: both encoders read simultaneously, with direction detection, incremental counting, and push button debouncing. No missed steps.
-2. **SH1106 OLED display**: both OLEDs share the same I2C bus (0x3C), refreshing angle data at 10 Hz without flicker or bus contention.
+2. **SH1106 OLED display**: both OLEDs answer to 0x3C, so each one sits on its own channel of a TCA9548A on the shared I2C bus. Both screens refresh their angle data at 10 Hz without flicker or bus contention.
 3. **WiFi WebSocket server**: a browser-based dashboard that shows both angles in real time. WebSocket beats polling for this kind of low-latency UI, and I added heartbeat packets so the connection doesn't time out.
 4. **FreeRTOS multi-task architecture**: three tasks pinned to Core 1: Encoder Task at 1000 Hz, Motor Task at 100 Hz, and OLED Task at 10 Hz. Core 0 handles the web server. Mutex on the motor struct keeps shared state consistent.
 
@@ -87,7 +88,7 @@ The goal wasn't to build anything flashy: it was to validate that the software a
 | BAK    | GPIO19    | Back button |
 | CON    | GPIO23    | Confirm button |
 
-> Both OLED modules share the same I2C bus (GPIO21/22). Each module's buttons and encoder use independent GPIO pins.
+> Both OLED modules share the same I2C bus (GPIO21/22) and the same address 0x3C, so a TCA9548A sits between them and the bus, one screen per channel. The multiplexer costs no extra GPIOs: it is selected over that same bus. Each module's buttons and encoder use independent GPIO pins.
 
 # Web Interface
 
@@ -438,9 +439,6 @@ void loop() {
 
 Everything checks out:
 
-- Both EC11 encoders track reliably with direction detection: no missed ticks even when I spin them fast.
-- The SH1106 OLED refreshes at 10 Hz without flicker, and the shared I2C bus handles both modules fine. The `display.begin(0x3C, true)` call was the key: passing `true` for reset fixed the "OLED shows only a horizontal line" problem that had me scratching my head for an hour.
-- The WebSocket server streams angle data to the browser with a 50ms send throttle. The heartbeat packets keep the connection alive even if nothing changes for a while.
-- FreeRTOS tasks on Core 1 don't starve each other: mutex acquisition times are negligible at these rates.
+Everything checks out. Both EC11 encoders track reliably with direction detection, with no missed ticks even when I spin them fast. The SH1106 OLED refreshes at 10 Hz without flicker, and with the TCA9548A in front of them both 0x3C modules behave. The `display.begin(0x3C, true)` call was the key: passing `true` for reset fixed the "OLED shows only a horizontal line" problem that had me scratching my head for an hour. The WebSocket server streams angle data to the browser with a 50ms send throttle, and the heartbeat packets keep the connection alive even when nothing changes for a while. The FreeRTOS tasks on Core 1 don't starve each other, and mutex acquisition times are negligible at these rates.
 
 This prototype proved the software stack works. Next step: wire up a real DM430 stepper driver and replace those virtual "motor" angle values with actual step pulses.

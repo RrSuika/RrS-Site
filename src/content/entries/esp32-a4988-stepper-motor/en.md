@@ -1,7 +1,7 @@
 ---
 title: ESP32 + A4988 24V Stepper Motor Control
 date: 2026-09-15
-description: The HSV channels become generic Rails; Rail 1 drives an A4988 and a 24V stepper motor, non-blocking, with the encoders and web page still in the loop.
+description: I turned the three HSV color channels into generic Rails and hung an A4988 and a 24V stepper motor off Rail 1, with the encoders and the web page still responsive while it moves.
 
 type: lab
 category: Embedded System
@@ -33,11 +33,11 @@ translationKey: esp32-a4988-stepper-motor
 
 # What I Built
 
-The HSV tests graduate to motion control. The three HSV channels became three generic control channels: Rail 1, Rail 2 and Rail 3, each 0-100, each still driven by its encoder and its web slider. What changed is what hangs off the end. Rail 1 now maps to a stepper motor through an A4988 driver on a 24V supply, and the whole thing stays non-blocking: the OLEDs and the web page keep working while the motor moves.
+The HSV rig was a color-mixing exercise: three channels, three knobs, three screens. This is the same rig with the color taken out and a motor bolted on the end.
 
-The ESP32-to-A4988 wiring: GPIO 12 ── DIRECTION, GPIO 13 ── STEP, 3.3V ── SLEEP and RESET, GND ── MS1, MS2, MS3 and ENABLE.
+The three HSV channels became three generic ones, Rail 1 through Rail 3, each still 0–100, each still driven by its own encoder and its own slider on the web page. Only what hangs off the end changed. I wired Rail 1 to an A4988 driver and a 24V stepper motor, and what I actually wanted to find out was whether the rest of the system would keep running while the motor turned. It does: GPIO 13 goes on emitting step pulses while the OLEDs refresh, the encoders count and the web page answers. That was the point of the test.
 
-Only Rail 1 is wired to a motor right now. Rail 2 and 3 stay free for future axes.
+Only two pins are new. GPIO 12 carries direction, GPIO 13 carries step. SLEEP and RESET are tied to 3.3V, the three microstepping pins and ENABLE are tied to ground, and Rails 2 and 3 have nothing attached yet.
 
 # Hardware
 
@@ -51,9 +51,7 @@ Only Rail 1 is wired to a motor right now. Rail 2 and 3 stay free for future axe
 | TCA9548A | 1 | I2C multiplexer |
 | 1.3" SH1106 OLED + EC11 module | 3 | Rail display and control |
 
-The motor runs from its own supply. The ESP32 only provides logic signals.
-
-# Pin Assignment
+The motor runs from its own 24V supply. The ESP32 only sends logic signals.
 
 | ESP32 GPIO | Function |
 |---|---|
@@ -68,11 +66,9 @@ The motor runs from its own supply. The ESP32 only provides logic signals.
 | GPIO 12 | A4988 DIRECTION |
 | GPIO 13 | A4988 STEP |
 
-The A4988 takes two new pins: 12 for direction, 13 for step. Everything else stays exactly where it was in the HSV tests.
+Apart from those two, every pin sits exactly where it was in the HSV build.
 
 # A4988 Wiring
-
-## Logic and control pins
 
 | A4988 Pin | Connection | Function |
 |---|---|---|
@@ -85,31 +81,19 @@ The A4988 takes two new pins: 12 for direction, 13 for step. Everything else sta
 | MS3 | GND | Full-step mode |
 | ENABLE | GND | Driver continuously enabled |
 
-## Power
+The A4988 has two power domains, and keeping them apart is the whole trick. VDD takes the ESP32's 3.3V for the logic side. VMOT takes the external 24V for the motor side. The 24V negative terminal goes to the A4988's motor-side GND, and the ESP32 GND joins that same node, so STEP and DIRECTION share a reference with the driver. The 24V supply never touches the ESP32's 3.3V or 5V pins.
 
-The A4988 has two power domains. VDD gets the ESP32's 3.3V for the logic side. VMOT gets the external 24V supply for the motor side. The 24V negative terminal ties to the A4988's motor-side GND, and the ESP32 GND joins the same node, so the STEP and DIRECTION signals share a reference with the driver.
+A 47µF / 50V electrolytic sits right at the VMOT input, positive to VMOT and negative to GND. It gives the motor supply local energy storage and damps the voltage swings the driver's switching creates. 50V rating on a 24V rail leaves comfortable headroom.
 
-The 24V supply never touches the ESP32's 3.3V or 5V pins.
+The motor has four wires and two coils: 1A/1B for coil A, 2A/2B for coil B. Wire colors vary between motors, so the reliable way to pair them is a multimeter. Two wires from the same coil show a measurable resistance; wires from different coils read open.
 
-## VMOT capacitor
-
-A 47µF / 50V electrolytic sits right at the A4988's VMOT input, positive to VMOT, negative to GND. It gives the motor supply local energy storage and smooths the voltage swings the driver's switching creates. The 50V rating leaves comfortable headroom over the 24V rail.
-
-## Stepper motor
-
-The motor has four wires, two coils: 1A/1B for coil A, 2A/2B for coil B. Wire colors vary by motor, so the reliable way to pair them is a multimeter: wires of the same coil show a measurable resistance, wires of different coils read open.
-
-## Microstepping
-
-The first test runs full-step, with MS1/MS2/MS3 all tied to GND, on purpose. The relationship between STEP pulses and movement stays obvious, which is what a first test needs. Microstepping can come later when smoothness or fine positioning matters.
+I ran the first test at full step, with MS1, MS2 and MS3 all tied to ground, and that was deliberate. Full step keeps the relationship between STEP pulses and movement obvious, which is what a first test needs. Microstepping can wait until smoothness or fine positioning actually matters.
 
 # Rail Architecture
 
-The HSV variables hVal, sVal and vVal became rail1Val, rail2Val and rail3Val. Each Rail spans 0-100. Encoder 1 drives Rail 1, encoder 2 drives Rail 2, encoder 3 drives Rail 3; the web sliders write the same values; each OLED shows its Rail. The three channels no longer know anything about color.
+The HSV variables hVal, sVal and vVal became rail1Val, rail2Val and rail3Val. Each Rail spans 0–100. Encoder 1 drives Rail 1, encoder 2 drives Rail 2, encoder 3 drives Rail 3. The web sliders write the same values, and each OLED shows its own Rail. The three channels no longer know anything about color.
 
-# Rail 1 to Motor Mapping
-
-Rail 1 maps linearly to a target step count:
+Rail 1 maps linearly onto a target step count:
 
 ```
 Rail 1 = 0   → 0 steps
@@ -118,44 +102,42 @@ Rail 1 = 50  → 500 steps
 Rail 1 = 100 → 1000 steps
 ```
 
-The 1000-step ceiling is a test value, not one motor revolution. Actual rotation depends on the motor's step angle and the microstepping setting.
+That 1000-step ceiling is a test value, not one motor revolution. How far the shaft actually turns depends on the motor's step angle and the microstepping setting.
 
 # Motor Software
 
-Two pins do the work: STEP and DIRECTION. The firmware keeps two positions:
+STEP and DIRECTION do all the work. The firmware keeps two positions:
 
 ```cpp
 long currentStep;
 long targetStep;
 ```
 
-targetStep is the position Rail 1 asked for, currentStep is where the software thinks the motor is. When the two differ, the controller pulses STEP until they match, with DIRECTION set by which side is ahead.
+targetStep is where Rail 1 asked the motor to go, currentStep is where the software thinks it is. When the two differ, the controller pulses STEP until they match, with DIRECTION set by whichever side is ahead.
 
-The stepping is non-blocking. The main loop cycles through the web server, encoder processing, one motor step per interval (1000µs) and OLED refresh, then repeats. The web page and the other two encoders stay responsive the whole time the motor moves. The structure is also ready for three A4988s later.
+None of that blocks the main loop. Each pass runs the web server, the encoder handling, one motor step every 1000µs and an OLED refresh, then starts over. The web page and the other two encoders stay responsive the whole time the motor is moving. The same structure will take three A4988s later without a rewrite.
 
 # Web Interface
 
-Same page concept as the HSV rig, now with three Rail sliders (0-100). Moving Rail 1 in the browser changes the motor target exactly like turning encoder 1. The /get endpoint exposes the current Rail values plus currentStep and targetStep, and the browser syncs against it periodically.
+The page keeps the HSV rig's layout with three Rail sliders in place of the color controls. Moving Rail 1 in the browser changes the motor target exactly the way turning encoder 1 does. The /get endpoint exposes the current Rail values along with currentStep and targetStep, and the browser syncs against it on a timer.
 
-# Test Procedure
+# Testing and Result
 
-No full-range commands on the first run. Power on and verify each stage: ESP32 boot, OLED init, TCA9548A communication, encoder input, WiFi connection, A4988 control signals. Then Rail 1 in small steps: 1, 5, 10, 20, 50. The motor followed every one of them.
+I didn't send any full-range commands on the first run. I powered it up and checked one stage at a time: ESP32 boot, OLED initialization, TCA9548A communication, encoder input, WiFi connection, then the A4988 control signals. Only after all of that did I move Rail 1 in small increments, 1, 5, 10, 20, 50, and the motor followed every one of them.
 
-# Result
+The test passed. The ESP32 drove the A4988 over GPIO 12 and 13, the A4988 drove the 24V stepper, and the existing three-channel UI kept working the whole time. Rail 1 moved from both the EC11 knob and the web page, with its value on OLED 1.
 
-The test passed. The ESP32 drove the A4988 over GPIO 12/13, the A4988 drove the 24V stepper, and the existing three-channel UI kept working throughout. Rail 1 moved from both the EC11 knob and the web page, with its value showing on OLED 1. Rails 2 and 3 sit there as independent channels for future motors or other actuators.
+The board now sits at the centre of two branches: ESP32 ── TCA9548A ── 3× (OLED + EC11) on one side, and ESP32 ── A4988 ── 42mm stepper motor on the other.
 
-# Current Architecture
-
-ESP32 ── TCA9548A multiplexer ── 3× OLED + EC11 modules; on the other side, ESP32 ── A4988 motor driver ── 42mm stepper motor.
+Rails 2 and 3 are still independent channels with nothing attached, left free for future motors or other actuators.
 
 # Safety Notes
 
-- Motor and logic supplies stay separate. 24V only goes to the A4988's motor input; the ESP32 supplies the logic rail.
-- Grounds are common, so STEP and DIRECTION share a reference.
-- The electrolytic cap went in with correct polarity: + to VMOT, − to GND. It's rated 50V on a 24V rail.
-- Never connect or disconnect the motor while the driver is powered. The inductive load throws voltage transients that can kill the driver.
-- Set the A4988 current limit to the motor's rated current before sustained operation.
+- The motor and logic supplies stay separate. 24V only ever reaches the A4988's motor input; the ESP32 supplies the logic rail.
+- The grounds are common, so STEP and DIRECTION share a reference with the driver.
+- The electrolytic went in with the right polarity, positive to VMOT and negative to GND, and it is rated 50V on a 24V rail.
+- Never connect or disconnect the motor while the driver is powered. The inductive load throws voltage transients that will kill the driver.
+- Set the A4988's current limit to the motor's rated current before running it for any length of time.
 
 # What's Next
 

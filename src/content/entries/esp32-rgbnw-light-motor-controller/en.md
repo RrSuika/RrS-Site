@@ -36,14 +36,14 @@ translationKey: esp32-rgbnw-light-motor-controller
 
 # What I Built
 
-This one takes the multi-OLED encoder prototype and gives it a product to run. The prototype proved an ESP32 could hold several dials and screens on one I2C bus. Here there are four of each, and every dial does a real job.
+I built the multi-OLED prototype to find out whether one ESP32 could hold several dials and screens on a single I2C bus. It could. So this time I gave the thing a product to run: four dials and four screens, every dial with a real job.
 
 One ESP32 runs:
 
-1. **Three dials and three OLEDs for H, S and V.** Screen one shows hue with a colour bar, screen two saturation, screen three value plus the neutral white mix in the corner and the current H/S in its footer.
+1. **Three dials and three OLEDs for H, S and V.** Screen one shows hue with a color bar, screen two saturation, screen three value plus the neutral white mix in the corner and the current H/S in its footer.
 2. **A fourth dial and OLED for the motor.** Position and target are both on the screen, and the dial moves a stepper through an A4988.
 3. **A 24V RGBNW strip.** Red, green, blue and a separate neutral white LED, driven through NeoPixelBus.
-4. **A web page** with a hue ring, an SV square, four sliders, five animated scenes, a colour history and the motor position. It reads the board every 180ms, so the dials and the page always agree.
+4. **A web page** with a hue ring, an SV square, four sliders, five animated scenes, a color history and the motor position. It reads the board every 180ms, so the dials and the page always agree.
 
 The screenshot below is the same board with the web UI open on the left. The strip is a plain 24V reel, no diffuser, which is why you can see individual LEDs.
 
@@ -82,7 +82,7 @@ The EC11 modules are wired the same way as in the three-dial version: TRA and TR
 
 # One Interrupt Handler for Four Dials
 
-The earlier sketch had one ISR per encoder, copy-pasted. Four of them drift. `attachInterruptArg` passes the encoder index, so there is one body and the pin tables are the only thing that changes:
+My earlier sketch had one ISR per encoder, copy-pasted four times. Copies drift. `attachInterruptArg` passes the encoder index, so I collapsed them into one body, and the only thing that changes now is the pin table:
 
 ```cpp
 void IRAM_ATTR isrEncoder(void *arg)
@@ -105,7 +105,7 @@ attachInterruptArg(digitalPinToInterrupt(ENC_A_PIN[i]), isrEncoder,
 
 # RGBNW: Two Whites, Not One
 
-The strip has four channels, and the interesting one is the fourth. Neutral white is mixed independently of value, and the two of them split the total:
+The strip has four channels, and the fourth is the interesting one. I mix neutral white independently of value, and the two of them split the total:
 
 ```cpp
 const float nwMix = constrain(outputWhite, 0.0f, 1.0f);
@@ -116,7 +116,7 @@ hsvToRgb(outputHue, outputSat, rgbValue, R, G, B);
 const uint8_t W = (uint8_t)lroundf(constrain(outputVal, 0.0f, 1.0f) * nwMix * 255.0f);
 ```
 
-At neutral white 0 the strip behaves exactly like an RGB strip. Turn it up and the RGB side dims while the white LED takes over the rest, so you can sit at full value and still walk from a saturated colour to a clean white without the hue drifting.
+At neutral white 0 the strip behaves exactly like an RGB strip. Turn it up and the RGB side dims while the white LED takes over the rest, so you can sit at full value and still walk from a saturated color to a clean white without the hue drifting.
 
 ## The channel order that is not what the name says
 
@@ -142,7 +142,7 @@ Passing `(R, G, B, W)` gave green that looked blue and a white channel that look
 
 # Smoothing on the Output
 
-Web commands do not arrive at a steady rate. A drag sends updates as fast as the pointer moves, a poll can be silent for a while, and the strip refresh runs at a fixed 16ms. Writing the target straight to the strip shows that unevenness as steps, so the output chases the target with an exponential filter:
+Web commands do not arrive at a steady rate. A drag sends updates as fast as the pointer moves, a poll can be silent for a while, and the strip refresh runs at a fixed 16ms. Writing the target straight to the strip turns that unevenness into visible steps, so I made the output chase the target with an exponential filter:
 
 ```cpp
 const float alpha = 1.0f - expf(-((float)dtMs / LIGHT_SMOOTHING_MS));
@@ -161,9 +161,9 @@ Hue interpolates through the shortest arc, so dragging from 350 to 10 goes forwa
 
 # Web Page and Two-Way Sync
 
-The page is served from PROGMEM and has a hue ring, an SV square painted on a canvas, the four sliders, five scene presets, a 15-slot colour history and the motor readout with CCW / CW buttons. The theme toggle and the colour history live in `localStorage`, and the history stores `[h, s, v, w]` with a migration path for the older `[r, g, b]` entries.
+The page is served from PROGMEM, and I gave it a hue ring, an SV square painted on a canvas, the four sliders, five scene presets, a 15-slot color history and the motor readout with CCW / CW buttons. The theme toggle and the color history live in `localStorage`, and the history stores `[h, s, v, w]` with a migration path for the older `[r, g, b]` entries.
 
-Keeping the dials and the page in agreement took more care than the UI itself:
+Keeping the dials and the page in agreement took me more care than the UI itself:
 
 - **Page to board**: commands go through a small queue with a 20ms minimum interval and only one request in flight. A drag fires many updates, and without the queue they pile up and arrive out of order.
 - **Board to page**: `/get` returns hue, saturation, value, white, a `rev` revision counter, and the motor's current and target step. The page polls it every 180ms.
@@ -174,7 +174,7 @@ The board decides nothing about the page's state; the page never assumes it is t
 
 # Five Scenes
 
-Sunset, Ocean, Sky, Forest and Neon. Each one is a set of sine terms over H, S, V and the white mix, evaluated per frame:
+I ended up with five: Sunset, Ocean, Sky, Forest and Neon. Each one is a set of sine terms over H, S, V and the white mix, evaluated per frame:
 
 ```js
 case "sunset":
@@ -233,7 +233,7 @@ The safety note from the sketch header is worth repeating: **GPIO12 is a strappi
 
 These are copied from the sketch header because they are the things that bite later:
 
-1. **The web UI has no password.** Anyone on the same network can set the colour and move the motor. Put the board on its own network, or add `server.authenticate()` to every handler.
+1. **The web UI has no password.** Anyone on the same network can set the color and move the motor. Put the board on its own network, or add `server.authenticate()` to every handler.
 2. **150 RGBW LEDs at full white is roughly 6 to 9A.** Keep value off 100% on a small supply, or add a brightness limit in `updateLEDStrip()`.
 3. **I2C runs at 400kHz** with four screens behind the multiplexer. Long or thin wires give garbage on screen; drop `I2C_CLOCK` to 100000.
 4. **Arduino compiles every .ino file in the sketch folder.** Backups go in a subfolder, never next to the main sketch. A stray copy in the root breaks the build with "redefinition of setup", which is exactly what happened here.
@@ -265,7 +265,7 @@ EC11 #4 -> MOTOR
 
 mDNS is on by default, so `http://r2s.local` works instead of chasing the DHCP address.
 
-Where it goes next: the white channel still assumes that 255 on the white LED and 255 on the red LED are the same amount of light, and they are not. Real calibration would mean measuring each channel and scaling them, which is the difference between a controller and a light.
+What I want to do next: the white channel still assumes that 255 on the white LED and 255 on the red LED are the same amount of light, and they are not. Real calibration would mean measuring each channel and scaling them, which is the difference between a controller and a light.
 
 # Full Code
 

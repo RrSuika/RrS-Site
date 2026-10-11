@@ -28,9 +28,8 @@ translationKey: esp32-rgbww-color-wheel
 
 ![Verlichte LED-strip](./03-led-strip-lit.png)
 
-# Overzicht
-
-Hier kwamen de vorige twee experimenten samen. Ik had de FCOB-strip al aan de praat met de ESP32 en ik wist hoe ik een webpagina via WiFi moest serveren. De logische volgende stap was een echte kleurenkiezer: niet zomaar RGB-schuifregelaars, maar een echt kleurenwiel waar je in kon slepen, terwijl de strip in realtime meewerkt.
+# Doel
+Hier bracht ik de vorige twee experimenten samen. Ik had de FCOB-strip al aan de praat met de ESP32 en ik wist hoe ik een webpagina via WiFi moest serveren. De logische volgende stap was een echte kleurenkiezer: een kleurenwiel waar je in kon slepen, terwijl de strip in realtime meewerkt.
 
 De webinterface werd uiteindelijk het grootste deel van het project. Ik wilde dat het afgewerkt aanvoelde: een donker/licht-moduswisselaar, een glassmorphism-kaart, geanimeerde scenepresets, een kleurgeschiedenisraster en een achtergrondgloed die meebeweegt met de kleur die de strip op dat moment toont. Het HSV-kleurenwiel vanaf nul bouwen op een `<canvas>` was waarschijnlijk overkill, maar het is veel bevredigender in gebruik dan drie schuifregelaars.
 

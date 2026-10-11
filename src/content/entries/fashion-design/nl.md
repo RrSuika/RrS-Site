@@ -24,13 +24,13 @@ translationKey: fashion-design
 
 gallery:
   - file: 01-ibuki-suika.png
-    title: Ibuki Suika — Design #1 (Dec 2023)
+    title: Ibuki Suika; Design #1 (Dec 2023)
   - file: 02-ibuki-suika.png
-    title: Ibuki Suika — Design #2 (Jan 2026)
+    title: Ibuki Suika; Design #2 (Jan 2026)
   - file: 03-ibuki-suika.png
-    title: Ibuki Suika — Design #3 (Jan 2026)
+    title: Ibuki Suika; Design #3 (Jan 2026)
   - file: 04-ibuki-suika.png
-    title: Ibuki Suika — Design #4 (Jan 2026)
+    title: Ibuki Suika; Design #4 (Jan 2026)
 ---
 
 Een vierdelige mode-ontwerpserie met Ibuki Suika. Elke illustratie verkent een andere streetwear-look.

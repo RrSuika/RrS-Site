@@ -3,7 +3,7 @@ title: Light Diffusion Test Platform
 
 date: 2026-04-20
 
-description: Designed a desktop optical test platform to systematically evaluating the optical and visual properties of different materials; turning subjective CMF decisions into  repeatable and measurable comparisons.
+description: A desktop optical test platform for systematically evaluating the optical and visual properties of different materials, so CMF decisions rest on repeatable, measurable comparisons.
 
 type: projects
 
@@ -32,15 +32,15 @@ lang: en
 translationKey: light-diffusion-test-platform
 ---
 
-# The Problem
+# Background
 
-Here's something that happens all the time in product design: you're picking a translucent material for a lamp shade, a diffuser panel, or a display cover, and trying to guess which material looks the best. Hold the sample up to the light, squint a bit, maybe hold it next to another sample, and "yeah, this one looks about right."
+Picking a translucent material for a lamp shade, a diffuser panel, or a display cover usually comes down to guessing which one looks best. Hold the sample up to the light, squint a bit, maybe hold it next to another sample, and "yeah, this one looks about right."
 
-The trouble is two materials that look identical under room light can behave completely differently once they're backlit. Surface finish, thickness, internal structure; they all affect how light moves through the material, and renderings can only get you so far. At a certain point, you have to see it with your own eyes.
+The trouble is two materials that look identical under room light can behave completely differently once they're backlit. Surface finish, thickness and internal structure all affect how light moves through the material, and renderings can only get you so far. At a certain point, you have to see it with your own eyes.
 
 So I built a test platform, so that every CMF decision after that would be backed by data instead of intuition.
 
-# Measurable factors
+# Requirements
 
 Four optical properties, each directly relevant to product design decisions:
 
@@ -51,13 +51,7 @@ Four optical properties, each directly relevant to product design decisions:
 | **Reflection**             | How the material surface bounces incident light     | Surface finish selection, glare management               |
 | **Luminance Distribution** | Brightness variation across the illuminated area    | Visual comfort, light guide performance                  |
 
-Beyond the measurement goals, I had a handful of practical requirements that turned out to be just as important as the optical ones:
-
-- <strong style="color:var(--accent)">Repeatable positioning</strong>: If I can't place samples at consistent distances from the light source, the result will be meaningless.
-- <strong style="color:var(--accent)">Adjustable brightness</strong>: Materials look different at 10% brightness vs 100%. The light source needs to cover that range.
-- <strong style="color:var(--accent)">Ambient light control</strong>: Optical measurements in a sunlit room are creating noise. The test environment has to minimize external interference.
-- <strong style="color:var(--accent)">Quick sample swapping</strong>: If changing materials takes five minutes, I won't run enough comparisons to learn anything useful.
-- <strong style="color:var(--accent)">Visual output</strong>: I need to see the results. Side-by-side visual comparison is half the point.
+Beyond the measurement goals, I had a handful of practical requirements, and they turned out to weigh just as much as the optical ones. <strong style="color:var(--accent)">Repeatable positioning</strong> came first: if I can't place samples at consistent distances from the light source, nothing I measure afterwards means anything. <strong style="color:var(--accent)">Adjustable brightness</strong> mattered because a material at 10% and that same material at 100% are two different objects, so the source has to cover the whole range. <strong style="color:var(--accent)">Ambient light control</strong> was non-negotiable, since optical measurements taken in a sunlit room are mostly noise. <strong style="color:var(--accent)">Quick sample swapping</strong>, because at five minutes per changeover I would never run enough comparisons to learn anything. And <strong style="color:var(--accent)">visual output</strong>, because seeing two materials side by side is half the point.
 
 # Design & Build
 
@@ -65,7 +59,7 @@ Beyond the measurement goals, I had a handful of practical requirements that tur
 
 ## Platform Architecture
 
-The platform is a vertical measurement stand: light source at the bottom, adjustable sample stage in the middle, observation from above. The layout is basically a stripped-down optical bench; nothing I didn't need, nothing that gets in the way.
+The platform is a vertical measurement stand: light source at the bottom, adjustable sample stage in the middle, observation from above. The layout is basically a stripped-down optical bench: nothing I didn't need, nothing that gets in the way.
 
 <div class="side-by-side">
   <div><img src="./04-final-render.png" alt="Final Render" /><p>Final 3D Render</p></div>
@@ -78,13 +72,13 @@ The platform is a vertical measurement stand: light source at the bottom, adjust
 - <strong style="color:var(--accent)">Lift stand</strong>: The height adjustment lets me precisely control the distance between the light source and the material.
 - <strong style="color:var(--accent)">Frame</strong>: Laser-cut structural panels, spray-painted matte black and absorbs stray ambient light and kills internal reflections.
 - <strong style="color:var(--accent)">PWM Controller</strong>: Use PWM to control the LED strip’s dutycycle to adjust its brightness.
-- <strong style="color:var(--accent)">Power delivery</strong>: Oxygen-free copper wire 0.5mm². Rated for 2A with headroom.
+- <strong style="color:var(--accent)">Power delivery</strong>: Oxygen-free copper wire 0.5mm², comfortably above the 2A the strip draws.
 
 ## Fabrication Process
 
 <div class="process-scroll" id="process-scroll">
   <div class="process-track" id="process-track" data-copies="3" data-unique="10">
-    <div class="step"><img src="./06-3d-modelling.png" alt="3D Modelling" /><span>STEP 1: 3D Modelling</span></div>
+    <div class="step"><img src="./06-3d-modeling.png" alt="3D Modeling" /><span>STEP 1: 3D Modeling</span></div>
     <div class="step"><img src="./07-laser-cutting.png" alt="Laser Cutting" /><span>STEP 2: Laser Cutting</span></div>
     <div class="step"><img src="./08-test-build.png" alt="Test Build" /><span>STEP 3: Test Build</span></div>
     <div class="step"><img src="./09-surface-finish.png" alt="Surface Finish" /><span>STEP 4: Surface Finish</span></div>
@@ -94,7 +88,7 @@ The platform is a vertical measurement stand: light source at the bottom, adjust
     <div class="step"><img src="./13-polarity-check.png" alt="Polarity Check" /><span>STEP 8: Polarity Check</span></div>
     <div class="step"><img src="./14-subassembly-2.png" alt="Subassembly" /><span>STEP 9: Final Assembly</span></div>
     <div class="step"><img src="./15-circuit-testing.png" alt="Circuit Testing" /><span>STEP 10: Circuit Testing</span></div>
-    <div class="step"><img src="./06-3d-modelling.png" alt="3D Modelling" /><span>STEP 1: 3D Modelling</span></div>
+    <div class="step"><img src="./06-3d-modeling.png" alt="3D Modeling" /><span>STEP 1: 3D Modeling</span></div>
     <div class="step"><img src="./07-laser-cutting.png" alt="Laser Cutting" /><span>STEP 2: Laser Cutting</span></div>
     <div class="step"><img src="./08-test-build.png" alt="Test Build" /><span>STEP 3: Test Build</span></div>
     <div class="step"><img src="./09-surface-finish.png" alt="Surface Finish" /><span>STEP 4: Surface Finish</span></div>
@@ -104,7 +98,7 @@ The platform is a vertical measurement stand: light source at the bottom, adjust
     <div class="step"><img src="./13-polarity-check.png" alt="Polarity Check" /><span>STEP 8: Polarity Check</span></div>
     <div class="step"><img src="./14-subassembly-2.png" alt="Subassembly" /><span>STEP 9: Final Assembly</span></div>
     <div class="step"><img src="./15-circuit-testing.png" alt="Circuit Testing" /><span>STEP 10: Circuit Testing</span></div>
-    <div class="step"><img src="./06-3d-modelling.png" alt="3D Modelling" /><span>STEP 1: 3D Modelling</span></div>
+    <div class="step"><img src="./06-3d-modeling.png" alt="3D Modeling" /><span>STEP 1: 3D Modeling</span></div>
     <div class="step"><img src="./07-laser-cutting.png" alt="Laser Cutting" /><span>STEP 2: Laser Cutting</span></div>
     <div class="step"><img src="./08-test-build.png" alt="Test Build" /><span>STEP 3: Test Build</span></div>
     <div class="step"><img src="./09-surface-finish.png" alt="Surface Finish" /><span>STEP 4: Surface Finish</span></div>
@@ -172,38 +166,29 @@ I was planning on hand-soldering individual LEDs to the board. It was the obviou
 
 I swapped the individual LEDs for a uniform LED strip and used copper foil tape for the electrical connections. Better, but new problems.
 
-- <span style="color:#e53935">**Issue:**</span> Copper foil tape is convenient and looks clean, but it can't handle 2A. I ran the numbers on cross-sectional area and realized this was a fire hazard waiting to happen. Prototype aesthetics don't count for much when your wiring is undersized.
+- <span style="color:#e53935">**Issue:**</span> Copper foil tape is convenient and looks clean, but it is thin, and every connection in it is adhesive rather than metal. That is not a dependable way to carry 2A: the copper may survive it, the joints are where the heat collects. I worked the numbers through and realized this was a fire hazard waiting to happen.
 - <span style="color:#e53935">**Issue:**</span> Fixed brightness. No matter what material or distance I was testing, the light output was the same. Different scenarios need different illumination levels, and I had no way to adjust.
 
 ### V3: LED Strip + PWM Controller (Current Version)
 
 This is the one that stuck:
 
-- <span style="color:var(--terminal-green)">**Upgrade:**</span> Replaced copper tape with oxygen-free copper wire 0.5mm². Properly rated for 2A with margin to spare.
-- <span style="color:var(--terminal-green)">**Upgrade:**</span> PWM controller for full-range brightness adjustment. Now I can test at anywhere in between; and get the same reading every time.
+- <span style="color:var(--terminal-green)">**Upgrade:**</span> Replaced the tape with oxygen-free copper wire 0.5mm², which puts real metal at every joint and sits comfortably above the 2A the strip draws.
+- <span style="color:var(--terminal-green)">**Upgrade:**</span> PWM controller for full-range brightness adjustment. Now I can test at any level in between and get the same reading every time.
 - <span style="color:var(--terminal-green)">**Upgrade:**</span> Painted the interior frame matte black. Ambient light and internal reflections had been silently contaminating every reading.
 
-# What the Platform Delivers
+# Result
 
-The finished design gives me a reliable, repeatable environment for comparing how materials handle light:
-
-- <strong style="color:var(--accent)">Side-by-side material comparison</strong> under identical lighting: no more "I think this one looks better"
-- <strong style="color:var(--accent)">Surface finish evaluation</strong>: how does sanding, polishing, or texturing change the way light moves through?
-- <strong style="color:var(--accent)">Thickness vs transmission analysis</strong>: how much does doubling the sheet thickness actually reduce brightness?
-- <strong style="color:var(--accent)">Controlled brightness sweeps</strong>: see how materials behave across the full dimming range
-- <strong style="color:var(--accent)">Visual documentation</strong> of light distribution patterns I can reference on future projects
+The finished design gives me a reliable, repeatable environment for comparing how materials handle light. <strong style="color:var(--accent)">Side-by-side material comparison</strong> under identical lighting retires the old "I think this one looks better". I can work through <strong style="color:var(--accent)">surface finish evaluation</strong> and see what sanding, polishing or texturing does to the way light moves through. I can run a <strong style="color:var(--accent)">thickness versus transmission analysis</strong> and find out what doubling the sheet actually costs in brightness. I can do <strong style="color:var(--accent)">controlled brightness sweeps</strong> and watch a material across the full dimming range. And every run leaves <strong style="color:var(--accent)">visual documentation</strong> of the light distribution that I can pull up on the next project.
 
 ![Final Platform](./03-final-platform-3d.png)
 
-## What Building It Taught Me
+# What I Learned
 
 Beyond the CMF data, building this platform drilled in a few principles that apply to pretty much any design-build project:
 
-- <strong style="color:var(--accent)">Current ratings are important</strong>: The copper tape was a concrete reminder that prototyping materials need to be evaluated against their actual electrical loads. It doesn't matter how clean the build looks if the wiring is undersized. Safety specs aren't negotiable.
-- <strong style="color:var(--accent)">Your environment is part of your instrument</strong>: Optical measurements live and die by ambient light control. That matte black paint job; which took maybe twenty minutes; improved measurement consistency more than any other single change. Sometimes the simplest fix has the biggest impact.
-- <strong style="color:var(--accent)">Isolate one variable at a time or you're just guessing</strong>: The ability to change material, thickness, finish, or distance independently is what turns this from "holding things up to a lamp" into actual testing. Systematic comparison only works if you can hold everything steady except the one thing you're studying.
-- <strong style="color:var(--accent)">Tools pay for themselves across projects</strong>: Spending time on a proper test platform feels slow at first, but every future CMF decision involving translucent materials now references real measurements instead of squinting and hoping.
+<strong style="color:var(--accent)">Current ratings are important</strong>: the copper tape was a concrete reminder that prototyping materials have to be judged against their actual electrical loads, and that a clean-looking build means nothing if the wiring is undersized. <strong style="color:var(--accent)">Your environment is part of your instrument</strong>: optical measurements live and die by ambient light control, and twenty minutes with a can of matte black paint improved measurement consistency more than any other single change. <strong style="color:var(--accent)">Isolate one variable at a time</strong>, or you are just guessing, because being able to change material, thickness, finish or distance independently is exactly what turns holding things up to a lamp into an experiment. And <strong style="color:var(--accent)">tools pay for themselves across projects</strong>: the platform felt slow to build, but every CMF decision involving translucent materials now starts from real measurements instead of squinting and hoping.
 
 ## Future improvements
 
-- <strong style="color:var(--accent)">Replace manual PWM control with calibrated digital control</strong>: The current setup relies on a manually adjusted PWM controller, which is sufficient for exploratory testing but introduces some variation in light intensity between measurements. A microcontroller could generate precisely defined PWM signals and store repeatable intensity settings, making it possible to reproduce identical lighting conditions across tests. This would improve the reliability of the data and make comparisons between materials more rigorous.
+<strong style="color:var(--accent)">Replace manual PWM control with calibrated digital control</strong>. The setup relies on a manually adjusted PWM controller, which is fine for exploratory testing but leaves some variation in light intensity between measurements. A microcontroller could generate precisely defined PWM signals and store repeatable intensity settings, so the same lighting conditions could be reproduced across tests. That would make the data more reliable and comparisons between materials more rigorous.

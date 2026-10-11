@@ -1,7 +1,7 @@
 ---
 title: ESP32 + WiFi LED-helderheidsregeling
 date: 2026-08-04
-description: WiFi-webserver en PWM-LED-helderheidsregeling via een browserinterface.
+description: Een webpagina die de ESP32 zelf serveert stuurt de ingebouwde LED aan via 8-bits PWM, zodat elk apparaat op het lokale netwerk de helderheid kan instellen.
 
 type: lab
 category: Embedded systemen
@@ -25,13 +25,11 @@ lang: nl
 translationKey: esp32-wifi-led-brightness-control
 ---
 
-# Overzicht
+# Doel
 
-Het idee was simpel: een LED aansturen vanaf mijn telefoon. Geen Bluetooth, geen app; gewoon een webpagina die door de ESP32 zelf wordt geserveerd en bereikbaar is vanaf elk apparaat op mijn thuis-wifi. Ik zou een schuifregelaar in de browser krijgen en de LED zou in realtime reageren. Het bleek een leuke kleine oefening in het combineren van WiFi, HTTP en PWM; drie dingen die in vrijwel elk IoT-project terugkomen.
+Het idee was simpel: een LED aansturen vanaf mijn telefoon. Geen Bluetooth en geen app, alleen een webpagina die de ESP32 zelf serveert en die elk apparaat op mijn thuis-wifi kan openen. Een schuifregelaar in de browser, en de LED volgt die in realtime. Daarmee komen WiFi, HTTP en PWM in één klein bouwsel samen, en daarom koos ik dit als oefening.
 
-# Systeemarchitectuur
-
-De ESP32 is tegelijk WiFi-client en webserver.
+De ESP32 is hier zowel WiFi-client als webserver.
 
 # Hardware
 
@@ -39,38 +37,36 @@ De ESP32 is tegelijk WiFi-client en webserver.
 - Ingebouwde LED (GPIO 2)
 - USB-kabel
 
-Begonnen met de ingebouwde LED, voor het gemak. Geen breadboard, geen externe componenten; alleen het ontwikkelbord en een USB-kabel. De LED op het bord zit op GPIO 2, wat handig is omdat die al is aangesloten en je niet hoeft na te denken over stroombegrenzingsweerstanden.
+Ik begon met de ingebouwde LED om het aantal onderdelen op nul te houden: geen breadboard, geen externe componenten, alleen het ontwikkelbord en een USB-kabel. De LED op het bord zit op GPIO 2 met de stroombegrenzingsweerstand er al bij, dus aan de hardwarekant viel er niets mis te gaan voordat er code geschreven was.
 
 # Software
 
-Omgeving: Arduino IDE met de ESP32 Arduino Core
-
-Bibliotheken:
+Arduino IDE met de ESP32 Arduino Core.
 
 ```cpp
 #include <WiFi.h>
 #include <WebServer.h>
 ```
 
-Beide bibliotheken worden meegeleverd met de ESP32 Arduino Core, dus je hoeft niets extra te installeren. `WiFi.h` verzorgt de verbinding en `WebServer.h` geeft je een lichtgewicht HTTP-server; perfect voor dit soort dingen.
+Beide bibliotheken zitten bij de core, dus er hoefde niets extra's geïnstalleerd te worden. `WiFi.h` doet de verbinding en `WebServer.h` levert een lichtgewicht HTTP-server, en meer had dit niet nodig.
 
 # Implementatie
 
 ## WiFi-webserver
 
-De ESP32 maakt verbinding met je lokale WiFi en serveert een bedieningspagina. <br>
-Apparaten op hetzelfde netwerk kunnen het toegewezen IP-adres openen, bijvoorbeeld http://192.168.x.x/.
+De ESP32 meldt zich aan op mijn lokale wifi en serveert een bedieningspagina.<br>
+Elk apparaat op hetzelfde netwerk kan het toegewezen IP-adres openen, bijvoorbeeld http://192.168.x.x/.
 
-Dit is wat ik het leukst vind aan de ESP32: je draait een webserver op in een handvol regels en ineens is je microcontroller bereikbaar vanaf elk apparaat op het netwerk. Geen routerconfiguratie, geen port forwarding, gewoon een lokaal IP-adres.
+Dit is het onderdeel van de ESP32 dat ik het leukst vind. Een handvol regels zet een webserver op, en ineens is de microcontroller bereikbaar vanaf alles op het netwerk. Geen routerconfiguratie, geen port forwarding, gewoon een lokaal adres.
 
 ## PWM-helderheidsregeling
 
-De helderheid gebruikt PWM met een 8-bits resolutie (0–255 komt overeen met 0%–100%). <br>
-De schuifregelaar op de webpagina stuurt een HTTP-verzoek om de dutycycle te wijzigen:
+De helderheid loopt op 8-bits PWM, dus 0–255 valt samen met 0%–100%.<br>
+De schuifregelaar stuurt een HTTP-verzoek dat de dutycycle verandert:
 
 Browser → /set?value=brightness → PWM-uitgang van de ESP32
 
-Ik koos voor 8-bits PWM (0–255) omdat dat mooi aansluit op het bereik van `ledcWrite` en op de `min`/`max`-attributen van de schuifregelaar. De webpagina gebruikt `fetch()` om bij elke beweging van de schuifregelaar een GET-verzoek naar `/set?value=128` te sturen, en de ESP32 parseert de waarde en schrijft die naar het PWM-kanaal. Op 5000 Hz is er geen zichtbare flikkering.
+8 bits was de voor de hand liggende keuze, want dat sluit aan op het bereik dat `ledcWrite` aanneemt en op de `min`- en `max`-attributen van de schuifregelaar. De pagina gebruikt `fetch()` om bij elke beweging van de schuifregelaar een GET naar `/set?value=128` te sturen, en de ESP32 parst de waarde en schrijft die naar het PWM-kanaal. Op 5000 Hz is er geen zichtbare flikkering.
 
 # Testen
 
@@ -81,9 +77,9 @@ Ik koos voor 8-bits PWM (0–255) omdat dat mooi aansluit op het bereik van `led
 
 # Resultaat
 
-De ESP32 maakt verbinding, serveert de interface, ontvangt HTTP-helderheidswaarden en stuurt de LED aan via PWM. De hele keten (hardware, netwerk, interface, fysieke uitvoer) werkt zoals verwacht en vormt een basis voor meer interactieve IoT-projecten.
+De ESP32 maakt verbinding, serveert de interface, ontvangt HTTP-helderheidswaarden en stuurt de LED aan via PWM. De hele keten werkt van begin tot eind, van hardware via netwerk en interface naar de fysieke uitgang, en daarmee staat er een basis om interactievere dingen op te bouwen.
 
-Dit is een van die projecten waar de verhouding tussen inspanning en opbrengst erg bevredigend is. Met ongeveer 160 regels code krijg je een werkend, webgestuurd licht. Hetzelfde patroon (WiFi + webserver + PWM) leent zich net zo goed voor zaken als motortoerentalregeling, servopositionering of het aansturen van een LED-strip via een MOSFET.
+In ongeveer 160 regels code staat er een werkend, webgestuurd licht. Dezelfde combinatie van WiFi, webserver en PWM gaat net zo goed op voor motortoeren, servopositie of het aansturen van een LED-strip via een MOSFET.
 
 # Volledige code
 

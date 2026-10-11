@@ -33,11 +33,11 @@ gallery:
   - file: 04-powerdrill.jpg
     title: Powerdrill
   - file: 05-powerdrill-variant.png
-    title: Powerdrill — Alternate
+    title: Powerdrill (Alternate)
   - file: 06-zoem-bike.png
     title: Zoem Bike
   - file: 07-zoem-bike-variant.png
-    title: Zoem Bike — Alternate
+    title: Zoem Bike (Alternate)
 ---
 
 Productposterontwerpen gemaakt voor merkvisualisatie en commerciële presentatie.

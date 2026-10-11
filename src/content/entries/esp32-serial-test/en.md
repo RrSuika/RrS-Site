@@ -24,9 +24,8 @@ lang: en
 translationKey: esp32-serial-test
 ---
 
-# Purpose
-
-Before diving into anything more ambitious, I needed to make sure the ESP32 board actually worked: that I could flash it, talk to it over USB, and see output from a running program. It's the kind of sanity check that saves you hours of debugging later. If serial communication isn't working, nothing downstream will either.
+# Objective
+Before diving into anything more ambitious, I needed to make sure the ESP32 board actually worked: that I could flash it, talk to it over USB, and see output from a running program. If serial communication isn't working, nothing downstream will either.
 
 # Code
 
@@ -41,7 +40,7 @@ void loop() {
 }
 ```
 
-Nothing fancy here: just initialising the serial port at 115200 baud and printing a heartbeat every second. If this shows up in the Serial Monitor, I know the board is alive, the USB-to-UART bridge works, and the Arduino IDE can talk to it properly.
+Nothing fancy here: just initializing the serial port at 115200 baud and printing a heartbeat every second. If this shows up in the Serial Monitor, I know the board is alive, the USB-to-UART bridge works, and the Arduino IDE can talk to it properly.
 
 # Test Steps
 

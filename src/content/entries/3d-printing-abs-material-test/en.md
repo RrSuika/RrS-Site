@@ -32,16 +32,14 @@ translationKey: 3d-printing-abs-material-test
 
 ![ABS 3D Printing Research](./ABS-3D-Printing-Guide-0.png)
 
-# Overview
-
+# Background
 So I decided to finally tackle ABS. If you've spent any time in 3D printing communities, you know the reputation: it warps, it shrinks, it clogs, and if you so much as breathe on it wrong during a print, it'll peel right off the bed. But I kept coming back to the same question: is it really that hard, or do most people just not spend enough time understanding what's actually going on?
 
 This log is my attempt to answer that. I ran 15 tests on a Bambu Lab A1, messing with enclosure temperatures, heater wattages, fan speeds, print speeds, and whatever else I could tweak. Along the way I jammed my hotend more times than I'd like to admit, learned a lot about heat creep, and eventually got to a workflow that actually works.
 
-I'm writing this up not as a polished guide, but as the real journey: failures, dead ends, and the moments where things finally clicked.
+I'm writing this up as the real journey: failures, dead ends, and the moments where things finally clicked.
 
-# What I Wanted to Figure Out
-
+# Objective
 I wanted to understand _why_ ABS behaves the way it does, and whether a consumer printer like the A1 (which isn't exactly marketed as an ABS machine) could handle it reliably with the right setup.
 
 ABS is appealing for functional parts because it handles heat better than PLA, takes impacts better than PETG, and lasts. But the printing environment matters way more than slicer settings alone. I wanted to:
@@ -450,7 +448,7 @@ The sweet spot seems to be a compromise between thermal stability and extrusion 
 
 ## What I learned about clogging
 
-Here's something that surprised me: enclosure temperature alone didn't explain the clogging. I saw clogs happen even when the enclosure was around 30°C. So it's not that simple. Other factors matter too:
+Enclosure temperature alone didn't explain the clogging. I saw clogs happen even when the enclosure was around 30°C, so other factors matter too:
 
 - Hotend temperature
 - Filament condition
@@ -485,58 +483,33 @@ Long-term fix: replace the stock plastic gear with a hardened steel one. More bi
 
 ## Cooling and thermal issues
 
-- Enclosure below ~45°C: warping almost guaranteed
-- Enclosure above ~55°C: heat creep starts becoming a real risk
-- High temperatures compromise the hotend cooling fan's effectiveness
-- Cooling fan running too fast undoes all your enclosure work
-- Bed temperature wasn't always optimal
-- Drafts and cold airflow killed first-layer adhesion
-- Manual enclosure temperature control was basically useless
-- Passive heat loss through uninsulated walls was way too high
+The thermal window turned out to be narrow and unforgiving. Below about 45°C the part warps almost every time; above about 55°C heat creep sets in and the extrusion trouble starts. High enclosure temperatures also cut into how well the hotend cooling fan works, and running that fan hard undoes the enclosure work you just did. Bed temperature was not always where it should have been, and drafts or cold airflow were enough on their own to kill first-layer adhesion. Manual temperature control was effectively useless, and uninsulated walls leaked heat far too fast to hold a setpoint.
 
 ## Extrusion and mechanical issues
 
-- Filament grinding at the extruder gear
-- Gear couldn't maintain consistent grip
-- Partial hotend clogs that came and went
-- Heat creep softening filament in the cold zone
-- Excessive extrusion resistance
-- Possibly moisture in old filament
+Most of the extrusion trouble traced back to the feed path rather than the hotend. The gear ground into the filament and could not hold a consistent grip, which showed up as partial clogs that came and went. Heat creep softened the filament up in the cold zone, extrusion resistance ran high, and the filament I started with had probably taken on moisture from sitting out.
 
 ## Adhesion issues
 
-- First layer wouldn't always stick, even with a clean bed
-- Glue didn't reliably help
-- Bed cleaning needed to be more thorough than I was doing
+First-layer adhesion was unreliable even on a clean bed. Glue helped sometimes and not others, and the real fix turned out to be cleaning the plate far more thoroughly than I had been doing.
 
 # What Actually Helped
 
 ![Solutions overview](./ABS-3D-Printing-Guide-7.png)
 
-Here's the practical stuff that moved the needle, in rough order of impact:
+Here is the practical stuff that moved the needle, roughly in order of impact.
 
-# Hardware upgrades worth doing
+## Hardware upgrades worth doing
 
-- Insulate the enclosure properly (the 10mm foam made a huge difference)
-- Add thermostat-controlled heating (manual control is a waste of time)
-- Consider a hardened steel extruder gear
-- The hotend itself was fine: I never actually needed to replace it
+Insulating the enclosure properly was the single biggest win, and the 10mm foam made an obvious difference. Thermostat-controlled heating came next, because manual control is a waste of time. A hardened steel extruder gear is the upgrade I would still make. The hotend itself was fine; I never actually needed to replace it.
 
-# Process changes that matter
+## Process changes that matter
 
-- Clean the build plate more carefully than you think you need to
-- Keep the cooling fan as low as possible
-- Use a brim: it's simpler and often more effective than a full draft shield
-- Tune speed to what the material can handle
-- If ABS keeps fighting you, ASA is a legitimate alternative worth testing
-- Better filament matters: old, poorly stored ABS is fighting with one hand tied behind its back
+Clean the build plate more carefully than you think you need to. Keep the cooling fan as low as it will go, and use a brim, which is simpler and usually more effective than a full draft shield. Tune speed to what the material can actually handle. If ABS keeps fighting you, ASA is a legitimate alternative worth testing. And better filament matters: old, badly stored ABS is fighting with one hand tied behind its back.
 
-# Extrusion reliability fixes
+## Extrusion reliability fixes
 
-- Check the extruder gear for filament dust buildup regularly
-- Clear partial blockages before they become full clogs
-- Don't be afraid to manually assist feeding if the gear is struggling
-- A slightly higher nozzle temp (255→260°C) made a noticeable difference
+Check the extruder gear for filament dust regularly, and clear partial blockages before they become full clogs. If the gear is struggling, there is no harm in helping the feed by hand. Bumping the nozzle from 255°C to 260°C made a noticeable difference on its own.
 
 # Extruder Gear Thoughts
 
@@ -544,9 +517,9 @@ I considered swapping the stock gear for a brass one, but I'm not convinced that
 
 A hardened steel gear seems like the safer bet. Better bite, less thermal conductivity, and it won't wear down the same way.
 
-## Future Work
+# What's Next
 
-Stuff I'd like to test when I get around to it:
+Stuff I would like to test when I get around to it:
 
 - ABS vs. ASA head-to-head under identical conditions
 - A higher-quality ABS brand to see how much the filament itself matters
@@ -558,7 +531,7 @@ Stuff I'd like to test when I get around to it:
 
 The big lesson on methodology: changing three things at once might get you to a solution faster, but you won't know _which_ thing fixed it. Next round I want to be more disciplined about isolating variables.
 
-## Self Reflection
+# What I Learned
 
 This project changed how I think about 3D printing. ABS is a completely different animal from "hard mode" PLA, exposing weaknesses in your setup that easier materials let you ignore.
 
@@ -570,20 +543,20 @@ The early tests were messy: I was changing multiple variables, getting frustrate
 
 Overall, I'm glad I stuck with it. Going from "ABS is impossible on this printer" to having a repeatable process is genuinely satisfying.
 
-## Filament and Printer Setup
+# Filament and Printer Setup
 
-### Printer
+## Printer
 
 - Printer: Bambu Lab A1
 - Nozzle: Bambu Lab Stainless Steel 0.4mm
 - Build plate: Bambu Lab PEI Build Plate
 
-### Material
+## Material
 
 - Filament: ABS
 - Diameter: 1.75mm
 
-### Extrusion System
+## Extrusion System
 
 Original setup:
 
@@ -593,9 +566,9 @@ What I'd switch to:
 
 - Hardened steel extruder gear
 
-The stock gear works fine for PLA and PETG, but ABS creates higher feed resistance, and the gear's grip isn't always enough. I considered a full-metal brass gear but the higher thermal conductivity might push more heat into the filament path: probably not what you want when heat creep is already on your list of problems.
+The stock gear works fine for PLA and PETG, but ABS creates higher feed resistance and the grip is not always enough.
 
-### Printing Environment
+## Printing Environment
 
 Room temperature: 18–24°C
 
@@ -605,7 +578,7 @@ What I'd aim for: 45–50°C
 
 Higher than 55°C did help with warping resistance but brought heat creep and extrusion issues more often. Lower than 45°C and I'd start seeing corners lift. It's a narrow window, but once you find it, it's repeatable.
 
-## References
+# References
 
 1. Bambu Lab Basic Maintenance  
    https://wiki.bambulab.com/en/a1/maintenance/basic-maintenance

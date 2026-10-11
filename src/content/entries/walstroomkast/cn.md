@@ -2,7 +2,7 @@
 title: "模块化岸电柜"
 date: 2026-06-15
 dateLabel: "Jun 15"
-description: "为荷兰内河船舶做的岸电方案;用电池缓冲把 3×80A 的有限并网顶到 3×250A 的峰值需求，柜体按模组化设计，可按需拼装扩展。"
+description: "为荷兰内河船舶做的岸电方案：用电池缓冲把 3×80A 的有限并网顶到 3×250A 的峰值需求，柜体按模组化设计，可按需拼装扩展。"
 type: projects
 category: 工业设计 / 电气系统
 cover: cover.webp
@@ -27,15 +27,15 @@ translationKey: walstroomkast
 
 # 项目背景
 
-内河船舶停靠码头时不再允许用柴油发电机，必须接岸电。船上的用电需求很大而且波动剧烈，峰值可以到 3×250A；但码头这边的并网容量只有 3×80A，两者差了三倍多。
+内河船舶停靠码头时不再允许用柴油发电机，必须接岸电。船上的用电需求很大而且波动剧烈，峰值可以到 3×250A，但码头这边的并网容量只有 3×80A，两者差了三倍多。
 
-这是来自 Hogeschool Rotterdam 学校的项目，合作方是 Endenburg 公司。团队一共 5 个人：我和搭档负责工业设计，另外三位电气工程组员负责电气技术验证和交付物。我和搭档之前在 ZOEM Bike 实习时就一起做过一台完整的货运自行车货箱，分工方式直接沿用下来。我负责调研、材料分析、把研究结论写成设计决策，以及文档、视觉呈现和最终答辩；搭档主要负责 3D 建模、渲染和绘制工程图。
+这是来自 Hogeschool Rotterdam 学校的项目，合作方是 Endenburg 公司。团队一共 5 个人：我和搭档负责工业设计，另外三位电气工程组员负责电气技术验证和交付物。我和搭档之前在 ZOEM Bike 实习时就一起做过一台完整的货运自行车货箱，分工方式直接沿用下来。我负责调研、材料分析，以及把研究结论写成设计决策，以及文档、视觉呈现和最终答辩：搭档主要负责 3D 建模、渲染和绘制工程图。
 
 # 设计目标
 
 主要问题：在 3×80A 的并网容量下，做一台能应付 3×250A 峰值、并且能跟着用电需求一起长的模组化柜体。
 
-项目还定了五个关键成功因素，后面每一步设计决策都要能对上它们：
+我们还定了五个关键成功因素，后面每一步设计决策都要能对上它们：
 
 | 关键成功因素 | 具体要求 |
 | --- | --- |
@@ -116,9 +116,9 @@ translationKey: walstroomkast
 <tbody>
 <tr><td>冲孔型材 / Strut Channel<br />（25mm 孔距）</td><td><span class="plus">+</span>元件位置灵活<br /><span class="plus">+</span>模块可扩展<br /><span class="plus">+</span>标准件好买</td><td><span class="minus">−</span>密封处理麻烦</td></tr>
 <tr><td>型材系统</td><td><span class="plus">+</span>刚度和机械强度高<br /><span class="plus">+</span>标准件好买<br /><span class="plus">+</span>模块可扩展</td><td><span class="minus">−</span>密封能力有限</td></tr>
-<tr><td>玻璃纤维增强塑料型材</td><td>—</td><td><span class="minus">−</span>寿命短<br /><span class="minus">−</span>在使用环境里可靠性不够</td></tr>
-<tr><td>企口夹芯板</td><td>—</td><td><span class="minus">−</span>扩展性受限<br /><span class="minus">−</span>密封不足</td></tr>
-<tr><td>模块化管轨</td><td>—</td><td><span class="minus">−</span>连接点太多<br /><span class="minus">−</span>密封不足</td></tr>
+<tr><td>玻璃纤维增强塑料型材</td><td>无</td><td><span class="minus">−</span>寿命短<br /><span class="minus">−</span>在使用环境里可靠性不够</td></tr>
+<tr><td>企口夹芯板</td><td>无</td><td><span class="minus">−</span>扩展性受限<br /><span class="minus">−</span>密封不足</td></tr>
+<tr><td>模块化管轨</td><td>无</td><td><span class="minus">−</span>连接点太多<br /><span class="minus">−</span>密封不足</td></tr>
 <tr class="verdict"><td colspan="3"><strong>最终选择：</strong>25mm 孔距的冲孔型材，配侧面密封条加顶盖来处理密封。</td></tr>
 </tbody>
 </table>
@@ -186,7 +186,7 @@ translationKey: walstroomkast
 
 缩比模型按真实布局搭：全部电子元件装在 3D 打印的框架里，模块 A 是硬件和控制器件所在的上段，模块 B 是留给后续扩展的下段，用来说明整柜的分区和结构逻辑。
 
-柜顶做成种植槽，目的是把工业柜体的观感压一压，让它在城市公共空间里不那么突兀。模块本身可拆换、好维护，不向两侧扩展。选的是耐晒、抗风、耐旱、根系浅、好打理的植物。
+柜顶做成种植槽，目的是把工业柜体的观感压一压，让它在城市公共空间里不那么突兀。模块本身可拆换、好维护，不向两侧扩展。选的是耐晒、抗风、耐旱，根系浅又好打理的植物。
 
 ## 材料与防护
 
@@ -268,9 +268,9 @@ translationKey: walstroomkast
 
 # 未来可拓展性
 
-模组化是为后面留的口子。中央柜负责控制和接入，需要更多容量时，在旁边挂一个外形相同的电池柜就行。往下还能继续挂：余热回收、5G 基站、无人机降落平台、外部电源输入口。顶上除了标配的绿顶，也可以选装太阳能板，给柜上的显示器和传感器供电。
+模组化是为后面留的口子。中央柜负责控制和接入，需要更多容量时，在旁边挂一个外形相同的电池柜就行。往下还能继续挂：余热回收、5G 基站、无人机降落平台和外部电源输入口。顶上除了标配的绿顶，也可以选装太阳能板，给柜上的显示器和传感器供电。
 
-# 实物
+# 结果
 
 <div class="process-scroll">
   <div class="process-track" data-copies="3" data-unique="5">
@@ -298,7 +298,7 @@ translationKey: walstroomkast
 
 这个项目跟委托方的期待一开始没对上。开头有几周卡在等对方补充信息和用户场景上；等我们确认对方实际要的是电气计算、而这类题目本身不属于工业设计的范畴时，两边的方向已经错开了。我们和两位指导老师谈过之后，把项目重构成自己的设计题目：一台模组化可扩展的岸电柜。事后看这个决定是对的，项目从这时候起才真正对上我们的学习目标。
 
-# 这个项目教会我的
+# 学到的东西
 
 - <strong style="color:var(--accent)">材料研究的价值在于能不能落成决定</strong>：316、316L、2205 双相不锈钢的对比，HDPE 和 GFRP 的取舍，最后都要能给出一句"所以选这个"。研究本身不难，难的是把结论收成一个可以被追问的选择。
 - <strong style="color:var(--accent)">电气规范是设计输入，不是背景资料</strong>：IP 等级、IK10、C5 涂层、接地电阻 1 Ω、安装高度，这些都是决定柜体长什么样的硬约束。

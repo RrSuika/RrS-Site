@@ -34,8 +34,7 @@ translationKey: esp32-inmp441-noise-monitor
 
 ![Setup](./01-setup.png)
 
-# Overview
-
+# Objective
 I wanted a way to see what my workspace actually sounds like, the full frequency picture. So I grabbed an INMP441 I2S microphone, wired it up to an ESP32, and wrote the FFT pipeline myself. The end result is a little device that sits on my desk, grabs audio in real time, runs a 512-point FFT, and streams everything to a browser dashboard over WiFi. It shows me the current dB level, a 64-bin spectrum bar chart, and a rolling 30-minute history of noise levels. It's surprisingly addictive to watch: you really get a feel for which appliances are the loudest in the room.
 
 # System Architecture
@@ -60,7 +59,7 @@ INMP441 → I2S → ESP32 → FFT → WebSocket → Browser Dashboard
 # Key Features
 
 - **Real-time dB SPL** reading with a status indicator that changes between Quiet, Normal, Warning, and Danger. I set the thresholds based on what felt right in my room: your mileage may vary.
-- **64-bin frequency spectrum** shown as animated bars, log-spaced from 20 Hz to 20 kHz. The log spacing matters a lot because our ears work that way: linear bins would waste most of the display on high frequencies we don't care about.
+- **64-bin frequency spectrum** shown as animated bars, log-spaced rather than linear. The log spacing matters a lot because our ears work that way: linear bins would waste most of the display on high frequencies we don't care about. What limits the range is the sample rate. At 16 kHz the usable ceiling is 8 kHz and one FFT bin is 31 Hz wide, so the left end of the axis advertises finer resolution than the data behind it actually has, and the INMP441 itself only responds from 60 Hz upward.
 - **Dominant frequency detection**: finds the loudest frequency in each frame. Handy for spotting things like a fridge compressor kicking in at a specific tone.
 - **Noise history** with a 30-minute rolling buffer, sampled once per second. The ESP32 keeps all 1800 points in RAM and sends the most recent 600 to the browser so the JSON doesn't get absurdly large.
 - **Calibration offset** accessible from the web UI: useful because the INMP441 isn't factory-calibrated for absolute SPL. I zero it against a phone app and call it close enough.

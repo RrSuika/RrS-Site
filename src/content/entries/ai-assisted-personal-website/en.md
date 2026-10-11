@@ -35,23 +35,11 @@ lang: en
 translationKey: ai-assisted-personal-website
 ---
 
-# Bottom line first
+# Background
 
-This is not a "one-click AI website" success story.
+I built this site together with AI, and it never behaved like a one-click website generator. The split was the same every time: I decide why the site exists, who it is for, what matters and what to leave out; AI turns those decisions into drafts, code, alternatives and clearer explanations; I test, look, delete, revise, and carry the result.
 
-It is more like a long-term experiment between me and AI:
-
-- I decide why the site exists, who it is for, what matters, and what to leave out.
-- AI turns ideas into drafts, code, alternatives, and clearer explanations.
-- I test, look, delete, revise, and take responsibility for the result.
-
-So far, the site has gone through three clear iterations:
-
-1. **V1: make it exist**
-2. **V2: give it a personality**
-3. **V3: give it a world**
-
-Below is the timeline: what I did, what went wrong, where AI helped, and what AI still cannot replace.
+The site has gone through three iterations so far: V1 to make it exist, V2 to give it a personality, V3 to give it a world. What follows is the timeline of what I did, what went wrong, where AI helped, and what it still cannot replace.
 
 <div class="project-gallery-slot"></div>
 
@@ -68,33 +56,11 @@ Below is the timeline: what I did, what went wrong, where AI helped, and what AI
 
 At the very beginning, we only deployed a single page: one file that held the homepage, bio, portfolio and contact information.
 
-My workflow was crude: I copied thousands of lines of code to AI, asked it to add new content, then copied the result back to my computer.
+My workflow was crude. I copied thousands of lines of code into AI, asked it to add something, and copied the result back to my computer. Two problems showed up quickly. Every change forced AI to re-read the whole file, which wasted time; and the file kept growing until I could no longer find a specific section inside it.
 
-Two problems appeared quickly:
+What I actually wanted was a **multilingual site with a personal database and a portfolio** behind it. So I moved to the current architecture, where content, pages, styles and components are managed separately. Changing text no longer means digging through thousands of lines. Every project gets its own folder for articles, covers, version images and translations. Chinese, English and Dutch share one page structure, and the portfolio can keep growing without turning into chaos: to edit a project, I go to its folder.
 
-1. **Copy-paste wasted time.** Every change required AI to re-read the entire file.
-2. **The file became bloated.** The more content was added, the longer the code grew, until I could no longer find a specific section.
-
-What I really wanted was not “one long page”, but a **multilingual site + personal database + portfolio**.
-
-So we switched to the current architecture: content, pages, styles and components are managed separately.
-
-In plain language, the current architecture has these advantages:
-
-- Content, styles and page structure are separated; changing text no longer means digging through thousands of lines.
-- Each project has its own folder for articles, covers, version images and translations.
-- Chinese, English and Dutch share one page structure.
-- The portfolio and personal database can keep growing without turning into chaos.
-- Maintenance is clearer: to edit a project, go to its folder.
-
-The disadvantages are:
-
-- It is more complex than “one single-page file”; new projects must follow the folder structure and frontmatter format.
-- Translations must be maintained by hand, so it is easy to miss a language.
-- Changing global styles can affect every project, so it requires more care.
-- The learning curve is higher at the start; it is not as immediate as copy-paste.
-
-But for me, it is better for long-term maintenance, and it fits the goal of a **personal database + portfolio**.
+The cost is real, and it is worth stating plainly. This architecture is more complex than a single-page file, every new project has to follow the folder structure and the frontmatter format, translations are maintained by hand so a language is easily forgotten, a change to global styles can affect every project, and the learning curve is steeper at the start. For long-term maintenance it is still the better trade, and it is what a personal database plus portfolio actually needs.
 
 # V1: Make it exist
 
@@ -141,7 +107,7 @@ But for me, it is better for long-term maintenance, and it fits the goal of a **
 
 - Added a **neural network background** on top of V1;
 - Added a **hacker terminal** to create a “system boot” feeling;
-- Unified the dark background, typography, colours and motion;
+- Unified the dark background, typography, colors and motion;
 - Made the background move without covering the content.
 
 ## Problems
@@ -182,7 +148,7 @@ But for me, it is better for long-term maintenance, and it fits the goal of a **
 - Moved the visual theme from “technology” to “cosmos”;
 - Added NASA punk, neumorphism and glassmorphism on top of a retro-futuristic base;
 - Added a **starfield, a black hole and gravitational lensing** in one sentence: light bends around the black hole, and the stars, black hole and content share one scene instead of feeling like separate layers;
-- Aimed not for one single style, but for a “chimera” that spans time and mixes several technology aesthetics.
+- Aimed for a “chimera” that spans time and mixes several technology aesthetics.
 
 ## Problems
 
@@ -198,10 +164,10 @@ But for me, it is better for long-term maintenance, and it fits the goal of a **
 
 - Explained gravitational lensing in simple language;
 - Suggested parameter ranges and debugging directions;
-- Helped optimise the effect;
+- Helped optimize the effect;
 - Proposed fallback versions for low-performance devices;
-- Helped organise credits and identify what needed attribution;
-- Helped translate, organise and polish the text.
+- Helped organize credits and identify what needed attribution;
+- Helped translate, organize and polish the text.
 
 ## What I did by hand
 
@@ -219,16 +185,9 @@ But for me, it is better for long-term maintenance, and it fits the goal of a **
 
 # Now: Keep iterating
 
-V3 is not the end. Right now I am:
+V3 is not the end. At the moment I am making the site stable on more devices; making the body text clearer and giving up less readability for effects; documenting the process so the project also works as a guide; keeping the Chinese, English and Dutch text in step; collecting feedback to see what visitors actually want; and continuing to balance performance against aesthetics and content.
 
-- Making the site stable on more devices;
-- Making the body text clearer and giving up less readability for effects;
-- Documenting the process so the project is not only a result, but also a guide;
-- Organising the project text into Chinese, English and Dutch;
-- Collecting feedback to see what visitors actually want;
-- Continuing to balance performance, aesthetics and content.
-
-The next goal is not “more flashy”. It is:
+The next goal is easier to state than to hit:
 
 > **Easier to read, easier to use, easier to maintain.**
 
@@ -250,14 +209,9 @@ Resolution is one of the most underrated problems in this project.
 
 The same black hole may look just right on a 2K screen, too large on a 1080p screen, and on a phone it can cover the text or make the page stutter.
 
-So the principles we ended up using are:
+So I adjust the black hole’s size, position and brightness separately for 2K and 1080p, I decide on mobile which effects are worth keeping and which should be hidden or reduced, and I built a debug window so its 2K and 1080p appearance can be tuned by hand. The point is to stop forcing one effect onto every device.
 
-- Adjust the black hole’s size, position and brightness separately for 2K and 1080p;
-- On mobile, decide which effects are worth keeping and which should be hidden or reduced;
-- Build a debug window for the black hole so its 2K and 1080p appearance can be tuned by hand;
-- Do not force one effect onto every device; give each device a version that fits it.
-
-> Good visuals are not about forcing the same effect onto every screen; they are about making each screen look right.
+> **Judge the effect on the device, not in the abstract.** A composition that works at 2K is not the composition that works on a phone.
 
 # What AI and humans do
 
@@ -265,17 +219,15 @@ So the principles we ended up using are:
 | --- | --- | --- |
 | Direction | Offer many options | Choose the final one |
 | Content | Outline, expand, rewrite, translate | Provide real experiences, photos and opinions |
-| Visuals | Suggest colours, layout and motion | Judge whether it looks good and fits |
+| Visuals | Suggest colors, layout and motion | Judge whether it looks good and fits |
 | Code | Write a first version, find errors, explain errors | Decide whether to use it and test real devices |
 | Copy | Polish, reduce AI tone, unify voice | Check facts and keep a personal voice |
 | Performance | Suggest optimisations | Experience the site on old phones and slow networks |
-| Copyright | Organise references and attribution formats | Confirm permissions and take responsibility |
+| Copyright | Organize references and attribution formats | Confirm permissions and take responsibility |
 | Maintenance | Generate update checklists | Keep updating, replying and making trade-offs |
 
-One sentence:
-
-> **AI is an accelerator, not the person in charge.**
-> It helps you move faster, but it cannot decide what this is, why it exists, or who is responsible.
+> **AI accelerates the work; it does not decide anything.**
+> It moves faster than I do, but it cannot say what this is, why it exists, or who is responsible for it.
 
 # Beginner guide
 
@@ -305,7 +257,7 @@ One sentence:
 The visuals did not appear from nowhere. These sources gave me important references and inspiration:
 
 - **Starfield reference**: [OpenAI GPT-6 Astra page](https://openai.com/index/gpt-6-astra/)
-- **Black hole implementation reference**: [Shadertoy — lstSRS](https://www.shadertoy.com/view/lstSRS)
+- **Black hole implementation reference**: [Shadertoy (lstSRS)](https://www.shadertoy.com/view/lstSRS)
 - **Gravitational lensing reference**: [BH+disk](https://guitrj.github.io/BH+disk/)
 - **Cassette shelf reference**: the tape shelf you pick a story from in Zenless Zone Zero’s Agent Story chapters ([official site](https://zenless.hoyoverse.com/en-us/)). The finished visuals have moved a long way from the original; the way the tapes move is what I took from it.
 - **Intro sequence reference**: the opening animation on the Arknights: Endfield site ([official site](https://endfield.gryphline.com/en-us/)). The palette, the layout and the readout-style entrance pacing come from there; every element and all of the copy were rewritten.
@@ -320,7 +272,7 @@ There are many reference sites, and browsing them without a plan quickly becomes
 
 | Site | What it is in one sentence | What inspiration it gives |
 | --- | --- | --- |
-| [Land-book](https://land-book.com) | A gallery of well-designed websites | Overall style, colour, typography and whitespace |
+| [Land-book](https://land-book.com) | A gallery of well-designed websites | Overall style, color, typography and whitespace |
 | [Siteinspire](https://www.siteinspire.com) | A searchable library of web design cases | Specific moods: dark, minimal, technological |
 | [Lapa Ninja](https://www.lapa.ninja) | A large collection of landing pages and templates | Many first-screen directions at a glance |
 | [One Page Love](https://onepagelove.com) | A showcase dedicated to one-page sites | How to tell a whole story in one page |
@@ -358,17 +310,13 @@ There are many reference sites, and browsing them without a plan quickly becomes
 > A small reminder: inspiration sites are a menu, not a to-do list.  
 > Pick 2–3 references that truly fit; otherwise you will keep looking and never start building.
 
-# Conclusion
+# What I Learned
 
 This site grew from a simple personal homepage into a neural network and hacker terminal, and then into a starfield, black hole and gravitational lensing.
 
-But more important than the visuals is what the process taught me:
+The visuals are only the visible part. What the process actually taught me is that AI can carry me across the threshold of not knowing how to code, and that once I am across, taste, judgement, content and responsibility are still mine. A website turns out to be an ongoing record of iteration rather than a finished object.
 
-- AI can help me cross the threshold of not knowing how to code;
-- After crossing it, taste, judgement, content and responsibility still belong to the human;
-- A website is not a one-off object, but an ongoing record of iteration.
-
-AI makes execution cheap, and that makes judgement more valuable.
+AI makes execution cheap, which is exactly what makes judgement valuable.
 
 If I had to summarise the project in one sentence:
 

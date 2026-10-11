@@ -3,7 +3,7 @@ title: Testplatform voor lichtdiffusie
 
 date: 2026-04-20
 
-description: Ontwierp een optisch desktop-testplatform om de optische en visuele eigenschappen van verschillende materialen systematisch te evalueren; zodat subjectieve CMF-beslissingen herhaalbare en meetbare vergelijkingen worden.
+description: Een optisch desktop-testplatform om de optische en visuele eigenschappen van verschillende materialen systematisch te evalueren, zodat subjectieve CMF-beslissingen herhaalbare en meetbare vergelijkingen worden.
 
 type: projects
 
@@ -32,7 +32,7 @@ lang: nl
 translationKey: light-diffusion-test-platform
 ---
 
-# Het probleem
+# Achtergrond
 
 Dit gebeurt voortdurend in productontwerp: je kiest een doorschijnend materiaal voor een lampenkap, een diffuserpaneel of een displayafdekking, en je probeert te raden welk materiaal er het beste uitziet. Je houdt het sample tegen het licht, knijpt je ogen een beetje toe, houdt het misschien naast een ander sample en denkt: "ja, deze ziet er ongeveer goed uit".
 
@@ -40,7 +40,7 @@ Het probleem is dat twee materialen die er onder kamerlicht identiek uitzien, zi
 
 Dus bouwde ik een testopstelling, zodat elke CMF-beslissing die ik daarna nam onderbouwd zou zijn met data in plaats van intuïtie.
 
-# Meetbare factoren
+# Eisen
 
 Vier optische eigenschappen, elk direct relevant voor productontwerpbeslissingen:
 
@@ -51,13 +51,7 @@ Vier optische eigenschappen, elk direct relevant voor productontwerpbeslissingen
 | **Reflectie**           | Hoe het materiaaloppervlak invallend licht weerkaatst | Keuze van oppervlakteafwerking, tegengaan van verblinding                                  |
 | **Luminantieverdeling** | Helderheidsvariatie over het belichte oppervlak       | Visueel comfort, prestaties van lichtgeleiders                                             |
 
-Naast de meetdoelen had ik een handvol praktische eisen die net zo belangrijk bleken als de optische:
-
-- <strong style="color:var(--accent)">Reproduceerbare positionering</strong>: als ik samples niet op consistente afstanden van de lichtbron kan plaatsen, zijn de resultaten betekenisloos.
-- <strong style="color:var(--accent)">Instelbare helderheid</strong>: materialen zien er bij 10% helderheid anders uit dan bij 100%. De lichtbron moet dat bereik kunnen dekken.
-- <strong style="color:var(--accent)">Beheersing van omgevingslicht</strong>: optische metingen in een zonverlichte kamer zijn alleen maar ruis. De testomgeving moet externe interferentie minimaliseren.
-- <strong style="color:var(--accent)">Snel samples wisselen</strong>: als het verwisselen van materiaal vijf minuten kost, ga ik niet genoeg vergelijkingen uitvoeren om iets nuttigs te leren.
-- <strong style="color:var(--accent)">Visuele output</strong>: ik moet de resultaten kunnen zien. Zij-aan-zij visuele vergelijking is de helft van waar het om gaat.
+Naast de meetdoelen had ik een handvol praktische eisen, en die bleken net zo zwaar te wegen als de optische. <strong style="color:var(--accent)">Reproduceerbare positionering</strong> stond voorop: als ik samples niet op een consistente afstand van de lichtbron krijg, betekent niets van wat ik daarna meet nog iets. <strong style="color:var(--accent)">Instelbare helderheid</strong> was nodig omdat een materiaal op 10% en datzelfde materiaal op 100% twee verschillende objecten zijn, dus de bron moet het hele bereik dekken. <strong style="color:var(--accent)">Beheersing van omgevingslicht</strong> stond niet ter discussie, want optische metingen in een zonverlichte kamer zijn vooral ruis. <strong style="color:var(--accent)">Snel samples wisselen</strong>, want bij vijf minuten per wissel zou ik nooit genoeg vergelijkingen doen om er iets van te leren. En <strong style="color:var(--accent)">visuele output</strong>, omdat twee materialen naast elkaar zien de helft van het werk is.
 
 # Ontwerp & maken
 
@@ -172,38 +166,29 @@ Ik was van plan om losse LED's met de hand op de printplaat te solderen. Het was
 
 Ik verving de losse LED's door een uniforme LED-strip en gebruikte koperfolietape voor de elektrische verbindingen. Beter, maar nieuwe problemen.
 
-- <span style="color:#e53935">**Probleem:**</span> Koperfolietape is handig en ziet er netjes uit, maar het kan 2A niet aan. Ik rekende de doorsnede door en realiseerde me dat dit een brandgevaar was dat stond te gebeuren. De esthetiek van een prototype telt weinig als je bedrading ondergedimensioneerd is.
+- <span style="color:#e53935">**Probleem:**</span> Koperfolietape is handig en ziet er netjes uit, maar het is dun, en elke verbinding erin is lijm in plaats van metaal. Dat is geen betrouwbare manier om 2A te voeren: het koper overleeft het misschien, de warmte hoopt zich op in de overgangen. Ik rekende het door en zag dat dit een brandgevaar was dat stond te gebeuren.
 - <span style="color:#e53935">**Probleem:**</span> Vaste helderheid. Welk materiaal of welke afstand ik ook testte, de lichtopbrengst bleef hetzelfde. Verschillende scenario's vragen om verschillende lichtniveaus, en ik had geen manier om bij te stellen.
 
 ### V3: LED-strip + PWM-controller (huidige versie)
 
 Dit is de versie die is gebleven:
 
-- <span style="color:var(--terminal-green)">**Upgrade:**</span> De kopertape vervangen door zuurstofvrij koperdraad 0.5 mm². Netjes geschikt voor 2 A met marge.
-- <span style="color:var(--terminal-green)">**Upgrade:**</span> PWM-controller voor helderheidsregeling over het volledige bereik. Nu kan ik overal daartussenin testen en elke keer dezelfde meting krijgen.
+- <span style="color:var(--terminal-green)">**Upgrade:**</span> De tape vervangen door zuurstofvrij koperdraad 0.5 mm²: echt metaal in elke overgang, en ruim boven de 2 A die de strip trekt.
+- <span style="color:var(--terminal-green)">**Upgrade:**</span> PWM-controller voor helderheidsregeling over het volledige bereik. Nu kan ik elk niveau daartussen testen en krijg ik elke keer dezelfde meting.
 - <span style="color:var(--terminal-green)">**Upgrade:**</span> Het binnenframe matzwart geschilderd. Omgevingslicht en interne reflecties hadden stilletjes elke meting vervuild.
 
-# Wat het platform oplevert
+# Resultaat
 
-De afgebouwde opstelling geeft me een betrouwbare, reproduceerbare omgeving om te vergelijken hoe materialen met licht omgaan:
-
-- <strong style="color:var(--accent)">Zij-aan-zij materiaalvergelijking</strong> onder identieke belichting: geen "ik denk dat deze er beter uitziet" meer
-- <strong style="color:var(--accent)">Beoordeling van oppervlakteafwerking</strong>: hoe verandert schuren, polijsten of textureren de manier waarop licht erdoorheen beweegt?
-- <strong style="color:var(--accent)">Analyse van dikte versus transmissie</strong>: hoeveel helderheid kost een verdubbeling van de plaatdikte nu echt?
-- <strong style="color:var(--accent)">Gecontroleerde helderheidssweeps</strong>: zie hoe materialen zich gedragen over het volledige dimbereik
-- <strong style="color:var(--accent)">Visuele documentatie</strong> van lichtverdelingspatronen waar ik bij toekomstige projecten naar kan terugverwijzen
+De afgebouwde opstelling geeft me een betrouwbare, reproduceerbare omgeving om te vergelijken hoe materialen met licht omgaan. <strong style="color:var(--accent)">Zij-aan-zij materiaalvergelijking</strong> onder identieke belichting maakt "ik denk dat deze er beter uitziet" overbodig. Ik kan <strong style="color:var(--accent)">oppervlakteafwerkingen beoordelen</strong> en zien wat schuren, polijsten of textureren doet met de weg die het licht aflegt. Ik kan een <strong style="color:var(--accent)">analyse van dikte versus transmissie</strong> doen en meten wat een verdubbeling van de plaatdikte werkelijk aan helderheid kost. Ik kan <strong style="color:var(--accent)">gecontroleerde helderheidssweeps</strong> draaien en een materiaal over het hele dimbereik volgen. En elke run laat <strong style="color:var(--accent)">visuele documentatie</strong> van de lichtverdeling achter waar ik bij het volgende project naar terugverwijs.
 
 ![Eindplatform](./03-final-platform-3d.png)
 
-## Wat heb ik geleerd
+# Wat ik heb geleerd
 
 Naast de CMF-data heeft het bouwen van dit platform een paar principes erin gestampt die op vrijwel elk ontwerp-bouwproject van toepassing zijn:
 
-- <strong style="color:var(--accent)">Stroomwaarden zijn belangrijk</strong>: de kopertape was een concrete herinnering dat prototypematerialen moeten worden beoordeeld op hun werkelijke elektrische belasting. Het maakt niet uit hoe netjes de build eruitziet als de bedrading ondergedimensioneerd is. Veiligheidsspecificaties zijn niet onderhandelbaar.
-- <strong style="color:var(--accent)">Je omgeving is onderdeel van je instrument</strong>: optische metingen staan of vallen met de beheersing van omgevingslicht. Die matzwarte verflaag (die misschien twintig minuten kostte) verbeterde de meetconsistentie meer dan elke andere afzonderlijke wijziging. Soms heeft de simpelste oplossing de grootste impact.
-- <strong style="color:var(--accent)">Isoleer één variabele tegelijk, anders ben je gewoon aan het gokken</strong>: de mogelijkheid om materiaal, dikte, afwerking of afstand onafhankelijk te veranderen is wat dit van "dingen voor een lamp houden" verandert in echt testen. Systematische vergelijking werkt alleen als je alles stil kunt houden behalve het ene ding dat je onderzoekt.
-- <strong style="color:var(--accent)">Gereedschap verdient zich terug over projecten heen</strong>: tijd steken in een goed testplatform voelt in het begin traag, maar elke toekomstige CMF-beslissing met doorschijnende materialen verwijst nu naar echte metingen in plaats van turen en hopen.
+<strong style="color:var(--accent)">Stroomwaarden zijn belangrijk</strong>: de koperfolietape was een concrete herinnering dat prototypematerialen tegen hun werkelijke elektrische belasting moeten worden beoordeeld, en dat een nette build niets betekent als de bedrading ondergedimensioneerd is. <strong style="color:var(--accent)">Je omgeving is onderdeel van je instrument</strong>: optische metingen staan of vallen met de beheersing van omgevingslicht, en twintig minuten met een spuitbus matzwart deden meer voor de meetconsistentie dan welke andere afzonderlijke ingreep ook. <strong style="color:var(--accent)">Isoleer één variabele tegelijk</strong>, anders ben je gewoon aan het gokken, want materiaal, dikte, afwerking of afstand onafhankelijk kunnen veranderen is precies wat dingen voor een lamp houden in een experiment verandert. En <strong style="color:var(--accent)">gereedschap verdient zich terug over projecten heen</strong>: het platform bouwen voelde traag, maar elke CMF-beslissing met doorschijnende materialen begint nu bij echte metingen in plaats van turen en hopen.
 
 ## Toekomstverbeteringen
 
-- <strong style="color:var(--accent)">Vervang handmatige PWM-sturing door gekalibreerde digitale sturing</strong>: De huidige opstelling vertrouwt op een handmatig ingestelde PWM-controller, wat volstaat voor verkennend testen maar enige variatie in lichtintensiteit tussen metingen introduceert. Een microcontroller zou nauwkeurig gedefinieerde PWM-signalen kunnen genereren en herhaalbare intensiteitsinstellingen kunnen opslaan, waardoor het mogelijk wordt om identieke lichtomstandigheden te reproduceren tussen tests. Dit zou de betrouwbaarheid van de data verbeteren en vergelijkingen tussen materialen rigoureuzer maken.
+<strong style="color:var(--accent)">Vervang handmatige PWM-sturing door gekalibreerde digitale sturing</strong>. De opstelling leunt op een handmatig ingestelde PWM-controller, wat volstaat voor verkennend testen maar enige variatie in lichtintensiteit tussen metingen laat staan. Een microcontroller kan nauwkeurig gedefinieerde PWM-signalen genereren en herhaalbare intensiteitsinstellingen opslaan, zodat dezelfde lichtomstandigheden tussen tests te reproduceren zijn. Dat maakt de data betrouwbaarder en de vergelijking tussen materialen strenger.

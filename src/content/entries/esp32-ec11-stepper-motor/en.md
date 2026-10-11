@@ -112,9 +112,9 @@ Pressing either encoder's push button toggles between modes. When you switch mod
 | PUL+      | GPIO4     | STEP pulse |
 | DIR+      | GPIO5     | Direction |
 | ENA+      | GPIO13    | Enable (optional) |
-| PUL-      | GND       |: |
-| DIR-      | GND       |: |
-| ENA-      | GND       |: |
+| PUL-      | GND       | n/a |
+| DIR-      | GND       | n/a |
+| ENA-      | GND       | n/a |
 
 ## DM430 to 42BL40 Stepper Motor
 
@@ -133,7 +133,7 @@ Pressing either encoder's push button toggles between modes. When you switch mod
 | OLED x2 | 3.3V    | ESP32   |
 | EC11 x2 | 3.3V    | ESP32   |
 | DM430   | 24V     | External PSU |
-| 42BL40  |:       | DM430 output |
+| 42BL40  | n/a     | DM430 output |
 
 # Debugging Journey
 
@@ -623,10 +623,6 @@ void loop() {
 
 This one fought me a bit: stepper drivers have their own personality: but everything came together:
 
-- Both EC11 encoders feed into the control loop with no dropped counts, and the mode-switching logic (with position sync on transition) prevents the motor from jumping when you toggle between MANUAL and AUTO.
-- Dual OLEDs display angle, step count, speed, and mode: I2C bus sharing works fine at these refresh rates.
-- The WebSocket dashboard mirrors the OLED data in real time, with the usual heartbeat and auto-reconnect.
-- The DM430 drives the 42BL40 smoothly at 1600 microsteps/rev. The motor sings a bit at certain speeds but that's just stepper harmonics: nothing a microstep tuning pass can't dial out.
-- FreeRTOS scheduling holds up: the 1000 Hz encoder task, the pulse-generation motor task, and the 10 Hz OLED refresh all coexist on Core 1 without starving each other.
+This one fought me a bit, because stepper drivers have their own personality, but everything came together. Both EC11 encoders feed into the control loop with no dropped counts, and the mode-switching logic with position sync on transition keeps the motor from jumping when you toggle between MANUAL and AUTO. The dual OLEDs display angle, step count, speed and mode, and I2C bus sharing works fine at these refresh rates. The WebSocket dashboard mirrors the OLED data in real time, with the usual heartbeat and auto-reconnect. The DM430 drives the 42BL40 smoothly at 1600 microsteps per revolution, and although the motor sings a bit at certain speeds, that is just stepper harmonics and nothing a microstep tuning pass can't dial out. FreeRTOS scheduling holds up as well: the 1000 Hz encoder task, the pulse-generation motor task and the 10 Hz OLED refresh all coexist on Core 1 without starving each other.
 
 This thing has graduated from "does the software work" to "actual motion control platform." The next round of upgrades I'm planning: a TCA9548A I2C multiplexer so I can run four independent OLEDs without address conflicts, HSV-based lighting control tied to motor position, and eventually closed-loop feedback with an encoder on the motor shaft.

@@ -30,8 +30,7 @@ translationKey: tinkercad-3ch-led-strip
 
 ![Tinkercad-circuit](./01-tinkercad-circuit.png)
 
-# Overzicht
-
+# Doel
 Voordat ik me vastlegde op echte hardware, wilde ik eerst een meerkanaals LED-controller prototypen in een simulatie. Tinkercad Circuits is verrassend capabel voor dit soort dingen: het geeft je een virtuele Arduino, NeoPixel-strips, potentiometers, knoppen en een werkende Serial Monitor, allemaal zonder ook maar iets te solderen.
 
 Het circuit stuurt drie onafhankelijke NeoPixel-strips aan. Met drie drukknoppen kies je welke strip "actief" is, en vier potentiometers verzorgen de kleurmenging: drie voor RGB, één voor de hoofdhelderheid. De geselecteerde strip wordt in realtime bijgewerkt, terwijl de andere twee hun laatste toestand vasthouden. Een kleine status-LED spiegelt de kleur van het actieve kanaal, zodat je in één oogopslag ziet welke strip je aan het bewerken bent.
@@ -60,7 +59,7 @@ void loop() {
 }
 ```
 
-De schaalformule voor helderheid `output = base_color × brightness / 255` houdt het simpel: elk kanaal wordt evenredig gedimd zonder dat de tint verschuift. Dat is belangrijker dan je zou denken; als je de ruwe waarden gewoon afkapt, krijg je kleurvervorming bij lage helderheid.
+De schaalformule voor helderheid `output = base_color × brightness / 255` houdt het simpel: elk kanaal wordt evenredig gedimd zonder dat de tint verschuift. Dat is belangrijker dan je zou denken: als je de ruwe waarden gewoon afkapt, krijg je kleurvervorming bij lage helderheid.
 
 # Toekomstige overweging
 
@@ -70,7 +69,4 @@ HSV (Hue, Saturation, Value) aansturen in plaats van RGB is waarschijnlijk intu�
 
 De Tinkercad-simulatie bevestigde dat de aanpak werkt voordat ik ook maar een cent aan hardware uitgaf:
 
-- Drie onafhankelijke LED-strips die elk hun eigen toestand in het geheugen bijhouden. Schakel je naar een andere strip, dan blijft de kleur gewoon staan.
-- Kanaalselectie via knoppen met nette ontdendering (de gesimuleerde knoppen van Tinkercad zijn, toegegeven, schoner dan echte knoppen).
-- Realtime RGB- en helderheidsregeling via vier potentiometers. De analoog-naar-digitaalomzetting van 0-1023 naar 0-255 is een simpele deling, maar werkt goed genoeg voor een simulatie.
-- De statusindicator-LED geeft duidelijke visuele feedback over welk kanaal actief is. Een klein detail, maar het zorgt ervoor dat de interface doordacht aanvoelt in plaats van giswerk.
+De Tinkercad-simulatie bevestigde dat de aanpak werkt voordat ik ook maar een cent aan hardware uitgaf. Drie onafhankelijke LED-strips houden elk hun eigen toestand in het geheugen bij, dus als je naar een andere strip schakelt blijft de kleur gewoon staan. De kanaalselectie gaat via knoppen met nette ontdendering, al zijn de gesimuleerde knoppen van Tinkercad toegegeven schoner dan echte. Vier potentiometers geven realtime RGB- en helderheidsregeling, en de analoog-naar-digitaalomzetting van 0–1023 naar 0–255 is een simpele deling, maar werkt goed genoeg voor een simulatie. De statusindicator-LED geeft duidelijke visuele feedback over welk kanaal actief is, een klein detail dat de interface doordacht laat aanvoelen in plaats van giswerk.

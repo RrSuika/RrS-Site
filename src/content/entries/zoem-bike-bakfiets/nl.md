@@ -38,7 +38,7 @@ ZOEM Bike is een Nederlandse bakfietsbouwer. Onze opdracht kwam van een van hun 
 
 Het project doorliep de volledige ontwikkelcyclus. We onderzochten bestaande marktoplossingen, vergeleken de haalbaarheid van verschillende componenten en analyseerden de pijnpunten van de klant in de praktijk. Die bevindingen werden vervolgens vertaald naar een geoptimaliseerd ontwerp, dat werd geproduceerd, gemonteerd en aan het einde van het project aan de klant geleverd.
 
-# Ontwerpdoelen
+# Eisen
 
 Het uitgangspunt was de huidige laadbak. Functioneel, maar beladen met jaren aan opgestapelde compromissen. De herontwerpopdracht kwam neer op vijf gerichte wijzigingen:
 
@@ -65,11 +65,11 @@ Het uitgangspunt was de huidige laadbak. Functioneel, maar beladen met jaren aan
 
 # Onderzoek en analyse
 
-Voordat er ook maar CAD-werk begon, rustte het herontwerp op drie inputs: onderzoek naar bestaande marktoplossingen, een vergelijking van componentopties op haalbaarheid en kosten, en dagelijkse interviews met de schilder (de klant die deze bak gaat gebruiken).
+Voordat ik ook maar CAD-werk begon, baseerde ik het herontwerp op drie inputs: onderzoek naar bestaande marktoplossingen, een vergelijking van componentopties op haalbaarheid en kosten, en dagelijkse interviews met de schilder (de klant die deze bak gaat gebruiken).
 
 ### Onderzoeksvragen
 
-Elke ontwerpbeslissing moest antwoord geven op een van deze vijf vragen, opgeschreven vóór de eerste schets:
+We schreven vijf vragen op vóór de eerste schets, en elke ontwerpbeslissing moest er een van beantwoorden:
 
 1. Hoe kiezen we een gasveer: makkelijk te openen, zacht bij het sluiten?
 2. Hoe kan het dagelijks gebruik gebruiksvriendelijker worden?
@@ -79,17 +79,9 @@ Elke ontwerpbeslissing moest antwoord geven op een van deze vijf vragen, opgesch
 
 ### Ontwerpdetails
 
-De klant beantwoordde onze vragen rechtstreeks. De antwoorden hieronder stuurden verschillende ontwerpkeuzes:
+De klant beantwoordde onze vragen rechtstreeks, en die antwoorden stuurden verschillende ontwerpkeuzes. <strong style="color:var(--accent)">Het dekselgewicht</strong> is het startpunt van de gasveerspecificatie: ongeveer 10–12 kg, gemeten in SolidWorks, en het <strong style="color:var(--accent)">openingsbereik</strong> moet zo ver gaan als het deksel toelaat. <strong style="color:var(--accent)">Het uitgangsmateriaal</strong> is aluminium plaatmetaal uit de 6XXX-serie voor het deksel, wat sterkte combineert met lasbaarheid en goed anodeert, op een <strong style="color:var(--accent)">frame</strong> van vierkante stalen buis die in vorm is gelast.
 
-- <strong style="color:var(--accent)">Dekselgewicht</strong>: ongeveer 10–12 kg, gemeten in SolidWorks. Hier begint de gasveerspecificatie.
-- <strong style="color:var(--accent)">Openingsbereik</strong>: de gebruiker wil dat het deksel zo ver mogelijk opengaat.
-- <strong style="color:var(--accent)">Uitgangsmateriaal</strong>: aluminium plaatmetaal uit de 6XXX-serie voor het deksel: combineert sterkte met lasbaarheid en laat zich goed anodiseren; staal voor het frame.
-- <strong style="color:var(--accent)">Frameconstructie</strong>: vierkante stalen buis, in vorm gelast.
-- <strong style="color:var(--accent)">Lekgeschiedenis</strong>: het vorige ontwerp liet water binnen bij het scharnier; de oude oplossing was overgedimensioneerd.
-- <strong style="color:var(--accent)">Dekselhelling</strong>: toegestaan, niet verplicht. Zonder helling loopt regenwater er vanzelf af.
-- <strong style="color:var(--accent)">Corrosie</strong>: aluminium onderdelen hebben bescherming nodig (geanodiseerd of gegalvaniseerd); poedercoaten is ook een optie.
-- <strong style="color:var(--accent)">Klinknagels</strong>: de huidige popnagels zijn mogelijk niet waterdicht genoeg; gesloten blindklinknagels zien er beter uit.
-- <strong style="color:var(--accent)">Extra</strong>: de bedrading van accu naar koplamp verbergen.
+De rest kwam voort uit wat er eerder mis was gegaan. Het vorige ontwerp liet water binnen bij het scharnier en de oude oplossing daarvoor was overgedimensioneerd, dus deze keer kreeg de afdichting echte aandacht. Een <strong style="color:var(--accent)">dekselhelling</strong> is toegestaan maar niet verplicht, want zonder helling loopt regenwater er toch vanzelf af. <strong style="color:var(--accent)">Aluminium onderdelen hebben bescherming nodig</strong>, of dat nu anodiseren, galvaniseren of poedercoaten is, en de huidige <strong style="color:var(--accent)">popnagels</strong> zijn mogelijk niet waterdicht genoeg, dus gesloten blindklinknagels lijken de betere keuze. Eén <strong style="color:var(--accent)">extra</strong> wens van de klant: de bedrading van accu naar koplamp verbergen.
 
 ### Gebruikersprofiel
 
@@ -151,7 +143,7 @@ De bak doorliep vier grote versies voordat het ontwerp vaststond. Elke ronde pak
 
 ## Evaluatie van de gasveren
 
-De veer werd gespecificeerd op basis van metingen en geverifieerd met behulp van een rekenblad. De eindassemblage gebruikt twee gasveren van 250 N om het deksel over de volledige slag vast te houden:
+Ik specificeerde de veer op basis van metingen en controleerde hem met een rekenblad. De eindassemblage gebruikt twee gasveren van 250 N om het deksel over de volledige slag vast te houden:
 
 ![Gasveertest en berekening](./17-ergonomics-eval.jpg)
 
@@ -176,15 +168,12 @@ Van model tot metaal: de eindrender en het echte exemplaar op de weg:
   <div><img src="./step-09-test-run.jpg" alt="Het echte exemplaar op de weg" /><p>Het echte exemplaar: testrit</p></div>
 </div>
 
-# Wat ik hieruit meeneem
+# Wat ik heb geleerd
 
 Dit was het eerste project waarin het einde van het proces een klant was die op het resultaat reed.
 
-- <strong style="color:var(--accent)">Plaatmetaal is een andere ontwerptaal</strong>: buigradii, lasnaden en poedercoattoleranties beperken de geometrie allemaal al ver voordat esthetiek ter sprake komt. Ontwerpen in SolidWorks en bouwen in staal zijn twee heel verschillende gesprekken.
-- <strong style="color:var(--accent)">Ontwerp is een taal van balans</strong>: elke onderdeelkeuze (een scharnier, een gasveer, een plaatdikte) weegt kosten af tegen levensduur, bewerkbaarheid, levertijd en de dagelijkse ervaring van de gebruiker. Het beste component op papier is zelden het beste component in het product.
-- <strong style="color:var(--accent)">Teams van twee hebben een gedeelde werkelijkheid nodig</strong>: met z'n tweeën moest elke schets en elke beslissing meteen leesbaar zijn voor de ander. Documentatie was geen corvee meer, maar werd de enige manier waarop we synchroon bleven.
-- <strong style="color:var(--accent)">Afwerken betekent het eindresultaat testen</strong>: de definitieve gasveren (twee exemplaren van 250 N) werden opnieuw geselecteerd toen het deksel eenmaal echt bestond. Specificaties overleven het contact met de werkelijkheid alleen als je ze aan het einde opnieuw verifieert.
-- <strong style="color:var(--accent)">De gasveerkracht was de echte technische puzzel</strong>: het deksel weegt op zichzelf zo'n twaalf kilo, maar grofweg dertig met de ladder erbovenop. Beide situaties komen elke dag voor, en het gat ertussen is groot; het kiezen van één veerkracht was dus een echt complexe beslissing.
-- <strong style="color:var(--accent)">Ideale waarden zijn slechts een startpunt</strong>: de theoretische kracht in newton en de voorspelde afmetingen van een gasveer berekenen is nuttig, maar er echt een installeren, het deksel openen en voelen hoe hij zich gedraagt, leerde me meer dan welk ideaal getal in een spreadsheet dan ook.
+<strong style="color:var(--accent)">Plaatmetaal is een andere ontwerptaal</strong>: buigradii, lasnaden en poedercoattoleranties beperken de geometrie ruim voordat esthetiek ter sprake komt, en ontwerpen in SolidWorks lijkt in niets op bouwen in staal. <strong style="color:var(--accent)">Ontwerp is ook een taal van balans</strong>, want elke onderdeelkeuze, of het nu een scharnier, een gasveer of een plaatdikte is, weegt kosten af tegen levensduur, maakbaarheid, levertijd en de dagelijkse ervaring van de gebruiker, en het beste onderdeel op papier is zelden het beste onderdeel in het product. <strong style="color:var(--accent)">Teams van twee hebben een gedeelde werkelijkheid nodig</strong>: met z'n tweeën moest elke schets en elke beslissing meteen leesbaar zijn voor de ander, en documentatie werd van een corvee de enige manier waarop we synchroon bleven.
+
+<strong style="color:var(--accent)">Afwerken betekent het eindresultaat testen</strong>, en de definitieve gasveren, twee exemplaren van 250 N, werden opnieuw geselecteerd nadat het deksel echt was, want een specificatie doorstaat de confrontatie met de werkelijkheid alleen als je hem op het einde opnieuw verifieert. <strong style="color:var(--accent)">De gasveerkracht was de echte technische puzzel</strong>: het deksel weegt op zichzelf zo'n twaalf kilo maar ongeveer dertig met de ladder erop, beide situaties komen dagelijks voor, en de kloof ertussen is enorm, dus één veerkracht kiezen was een oprecht complexe beslissing. En <strong style="color:var(--accent)">ideale waarden zijn slechts een startpunt</strong>: de theoretische kracht in newton en de voorspelde afmetingen van een gasveer berekenen is nuttig, maar er een installeren, het deksel openen en voelen hoe hij zich gedraagt leerde me meer dan welk ideaal getal in een spreadsheet dan ook.
 
 *Speciale dank aan [Lino Metaalwaren](https://lino-metaal.nl/) voor het sponsoren van het roestvrijstalen pianoscharnier voor dit project.*

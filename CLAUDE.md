@@ -21,6 +21,7 @@ Personal portfolio (Astro 7, static, no integrations), deployed to Cloudflare Pa
 > - `docs/tech-debt.md` — known issues and deliberate leftovers.
 > - `docs/pitfalls.md` — cross-module traps: build/measure/encoding. Read before writing any measurement script.
 > - `docs/writing-style.md` — en/zh/nl copy conventions. **Hard rules; read before rewriting any copy.**
+> - `docs/project-writing-guide.md` — how to write/rewrite a Project or Lab entry: reference-site techniques, measured voice baselines, the A–E skeletons, the de-AI trigger list, **the technical credibility audit**, domestic/terminology rules, and the rendering-layer constraints. **Read before writing or rewriting any entry.**
 > - `docs/changelog.md` — the v1.x version log. Only for tracing a past change.
 >
 > When code and docs disagree, **the code wins** — and the doc gets corrected in the same task.

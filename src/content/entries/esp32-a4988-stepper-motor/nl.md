@@ -1,7 +1,7 @@
 ---
 title: ESP32 + A4988 24V-stappenmotorbesturing
 date: 2026-09-15
-description: De HSV-kanalen worden generieke Rails; Rail 1 stuurt via een A4988 een 24V-stappenmotor aan, non-blocking, terwijl encoders en webpagina gewoon meedraaien.
+description: Ik heb de drie HSV-kleurkanalen omgebouwd tot generieke Rails en Rail 1 een A4988 met 24V-stappenmotor laten aansturen, terwijl encoders en webpagina blijven meedraaien.
 
 type: lab
 category: Embedded systeem
@@ -33,11 +33,11 @@ translationKey: esp32-a4988-stepper-motor
 
 # Wat ik heb gebouwd
 
-De HSV-tests promoveren naar motion control. De drie HSV-kanalen werden drie generieke besturingskanalen: Rail 1, Rail 2 en Rail 3, elk 0-100, elk nog steeds bediend door zijn eigen encoder en webslider. Wat veranderde is wat er aan het einde hangt. Rail 1 mapt nu op een stappenmotor via een A4988-driver op een 24V-voeding, en het geheel blijft non-blocking: de OLED's en de webpagina blijven werken terwijl de motor draait.
+De HSV-opstelling was een kleurmeng-oefening: drie kanalen, drie knoppen, drie schermen. Dit is diezelfde opstelling met de kleur eruit en een motor eraan vast.
 
-De ESP32-naar-A4988-bedrading: GPIO 12 ── DIRECTION, GPIO 13 ── STEP, 3.3V ── SLEEP en RESET, GND ── MS1, MS2, MS3 en ENABLE.
+De drie HSV-kanalen werden drie generieke kanalen, Rail 1 tot en met Rail 3, elk nog steeds 0–100, elk nog steeds bediend door zijn eigen encoder en zijn eigen slider op de webpagina. Alleen wat eraan hangt is veranderd. Ik heb Rail 1 aan een A4988-driver en een 24V-stappenmotor gehangen, en wat ik eigenlijk wilde weten was of de rest van het systeem bleef draaien terwijl de motor beweegt. Dat doet het: GPIO 13 blijft stappulsen uitsturen terwijl de OLED's verversen, de encoders tellen en de webpagina antwoordt. Dat was het punt van deze test.
 
-Alleen Rail 1 hangt op dit moment aan een motor. Rail 2 en 3 blijven vrij voor toekomstige assen.
+Er zijn maar twee nieuwe pinnen. GPIO 12 doet de richting, GPIO 13 doet de stap. SLEEP en RESET hangen aan 3.3V, de drie microstepping-pinnen en ENABLE aan massa, en op Rail 2 en 3 zit nog niets aangesloten.
 
 # Hardware
 
@@ -51,9 +51,7 @@ Alleen Rail 1 hangt op dit moment aan een motor. Rail 2 en 3 blijven vrij voor t
 | TCA9548A | 1 | I2C-multiplexer |
 | 1.3" SH1106 OLED + EC11-module | 3 | Rail-weergave en -bediening |
 
-De motor draait op zijn eigen voeding. De ESP32 levert alleen de logische signalen.
-
-# Pin-indeling
+De motor draait op zijn eigen 24V-voeding. De ESP32 stuurt alleen de logische signalen.
 
 | ESP32-GPIO | Functie |
 |---|---|
@@ -68,11 +66,9 @@ De motor draait op zijn eigen voeding. De ESP32 levert alleen de logische signal
 | GPIO 12 | A4988 DIRECTION |
 | GPIO 13 | A4988 STEP |
 
-De A4988 kost twee nieuwe pinnen: 12 voor richting, 13 voor stap. De rest blijft exact zoals hij op de HSV-opstelling zat.
+Afgezien van die twee zit elke pin precies waar hij in de HSV-opstelling zat.
 
 # A4988-bedrading
-
-## Logische en besturingspinnen
 
 | A4988-pin | Aansluiting | Functie |
 |---|---|---|
@@ -85,29 +81,17 @@ De A4988 kost twee nieuwe pinnen: 12 voor richting, 13 voor stap. De rest blijft
 | MS3 | GND | Full-step-modus |
 | ENABLE | GND | Driver continu ingeschakeld |
 
-## Voeding
+De A4988 heeft twee voedingsdomeinen, en die uit elkaar houden is de hele truc. VDD krijgt de 3.3V van de ESP32 voor de logica. VMOT krijgt de externe 24V voor de motor. De min van de 24V gaat naar de motorzijde-GND van de A4988, en de ESP32-GND komt op datzelfde punt uit, zodat STEP en DIRECTION een referentie met de driver delen. De 24V-voeding raakt nooit de 3.3V- of 5V-pinnen van de ESP32.
 
-De A4988 heeft twee voedingsdomeinen. VDD krijgt de 3.3V van de ESP32 voor de logica. VMOT krijgt de externe 24V voor de motor. De min van de 24V-voeding gaat naar de motorzijde-GND van de A4988, en de ESP32-GND sluit op hetzelfde punt aan, zodat STEP en DIRECTION een gezamenlijke referentie met de driver delen.
+Vlak bij de VMOT-ingang zit een elco van 47µF / 50V, plus naar VMOT, min naar GND. Hij geeft de motorvoeding lokale energieopslag en dempt de spanningsschommelingen die het schakelen van de driver veroorzaakt. 50V op een 24V-rail is ruim genoeg.
 
-De 24V-voeding raakt nooit de 3.3V- of 5V-pinnen van de ESP32.
+De motor heeft vier draden en twee spoelen: 1A/1B voor spoel A, 2A/2B voor spoel B. Draadkleuren verschillen per motor, dus de betrouwbare manier om ze te pairen is een multimeter. Twee draden van dezelfde spoel geven een meetbare weerstand, draden van verschillende spoelen meten open.
 
-## VMOT-elco
-
-Een elco van 47µF / 50V zit vlak bij de VMOT-ingang van de A4988, plus naar VMOT, min naar GND. Hij geeft de motorvoeding lokale energieopslag en dempt de spanningsschommelingen die het schakelen van de driver veroorzaakt. De 50V-rating laat ruime marge over de 24V-rail.
-
-## Stappenmotor
-
-De motor heeft vier draden, twee spoelen: 1A/1B voor spoel A, 2A/2B voor spoel B. Draadkleuren verschillen per motor, dus de betrouwbare manier om ze te paren is een multimeter: draden van dezelfde spoel geven een meetbare weerstand, draden van verschillende spoelen meten open.
-
-## Microstepping
-
-De eerste test draait op full-step, met MS1/MS2/MS3 allemaal aan GND, en dat is bewust. De relatie tussen STEP-pulsen en beweging blijft overzichtelijk, en dat heeft een eerste test nodig. Microstepping kan later, als soepelheid of fijne positionering er echt toe doet.
+De eerste test draaide ik bewust op full-step, met MS1, MS2 en MS3 allemaal aan massa. Full-step houdt de relatie tussen STEP-pulsen en beweging overzichtelijk, en dat is wat een eerste test nodig heeft. Microstepping kan wachten tot soepelheid of fijne positionering echt gaat tellen.
 
 # Rail-architectuur
 
-De HSV-variabelen hVal, sVal en vVal werden rail1Val, rail2Val en rail3Val. Elke Rail loopt van 0 tot 100. Encoder 1 stuurt Rail 1, encoder 2 Rail 2, encoder 3 Rail 3; de websliders schrijven dezelfde waarden; elke OLED toont zijn Rail. De drie kanalen weten niets meer van kleur.
-
-# Rail 1 naar motorpositie
+De HSV-variabelen hVal, sVal en vVal werden rail1Val, rail2Val en rail3Val. Elke Rail loopt van 0–100. Encoder 1 stuurt Rail 1, encoder 2 stuurt Rail 2, encoder 3 stuurt Rail 3. De websliders schrijven dezelfde waarden, en elke OLED toont zijn eigen Rail. De drie kanalen weten niets meer van kleur.
 
 Rail 1 mapt lineair op een doelaantal stappen:
 
@@ -118,44 +102,42 @@ Rail 1 = 50  → 500 stappen
 Rail 1 = 100 → 1000 stappen
 ```
 
-Het plafond van 1000 stappen is een testwaarde, geen volledige omwenteling. De echte rotatie hangt af van de staphoek van de motor en de microstepping-instelling.
+Dat plafond van 1000 stappen is een testwaarde, geen volledige omwenteling. Hoe ver de as echt draait hangt af van de staphhoek van de motor en de microstepping-instelling.
 
 # Motorsoftware
 
-Twee pinnen doen het werk: STEP en DIRECTION. De firmware houdt twee posities bij:
+STEP en DIRECTION doen al het werk. De firmware houdt twee posities bij:
 
 ```cpp
 long currentStep;
 long targetStep;
 ```
 
-targetStep is de positie die Rail 1 aanvroeg, currentStep is waar de software denkt dat de motor staat. Verschillen de twee, dan geeft de controller STEP-pulsen tot ze gelijk zijn, met DIRECTION aan de kant die voorloopt.
+targetStep is waar Rail 1 de motor naartoe wilde hebben, currentStep is waar de software denkt dat hij staat. Verschillen ze, dan pulst de controller STEP tot ze gelijk zijn, met DIRECTION aan de kant die voorloopt.
 
-Het stappen zelf is non-blocking. De hoofdlus doorloopt de webserver, de encoderverwerking, één motorstap per interval (1000µs) en de OLED-refresh, en herhaalt dat. De webpagina en de andere twee encoders blijven de hele tijd responsief terwijl de motor beweegt. De structuur is ook klaar voor drie A4988's later.
+Niets daarvan blokkeert de hoofdlus. Elke ronde doet de webserver, de encoderverwerking, één motorstap per 1000µs en een OLED-verversing, en begint dan opnieuw. De webpagina en de andere twee encoders blijven de hele tijd responsief terwijl de motor beweegt. Dezelfde structuur kan later drie A4988's aan, zonder herschrijven.
 
 # Webinterface
 
-Zelfde paginaconcept als de HSV-opstelling, nu met drie Rail-sliders (0-100). Rail 1 in de browser verplaatsen verandert het motordoel precies zoals aan encoder 1 draaien. Het /get-endpoint geeft de actuele Rail-waarden plus currentStep en targetStep, en de browser synchroniseert daar periodiek tegenaan.
+De pagina houdt de opzet van de HSV-opstelling, met drie Rail-sliders in plaats van de kleurregeling. Rail 1 in de browser verplaatsen verandert het motordoel precies zoals aan encoder 1 draaien. Het /get-endpoint geeft de actuele Rail-waarden plus currentStep en targetStep, en de browser synchroniseert daar op een timer tegenaan.
 
-# Testprocedure
+# Test en resultaat
 
-Geen volledige range-commando's bij de eerste run. Inschakelen en elke fase controleren: ESP32-boot, OLED-init, TCA9548A-communicatie, encoderinvoer, WiFi-verbinding, A4988-besturingssignalen. Daarna Rail 1 in kleine stappen: 1, 5, 10, 20, 50. De motor volgde ze allemaal.
+Bij de eerste run stuurde ik geen volledige-bereik-commando's. Ik zette hem aan en liep fase voor fase na: ESP32-boot, OLED-initialisatie, TCA9548A-communicatie, encoderinvoer, WiFi-verbinding en pas daarna de besturingssignalen van de A4988. Pas toen dat allemaal klopte liet ik Rail 1 in kleine stapjes oplopen, 1, 5, 10, 20, 50, en de motor volgde ze allemaal.
 
-# Resultaat
+De test is geslaagd. De ESP32 stuurde de A4988 aan via GPIO 12 en 13, de A4988 dreef de 24V-stappenmotor, en de bestaande driekanaals-UI bleef de hele tijd werken. Rail 1 bewoog zowel vanaf de EC11-knop als vanaf de webpagina, met de waarde op OLED 1.
 
-De test is geslaagd. De ESP32 stuurde de A4988 aan via GPIO 12/13, de A4988 dreef de 24V-stappenmotor aan, en de bestaande driekanaals-UI bleef de hele tijd werken. Rail 1 bewoog zowel via de EC11-knop als via de webpagina, met de waarde op OLED 1. Rail 2 en 3 staan erbij als onafhankelijke kanalen voor toekomstige motoren of andere actuatoren.
+Het bord zit nu in het midden van twee takken: ESP32 ── TCA9548A ── 3× (OLED + EC11) aan de ene kant, en ESP32 ── A4988 ── 42mm-stappenmotor aan de andere.
 
-# Huidige architectuur
-
-ESP32 ── TCA9548A-multiplexer ── 3× OLED + EC11-modules; aan de andere kant ESP32 ── A4988-motordriver ── 42mm-stappenmotor.
+Rail 2 en 3 zijn nog steeds onafhankelijke kanalen zonder iets eraan, vrijgehouden voor latere motoren of andere actuatoren.
 
 # Veiligheidsnotities
 
-- Motorvoeding en logische voeding blijven gescheiden. 24V gaat alleen naar de motoringang van de A4988; de ESP32 levert de logische rail.
-- De massa's zijn gemeenschappelijk, zodat STEP en DIRECTION een referentie delen.
-- De elco zit er met de juiste polariteit in: + naar VMOT, − naar GND. Hij is 50V-rated op een 24V-rail.
-- Nooit de motor los- of aankoppelen terwijl de driver onder spanning staat. De inductieve last gooit spanningstransiënten op die de driver kunnen slopen.
-- Stel de stroomlimiet van de A4988 in op de nominale stroom van de motor vóór langdurig gebruik.
+- Motorvoeding en logische voeding blijven gescheiden. 24V komt alleen op de motoringang van de A4988; de logische rail komt van de ESP32.
+- De massa's zijn gemeenschappelijk, zodat STEP en DIRECTION een referentie met de driver delen.
+- De elco zit er met de juiste polariteit in, plus naar VMOT en min naar GND, en hij is 50V-rated op een 24V-rail.
+- Koppel de motor nooit los of aan terwijl de driver onder spanning staat. De inductieve last gooit spanningstransiënten op die de driver slopen.
+- Zet de stroomlimiet van de A4988 op de nominale stroom van de motor voordat je hem langere tijd laat lopen.
 
 # Volgende stap
 

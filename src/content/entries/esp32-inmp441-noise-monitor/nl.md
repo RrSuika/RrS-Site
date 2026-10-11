@@ -34,8 +34,7 @@ translationKey: esp32-inmp441-noise-monitor
 
 ![Opstelling](./01-setup.png)
 
-# Overzicht
-
+# Doel
 Ik wilde een manier om het volledige frequentiebeeld van mijn werkplek te zien. Dus pakte ik een INMP441 I2S-microfoon, sloot die aan op een ESP32 en schreef ik zelf de FFT-pipeline. Het eindresultaat is een klein apparaatje dat op mijn bureau staat, audio in realtime binnenhaalt, een FFT van 512 punten draait en alles via WiFi naar een browserdashboard streamt. Het toont me het huidige dB-niveau, een staafdiagram van het 64-bins spectrum en een voortschrijdende geschiedenis van 30 minuten geluidsniveaus. Het is verrassend verslavend om naar te kijken: je krijgt echt een gevoel voor welke apparaten het luidst zijn in de kamer.
 
 # Systeemarchitectuur
@@ -60,7 +59,7 @@ INMP441 → I2S → ESP32 → FFT → WebSocket → Browser Dashboard
 # Belangrijkste functies
 
 - **Realtime dB SPL**-meting met een statusindicator die wisselt tussen Quiet, Normal, Warning en Danger. Ik heb de drempelwaarden ingesteld op basis van wat in mijn kamer goed aanvoelde: jouw ervaring kan anders zijn.
-- **Frequentiespectrum met 64 bins**, getoond als geanimeerde balken, logaritmisch verdeeld van 20 Hz tot 20 kHz. De logaritmische verdeling is erg belangrijk omdat onze oren zo werken: lineaire bins zouden het grootste deel van het display verspillen aan hoge frequenties waar we niets om geven.
+- **Frequentiespectrum met 64 bins**, getoond als geanimeerde balken, logaritmisch verdeeld in plaats van lineair. De logaritmische verdeling is erg belangrijk omdat onze oren zo werken: lineaire bins zouden het grootste deel van het display verspillen aan hoge frequenties waar we niets om geven. Wat het bereik beperkt is de samplefrequentie. Bij 16 kHz ligt het bruikbare plafond op 8 kHz en is één FFT-bin 31 Hz breed, dus de linkerkant van de as belooft meer resolutie dan de data erachter heeft; de INMP441 zelf begint pas bij 60 Hz.
 - **Dominante frequentiedetectie**: vindt de luidste frequentie in elk frame. Handig om dingen te spotten zoals een koelkastcompressor die op een specifieke toon aanslaat.
 - **Geluidsgeschiedenis** met een voortschrijdende buffer van 30 minuten, één keer per seconde gesampled. De ESP32 houdt alle 1800 punten in het RAM-geheugen en stuurt de meest recente 600 naar de browser, zodat de JSON niet absurd groot wordt.
 - **Kalibratie-offset** toegankelijk vanuit de webinterface: nuttig omdat de INMP441 niet in de fabriek is gekalibreerd voor absolute SPL. Ik stel hem op nul met een telefoonapp en noem dat goed genoeg.

@@ -38,7 +38,7 @@ ZOEM Bike is a Dutch cargo bike builder. Our assignment came from one of their c
 
 The project ran through the full development cycle. We researched existing market solutions, compared the feasibility of different components, and analyzed the client's pain points in the field. Those findings shaped an optimized design that we then produced, installed and delivered to the client at the end of the project.
 
-# Design Goals
+# Requirements
 
 The starting point was the current cargo box. Functional, but carrying years of accumulated compromises. The redesign brief came down to five targeted changes:
 
@@ -65,11 +65,11 @@ The starting point was the current cargo box. Functional, but carrying years of 
 
 # Research & Analysis
 
-Before any CAD work started, the redesign rested on three inputs: research into existing market solutions, a comparison of component options for feasibility and cost, and daily interviews with the painter: the client who would use this box.
+Before I started any CAD work, I based the redesign on three inputs: research into existing market solutions, a comparison of component options on feasibility and cost, and daily interviews with the painter who would actually use the box.
 
 ### Research Questions
 
-Every design decision had to answer one of these five questions, written down before the first sketch:
+We wrote five questions down before the first sketch, and every design decision had to answer one of them:
 
 1. How do we choose a gas spring that's easy to open and gentle when closing?
 2. How can we make daily use more user-friendly?
@@ -81,15 +81,9 @@ Every design decision had to answer one of these five questions, written down be
 
 The client answered our questions directly. The answers below steered several design choices:
 
-- <strong style="color:var(--accent)">Lid weight</strong>: around 10–12 kg, measured in SolidWorks. The gas spring spec starts here.
-- <strong style="color:var(--accent)">Opening range</strong>: the user wants the lid to open as far as possible.
-- <strong style="color:var(--accent)">Material stock</strong>: 6XXX-series aluminium sheet metal for the lid: combines strength with weldability and takes anodizing well; steel for the frame.
-- <strong style="color:var(--accent)">Frame construction</strong>: square steel tube, welded into shape.
-- <strong style="color:var(--accent)">Leak history</strong>: the previous design let water in around the hinge; the old solution was over-engineered.
-- <strong style="color:var(--accent)">Lid slope</strong>: allowed, not required. Without a slope, rainwater drains off naturally.
-- <strong style="color:var(--accent)">Corrosion</strong>: aluminium parts need protection (anodized or galvanized); powder coating is also an option.
-- <strong style="color:var(--accent)">Rivets</strong>: the current pop rivets may not be waterproof enough; closed-end blind rivets look better.
-- <strong style="color:var(--accent)">Extra</strong>: hide the battery-to-headlight wiring.
+The client answered our questions directly, and those answers steered several design choices. <strong style="color:var(--accent)">Lid weight</strong> is the starting point for the gas spring spec: around 10–12 kg, measured in SolidWorks, and the <strong style="color:var(--accent)">opening range</strong> should be as far as the lid will go. <strong style="color:var(--accent)">Material stock</strong> is 6XXX-series aluminium sheet metal for the lid, which combines strength with weldability and takes anodizing well, on a <strong style="color:var(--accent)">frame</strong> of square steel tube welded into shape.
+
+The rest came out of what had gone wrong before. The previous design let water in around the hinge and the old fix for that was over-engineered, so sealing got real attention this time. A <strong style="color:var(--accent)">lid slope</strong> is allowed but not required, because without one the rainwater drains off naturally anyway. <strong style="color:var(--accent)">Aluminium parts need protection</strong>, whether anodized, galvanized or powder coated, and the current <strong style="color:var(--accent)">pop rivets</strong> may not be waterproof enough, so closed-end blind rivets look like the better choice. One <strong style="color:var(--accent)">extra</strong> request from the client: hide the wiring that runs from the battery to the headlight.
 
 ### User Profile
 
@@ -122,7 +116,7 @@ The client answered our questions directly. The answers below steered several de
 </div>
 <div class="tab-panel active"><h4>Corrosion</h4><p>When aluminium makes contact with stainless steel fasteners, corrosion can occur. This is known as galvanic corrosion. It happens when two materials, an anode and a cathode, come into contact with each other through an electrolyte (rainwater is enough).</p><p><strong>Final choice:</strong> powder coating for both the steel frame and the aluminium parts. Process: sheet metal processed and welded at the factory (our workshop cannot weld aluminium) → shipped back for assembly and testing → holes drilled (after this point no further changes were possible) → sent to another factory for powder coating → shipped back for final assembly. The goal is for any corrosion to stay within acceptable limits over the product's expected service life.</p><p class="src">Source: 1. Why Can't You Use Stainless Steel and Aluminum Together?</p></div>
 <div class="tab-panel"><h4>Hinge types</h4><p><strong>Pivot hinge</strong>: 10–15 years service life; hidden design; load capacity; aesthetic.</p><p><strong>Piano hinge</strong>: 60 years service life; evenly distributed weight; load capacity; sturdiness.</p><p><strong>Butt / heavy-duty hinge</strong>: 5–7 years service life; cheap; load capacity.</p><p><strong>Final choice:</strong> stainless steel piano hinge: long service life with load distributed evenly along the full length, satisfying the brief's requirement for stainless, waterproof and rust-resistant hardware. Sponsored by <a href="https://lino-metaal.nl/">Lino Metaalwaren</a>.</p><p class="src">Source: 1. Camax Hardware 2. China industrial hinges factory</p></div>
-<div class="tab-panel"><h4>Rivet choice</h4><p>POP closed-end blind rivets offer up to 23% greater tensile strength than POP open-end rivets, and are completely sealed against liquids and gas, even under pressure. Closed-end rivets are available in a variety of rivet/mandrel material combinations.</p><p>Waterproofing was checked against the IPX rating scale: IPX2 (dripping water), IPX4 (splashing water), IPX6 (powerful water jets, 15 psi for 3 minutes, 100 litres per minute), IPX6K (increased pressure), IPX7 (immersion).</p><p><strong>Final choice:</strong> closed-end blind rivets: higher tensile strength and fully sealed against liquids and gas, verified against the IPX scale.</p><p class="src">Source: 1. The Difference Between Open and Closed End Blind Rivets 2. IPX Waterproof Rating Chart (Storyteller Tech)</p></div>
+<div class="tab-panel"><h4>Rivet choice</h4><p>POP closed-end blind rivets offer up to 23% greater tensile strength than POP open-end rivets, and are completely sealed against liquids and gas, even under pressure. Closed-end rivets are available in a variety of rivet/mandrel material combinations.</p><p>Waterproofing was checked against the IPX rating scale: IPX2 (dripping water), IPX4 (splashing water), IPX6 (powerful water jets, 15 psi for 3 minutes, 100 liters per minute), IPX6K (increased pressure), IPX7 (immersion).</p><p><strong>Final choice:</strong> closed-end blind rivets: higher tensile strength and fully sealed against liquids and gas, verified against the IPX scale.</p><p class="src">Source: 1. The Difference Between Open and Closed End Blind Rivets 2. IPX Waterproof Rating Chart (Storyteller Tech)</p></div>
 <div class="tab-panel"><h4>Gas springs</h4><p>Suppliers compared: Amatec Technische Veren (standard gas springs with fixed eyes), Tevema, Gasveerwinkel (full range online, including a configurator), and Spring Masters (from stock). A ball hinge (kogelscharnier) was also considered as an alternative mounting option.</p><p><strong>Final choice:</strong> two 250 N gas springs holding the 10–12 kg lid through its full travel; re-selected and verified during final assembly.</p><p class="src">Source: 1. Gasveerwinkel 2. Gasveerexpert 3. Amatec 4. Tevema 5. Spring Masters</p></div>
 <div class="tab-panel"><h4>Fastening</h4><p><strong>Well nut</strong>: vibration-resistant, waterproof, corrosion-resistant; limited load capacity, sensitive to wear and loosening, not suitable for heavy work.</p><p><strong>Closed-end blind rivet</strong>: vibration-resistant, waterproof, corrosion-resistant, load capacity; not serviceable, corrosion risk between metals and moisture, weaker than welding.</p><p><strong>Sealing screw</strong>: vibration-resistant, waterproof, corrosion-resistant, load capacity, serviceable; expensive, O-ring service life.</p><p><strong>Final choice:</strong> the square-tube steel frame was welded into shape, the hinge was fixed with rivets as specified in the brief, and the Alupanel shell was riveted to the steel frame. The rivets were tested and confirmed waterproof.</p><p class="src">Source: 1. Well Nuts vs Nutserts 2. What Are Sealing Screws? (ACCU)</p></div>
 <div class="tab-panel"><h4>Sealing &amp; Waterproofing</h4><p>Watertightness is built from three layers: waterproof rivets, silicone sealant (glass adhesive) along the seams, and the frame geometry itself: the lid edge is shaped like a roof gutter, so rainwater runs along it and off the sides instead of flowing into the box.</p></div>
@@ -151,7 +145,7 @@ The box went through four major versions before the design froze. Each round add
 
 ## Gas Spring Evaluation
 
-The spring was specified from measurements and verified with a calculation sheet. The final assembly runs two 250 N gas springs to hold the lid through its full travel:
+I specified the spring from measurements and checked it against a calculation sheet. The final assembly runs two 250 N gas springs to hold the lid through its full travel:
 
 ![Gas spring test & calculation](./17-ergonomics-eval.jpg)
 
@@ -176,15 +170,12 @@ From model to metal: the final render and the real thing on the road:
   <div><img src="./step-09-test-run.jpg" alt="The real thing on the road" /><p>The real thing: test run</p></div>
 </div>
 
-# What I Walked Away With
+# What I Learned
 
 This was the first project where the end of the process was a customer riding the result.
 
-- <strong style="color:var(--accent)">Sheet metal is a different design language</strong>: bend radii, weld seams and powder coat tolerances all constrain the geometry long before aesthetics enter the conversation. Designing in SolidWorks and building in steel are two very different things.
-- <strong style="color:var(--accent)">Design is a language of balance</strong>: every part decision (a hinge, a gas spring, a sheet thickness) weighs cost against service life, workability, lead time and the user's daily experience. The best component on paper is rarely the best component in the product.
-- <strong style="color:var(--accent)">Two-person teams need shared reality</strong>: with only two of us, every sketch and every decision had to be legible to the other person immediately. Documentation stopped being a chore and became the only way we stayed synchronized.
-- <strong style="color:var(--accent)">Finishing means testing the finished thing</strong>: the final gas springs (two 250 N units) were re-selected after the lid was real. Specifications survive contact with reality only if you re-verify them at the end.
-- <strong style="color:var(--accent)">The gas spring force was the real technical puzzle</strong>: the lid weighs about a dozen kilos on its own, but roughly thirty with the ladder on top. Both situations happen every day, and the gap between them is huge, so choosing one spring force was a genuinely complex decision.
-- <strong style="color:var(--accent)">Ideal values are only a starting point</strong>: calculating the theoretical Newton force and predicted dimensions of a gas spring is useful, but actually installing one, opening the lid and feeling how it behaves taught me more than any ideal number in a spreadsheet.
+<strong style="color:var(--accent)">Sheet metal is a different design language</strong>: bend radii, weld seams and powder coat tolerances all constrain the geometry long before aesthetics enter the conversation, and designing in SolidWorks is nothing like building in steel. <strong style="color:var(--accent)">Design is a language of balance</strong> as well, because every part decision, whether it is a hinge, a gas spring or a sheet thickness, weighs cost against service life, workability, lead time and the user's daily experience, and the best component on paper is rarely the best component in the product. <strong style="color:var(--accent)">Two-person teams need shared reality</strong>: with only two of us, every sketch and every decision had to be legible to the other person immediately, and documentation stopped being a chore and became the only way we stayed synchronized.
+
+<strong style="color:var(--accent)">Finishing means testing the finished thing</strong>, and the final gas springs, two 250 N units, were re-selected after the lid was real, because a specification only survives contact with reality if you re-verify it at the end. <strong style="color:var(--accent)">The gas spring force was the real technical puzzle</strong>: the lid weighs about a dozen kilos on its own but roughly thirty with the ladder on top, both situations happen every day, and the gap between them is huge, so settling on one spring force was a genuinely complex decision. And <strong style="color:var(--accent)">ideal values are only a starting point</strong>: calculating the theoretical Newton force and predicted dimensions of a gas spring is useful, but installing one, opening the lid and feeling how it behaves taught me more than any ideal number in a spreadsheet.
 
 *Special thanks to [Lino Metaalwaren](https://lino-metaal.nl/) for sponsoring the stainless steel piano hinge for this project.*

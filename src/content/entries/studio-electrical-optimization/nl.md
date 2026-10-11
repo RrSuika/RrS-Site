@@ -29,8 +29,7 @@ translationKey: studio-electrical-optimization
 
 ![Overzicht van de werkplek](./1.png)
 
-# Overzicht
-
+# Achtergrond
 Toen ik in dezelfde ruimte als mijn computers begon te lassen, wist ik dat ik om problemen vroeg. De verlichting flikkerde wanneer de compressor aansloeg. Stekkerdozen waren doorgelust op manieren die ik liever niet beschrijf. En ergens achter in mijn hoofd wist ik dat de opstelling problemen had; ik was er alleen nog niet voor gaan zitten om uit te zoeken wat die precies waren.
 
 Dit project is het resultaat van dat eindelijk eens te doen. Ik bracht elk stopcontact, elk apparaat en elke verlengkabel in mijn werkplaats in kaart, en wat ik aantrof was niet fraai: negen duidelijke veiligheidsrisico's, van een ongeaard lasapparaat tot een brandgevaar dat ik maandenlang gemakshalve had genegeerd.
@@ -39,11 +38,7 @@ Ik zit in **Nederland**, dus alles hier is gebaseerd op **NEN 1010**; de Nederla
 
 # Wat ik wilde bereiken
 
-- Echt in kaart brengen waar de stroom in mijn werkplaats naartoe loopt; niet zomaar gokken
-- Elk veiligheidsrisico vinden waar ik tot dan toe zonder het te merken voorbij was gelopen
-- Vaststellen welke apparaten de echte stroomvreters waren
-- Een oplossing ontwerpen die zowel veilig als daadwerkelijk uitvoerbaar was (geen theoretisch "herbedraad het hele huis"-plan)
-- Fysieke circuitscheiding aanbrengen tussen zware machines en gevoelige elektronica
+Ik wilde echt in kaart brengen waar de stroom in mijn werkplaats naartoe loopt, en elk veiligheidsrisico vinden waar ik tot dan toe zonder het te merken voorbij was gelopen. Onderweg wilde ik vaststellen welke apparaten de echte stroomvreters waren, een oplossing ontwerpen die zowel veilig als daadwerkelijk uitvoerbaar was in plaats van een theoretisch "herbedraad het hele huis"-plan, en fysieke circuitscheiding aanbrengen tussen de zware machines en de gevoelige elektronica.
 
 # Hoe een Nederlandse huisinstallatie werkt
 
@@ -58,7 +53,7 @@ Ter context: in Nederlandse woningen zit de _groepenkast_ in de meterkast. De st
 
 Het Nederlandse net is in de terminologie van de bedradingsgids een TN-C-S-systeem: het net levert de fasen plus een gecombineerde nul-aardgeleider (PEN), die de meterkast splitst in nul en aarde, ondersteund door een lokale aardpen. Die splitsing is de basis waarop de hele groepenkast bouwt, en het is ook wat RCD-beveiliging überhaupt mogelijk maakt; lekstroomdetectie werkt alleen in netten waar nul en aarde met elkaar verbonden zijn, zoals TN of TT.
 
-Een RCD vergelijkt de stroom in de fase- en de nuldraad en opent het circuit binnen 25–40ms zodra het verschil boven 5–30mA uitkomt; sneller dan een elektrische schok het hart in ventrikelfibrilleren kan duwen. Hetzelfde apparaat gaat schuil achter verschillende namen: RCCB, GFCI, GFI, veiligheidsschakelaar. Eén praktische bijwerking: apparatuur met een klein beetje permanente aardlek, zoals stekkerdozen met overspanningsbeveiliging en oude koelkastcompressoren, kan een RCD onvoorspelbaar laten trippen. Tript de RCD zonder duidelijke reden, dan zijn dat de gebruikelijke verdachten.
+Een RCD vergelijkt de stroom in de fase- en de nuldraad en opent het circuit zodra het verschil boven de nominale reststroom uitkomt. Een standaard exemplaar van 30mA moet bij die waarde binnen 300ms afschakelen en bij vijfmaal die waarde binnen 40ms; dat valt ruim binnen het venster waarin een schok gevaarlijk wordt. Hetzelfde apparaat gaat schuil achter verschillende namen: RCCB, GFCI, GFI, veiligheidsschakelaar. Eén praktische bijwerking: apparatuur met een klein beetje permanente aardlek, zoals stekkerdozen met overspanningsbeveiliging en oude koelkastcompressoren, kan een RCD onvoorspelbaar laten trippen. Tript de RCD zonder duidelijke reden, dan zijn dat de gebruikelijke verdachten.
 
 ## Installatieautomaten: 1P vs. 2P
 
@@ -104,7 +99,7 @@ De doorsnede van een kabel is niet zomaar een getal op de mantel; die bepaalt ho
 | Spanningsval bij 30A inschakelstroom | 4,1V         | 2,6V         |
 | Kabelwarmte bij 16A (P = I² × R)     | 35W          | 22W          |
 
-De opwaardering sneed de spanningsval met ruwweg 38% terug. Bij een stabiele 16A blijft 2.5mm² nog binnen de 2,5%-richtlijn uit de gids (5,75V bij 230V), maar de inschakelstromen van motoren zijn precies het regime waar het verschil zichtbaar wordt, en elke watt kabelwarmte is een watt die het gereedschap niet bereikt.
+De opwaardering sneed de spanningsval met ruwweg 38% terug. Bij een stabiele 16A verliest 2.5mm² over 10 m maar ongeveer 2,2 V, nog geen 1% van 230 V, dus die stationaire val was het echte probleem nooit. De inschakelstromen van motoren zijn precies het regime waar het verschil zichtbaar wordt, en elke watt kabelwarmte is een watt die het gereedschap niet bereikt.
 
 ## Kabelschade
 
@@ -151,7 +146,7 @@ Bij apparatuur met hoge inschakelstromen zal een standaard B-curve-automaat onno
 
 ### Doorlussen elimineren
 
-Ik had stekkerdozen in andere stekkerdozen gestoken. Elk koppelpunt voegt contactweerstand toe, genereert warmte en vergroot de kans dat er iets bezwijkt onder belasting. Het is een boomtopologie waarin elke tak een potentiële brand is. **Oplossing:** Overgestapt op een stertopologie; één hoogwaardige 16A-stekkerdoos als centraal verdeelpunt, waar alles op aansluit in plaats van door elkaar heen te lussen.
+Ik had stekkerdozen in andere stekkerdozen gestoken. Elk koppelpunt voegt contactweerstand toe, genereert warmte en vergroot de kans dat er iets bezwijkt onder belasting. Het is een boomtopologie waarin elke tak een potentiële brand is. **Oplossing:** Overgestapt op een stertopologie; één hoogwaardige 16A-stekkerdoos als centraal verdeelpunt, waar alles op aansluit in plaats van door elkaar heen te lussen. Wel zo eerlijk om te zeggen wat dat oplevert: die stekkerdoos begrenst de hele werkbank nog steeds op 16A (zo'n 3680W bij 230V), dus dit haalt het cascade-risico weg, niet het plafond.
 
 De wiskunde achter de warmte is P = I² × R. In de referentiewaarden van de bedradingsgids zit een goede verbinding (degelijk kabeloog, vast aangedraaide klem) rond 0,06mΩ, een 150A-zekering op 0,35mΩ en een 500A-shunt op 0,10mΩ. Een versleten of los contact is een ander verhaal; bij 0,1Ω contactweerstand verbrandt een belasting van 10A al 10W op één enkel punt (10² × 0,1). Warmte laat het contact verder loskomen, wat de weerstand verhoogt, wat de warmte verhoogt. Elk koppelpunt van een stekkerdoos was nog een kans dat die cyclus begon.
 
@@ -182,8 +177,7 @@ Dit klinkt misschien flauw, maar het maakt uit: ik heb echte labels opgehangen. 
 ![Waarschuwingslabels](./13.png)
 ![Detail veiligheidsborden](./14.png)
 
-# Conclusie
-
+# Resultaat
 Negen risicofactoren, waarvan sommige er al maanden in zaten terwijl ik eromheen werkte. Het ongeaarde lasapparaat was het engst; dat had daadwerkelijk iemand kunnen verwonden. De doorgeluste stekkerdozen hadden nog de grootste kans om een echte brand te veroorzaken.
 
 Het kerninzicht was dat mijn opstelling nooit ontworpen was; die was gewoon opgehoopt. Hier nog een stekkerdoos, daar een verlengsnoer, totdat de topologie een warboel van seriële verbindingen was waarin elke schakel een risico vormde. Overstappen op een stertopologie met fysiek gescheiden groepen zorgt ervoor dat een fout in de ene zone niet overslaat naar de andere.

@@ -30,8 +30,7 @@ translationKey: tinkercad-3ch-led-strip
 
 ![Tinkercad Circuit](./01-tinkercad-circuit.png)
 
-# Overview
-
+# Objective
 Before committing to real hardware, I wanted to prototype a multi-channel LED controller in simulation first. Tinkercad Circuits is surprisingly capable for this kind of thing: it gives you a virtual Arduino, NeoPixel strips, pots, buttons, and a working serial monitor, all without soldering anything.
 
 The circuit controls three independent NeoPixel strips. Three push buttons let you pick which strip is "active," and four potentiometers handle the color mixing: three for RGB, one for master brightness. The currently-selected strip gets updated in real time, while the other two hold their last state. A small status LED mirrors the active channel color so you can tell at a glance which strip you're editing.
@@ -60,7 +59,7 @@ void loop() {
 }
 ```
 
-The brightness scaling formula `output = base_color × brightness / 255` keeps things straightforward: it dims each channel proportionally without shifting the hue. This matters more than you'd think; if you just clamp the raw values, you'll get color distortion at low brightness levels.
+The brightness scaling formula `output = base_color × brightness / 255` keeps things straightforward: it dims each channel proportionally without shifting the hue. This matters more than you'd think: if you just clamp the raw values, you'll get color distortion at low brightness levels.
 
 # Future Consideration
 
@@ -70,7 +69,4 @@ Controlling HSV (Hue, Saturation, Value) instead of RGB might be more intuitive 
 
 The Tinkercad simulation confirmed the approach works before I spent a cent on hardware:
 
-- Three independent LED strips, each maintaining its own state in memory. Switch away from a strip and its color stays put.
-- Button-based channel selection with clean debouncing (Tinkercad's simulated buttons are cleaner than real ones, admittedly).
-- Real-time RGB + brightness control via four potentiometers. The analog-to-digital mapping from 0–1023 to 0–255 is a simple division, but it works well enough for a simulation.
-- Status indicator LED gives clear visual feedback on which channel is active. Small detail, but it makes the interface feel deliberate rather than guesswork.
+The Tinkercad simulation confirmed the approach works before I spent a cent on hardware. Three independent LED strips each maintain their own state in memory, so switching away from a strip leaves its color where it was. Channel selection is button-based with clean debouncing, though Tinkercad's simulated buttons are admittedly cleaner than real ones. Four potentiometers give real-time RGB and brightness control, and the analog-to-digital mapping from 0–1023 down to 0–255 is a simple division, but it works well enough for a simulation. The status indicator LED gives clear visual feedback on which channel is active, a small detail that makes the interface feel deliberate rather than guesswork.

@@ -34,7 +34,7 @@ translationKey: esp32-multi-oled-encoder-hsv
 
 # Wat ik heb gebouwd
 
-Dit was een vrij belangrijke test: de multiplexer scheelt flink wat pinnen, waardoor een tekort aan GPIO's geen probleem meer is. Het eerste prototype bewees dat één ESP32 twee encoders en twee OLED's tegelijk aankan. Deze keer ging ik van twee naar drie modules, en in plaats van kale hoeken kreeg elke module een echte taak: H, S en V. Eén ESP32, één TCA9548A, drie SH1106-OLED's en drie EC11-encoders, plus een WiFi-webpagina die de kleur live voorvertoont en met de knoppen meesynchroniseert in beide richtingen.
+Ik deed deze test om het probleem op te lossen dat elk eerder prototype blokkeerde: te weinig GPIO's. De multiplexer hangt meerdere devices aan één bus, en daarmee is dat opgelost. Het eerste prototype bewees dat één ESP32 twee encoders en twee OLED's tegelijk aankan. Deze keer ging ik van twee naar drie modules, en in plaats van kale hoeken kreeg elke module een echte taak: H, S en V. Eén ESP32, één TCA9548A, drie SH1106-OLED's en drie EC11-encoders, plus een WiFi-webpagina die de kleur live voorvertoont en met de knoppen meesynchroniseert in beide richtingen.
 
 Het systeem doet vier dingen:
 
@@ -96,7 +96,7 @@ Encoder-zijde (5 pinnen, mechanische schakelaar):
 | GND | GND | Gedeelde massa |
 | los | RST | Mag los, bij mij hangt hij los |
 
-> Over RST: active-low reset. De meeste modules hebben een interne pull-up, dus los laten werkt. Hij heeft hier de hele tijd los gehangen, zonder problemen.
+> Over RST: active-low reset. De meeste modules hebben een interne pull-up, dus los laten werkt. Zo heb ik hem de hele tijd laten hangen, zonder problemen.
 
 ## TCA9548A naar de drie OLED's
 
@@ -130,7 +130,7 @@ Elke extra module kost twee GPIO's (TRA, TRB). Die rekensom klopte prima.
 
 # De TCA9548A-truc
 
-Alle drie de OLED's antwoorden op 0x3C, dus parallel aansluiten geeft drie schermen die hetzelfde frame tonen. De TCA9548A vertakt één I2C-bus naar 8 kanalen, en je kiest het actieve kanaal door een bitmask naar adres 0x70 te schrijven:
+Alle drie de OLED's antwoorden op 0x3C, dus parallel aansluiten geeft drie schermen die hetzelfde frame tonen. De TCA9548A vertakt één I2C-bus naar 8 kanalen, en ik kies het actieve kanaal door een bitmask naar adres 0x70 te schrijven:
 
 ```cpp
 Wire.beginTransmission(0x70);
@@ -140,7 +140,7 @@ Wire.endTransmission();
 
 Er geleidt maar één kanaal tegelijk, dus de drie 0x3C-OLED's zien elkaar nooit.
 
-De encoders gaan bewust niet door de multiplexer: een EC11 is een mechanische schakelaar die kale niveaus uitstuurt, geen I2C-device. De TCA9548A stuurt alleen SDA/SCL door, dus TRA/TRB gaan rechtstreeks naar ESP32-GPIO's. Wie echt pinnen wil besparen, verhuist ze naar een ander soort module, een I2C GPIO-expander zoals de MCP23017. Maar elke module kost maar 2 GPIO's en drie modules maar 6, en die heeft de ESP32 ruim liggen, dus een MCP23017 verdient pas boven de 5 modules zijn plek.
+Ik houd de encoders bewust buiten de multiplexer: een EC11 is een mechanische schakelaar die kale niveaus uitstuurt, geen I2C-device. De TCA9548A stuurt alleen SDA/SCL door, dus TRA/TRB gaan rechtstreeks naar ESP32-GPIO's. Wie echt pinnen wil besparen, verhuist ze naar een ander soort module, een I2C GPIO-expander zoals de MCP23017. Maar elke module kost maar 2 GPIO's en drie modules maar 6, en die heeft de ESP32 ruim liggen, dus een MCP23017 verdient pas boven de 5 modules zijn plek.
 
 # Encoderdecodering
 
@@ -168,7 +168,7 @@ Het stuiteren was daarna grotendeels weg.
 
 ![Webpagina](./02-web-view.png)
 
-De pagina heeft drie sliders en een live kleurvoorbeeld, inclusief donker/licht-schakelaar, want op een lichte pagina ziet het voorbeeld er niet uit.
+Ik gaf de pagina drie sliders en een live kleurvoorbeeld, plus een donker/licht-schakelaar, want op een lichte pagina ziet het voorbeeld er niet uit.
 
 - **Hardware → web**: de pagina pollt elke 400ms GET /get en raakt de sliders alleen aan als de waarden echt verschillen.
 - **Web → hardware**: elke slider-input vuurt GET /hsv?value=h,s,v, en de ESP32 ververst meteen alle drie de OLED's.

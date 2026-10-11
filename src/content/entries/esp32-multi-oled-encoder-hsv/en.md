@@ -34,7 +34,7 @@ translationKey: esp32-multi-oled-encoder-hsv
 
 # What I Built
 
-This was a fairly important test: the multiplexer saves a lot of pins, so running out of GPIOs stops being a problem. The first prototype proved one ESP32 could juggle two encoders and two OLEDs over WebSocket. This time I went from two modules to three, and instead of raw angles each module got a real job: H, S and V. One ESP32, one TCA9548A, three SH1106 OLEDs and three EC11 encoders, plus a WiFi web page that previews the color live and stays in sync with the knobs in both directions.
+I ran this test to get past the thing that had blocked every earlier prototype: running out of GPIOs. The multiplexer hangs several devices on one bus, and that problem goes away. The first prototype proved one ESP32 could juggle two encoders and two OLEDs over WebSocket. This time I went from two modules to three, and instead of raw angles each module got a real job: H, S and V. One ESP32, one TCA9548A, three SH1106 OLEDs and three EC11 encoders, plus a WiFi web page that previews the color live and stays in sync with the knobs in both directions.
 
 The system does four things:
 
@@ -130,7 +130,7 @@ Every extra module costs two more GPIOs (TRA, TRB). That math held up fine.
 
 # The TCA9548A Trick
 
-All three OLEDs answer to 0x3C, so parallel wiring would make all three render the same frame. The TCA9548A fans one I2C bus out into 8 channels, and you pick the active one by writing a bitmask to address 0x70:
+All three OLEDs answer to 0x3C, so parallel wiring would make all three render the same frame. The TCA9548A fans one I2C bus out into 8 channels, and I pick the active one by writing a bitmask to address 0x70:
 
 ```cpp
 Wire.beginTransmission(0x70);
@@ -140,7 +140,7 @@ Wire.endTransmission();
 
 Only one channel conducts at a time, so the three 0x3C OLEDs never see each other.
 
-The encoders deliberately stay off the multiplexer: an EC11 is a mechanical switch outputting raw levels, not an I2C device. The TCA9548A forwards SDA/SCL and has no idea what a bare level means, so TRA/TRB wire straight to ESP32 GPIOs. If you really wanted to save pins, you'd move them to another kind of module, an I2C GPIO expander like the MCP23017. But each module only needs 2 GPIOs and three modules only 6, which the ESP32 has lying around, so the MCP23017 only earns its place past 5 modules.
+I deliberately kept the encoders off the multiplexer: an EC11 is a mechanical switch outputting raw levels, not an I2C device. The TCA9548A forwards SDA/SCL and has no idea what a bare level means, so TRA/TRB wire straight to ESP32 GPIOs. If you really wanted to save pins, you'd move them to another kind of module, an I2C GPIO expander like the MCP23017. But each module only needs 2 GPIOs and three modules only 6, which the ESP32 has lying around, so the MCP23017 only earns its place past 5 modules.
 
 # Encoder Decoding
 
@@ -162,13 +162,13 @@ void IRAM_ATTR isrEnc1() {
 }
 ```
 
-Bounce basically disappeared after this.
+The bounce basically disappeared after this.
 
 # Web Page Sync
 
 ![Web Page](./02-web-view.png)
 
-The page has three sliders and a live color preview. It even has a dark/light toggle, because the preview looks wrong on a bright page.
+I gave the page three sliders and a live color preview, plus a dark/light toggle, because the preview looks wrong on a bright page.
 
 - **Hardware to web**: the page polls GET /get every 400ms and only touches the sliders when the values actually differ.
 - **Web to hardware**: every slider input fires GET /hsv?value=h,s,v, and the ESP32 refreshes all three OLEDs immediately.
@@ -221,9 +221,9 @@ WiFi.setSleep(false);   // turn off WiFi power save
 
 ## Bug 4: TCA9548A RST pin
 
-RST is active-low reset. Most modules pull it up internally, so leaving it floating is fine, and that's how it ran here, completely stable.
+RST is active-low reset. Most modules pull it up internally, so leaving it floating is fine, and that is how I ran it, completely stable.
 
-If the TCA9548A acts up, check the usual suspects first: SDA/SCL swapped, a flaky dupont wire, a wire somebody bumped.
+If the TCA9548A acts up, I check the usual suspects first: SDA/SCL swapped, a flaky dupont wire, a wire somebody bumped.
 
 ## Bug 5: encoder phase A contact wore out
 

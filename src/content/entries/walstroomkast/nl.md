@@ -3,7 +3,7 @@ title: "Walstroomkast"
 spineTitle: "WALSTROOMKAST"
 date: 2026-06-15
 dateLabel: "Jun 15"
-description: "Een walstroomoplossing voor Nederlandse binnenvaartschepen; accu's vangen de pieken op zodat een beperkte netaansluiting van 3×80A een vraag van 3×250A aankan, in een modulaire kast die meegroeit."
+description: "Een walstroomoplossing voor Nederlandse binnenvaartschepen: accu's vangen de pieken op zodat een beperkte netaansluiting van 3×80A een vraag van 3×250A aankan, in een modulaire kast die meegroeit."
 type: projects
 category: Industrieel Product Ontwerp / Elektrotechniek
 cover: cover.webp
@@ -32,11 +32,11 @@ Binnenvaartschepen mogen niet meer op de dieselgenerator draaien als ze afgemeer
 
 Dit was een project van Hogeschool Rotterdam, met Endenburg als opdrachtgever. Met vijf man: mijn ontwerppartner en ik als de twee studenten Industrieel Product Ontwerpen, en drie studenten Elektrotechniek voor de elektrotechnische verificatie en deliverables. Mijn partner en ik hadden tijdens onze stage bij ZOEM Bike al samen een complete fietsbak voor een schildersbakfiets gebouwd, dus we hielden dezelfde werkverdeling aan. Ik deed het onderzoek, de materiaalanalyse, het opschrijven van de conclusies als ontwerpkeuzes, en de documentatie, het visuele werk en de eindpresentatie; mijn partner deed vooral het 3D-modelleren, de renders en de technische tekeningen.
 
-# Ontwerpvraag
+# Ontwerpopdracht
 
 De opdracht aan de fysieke kant was een modulaire kast die een piek van 3×250A aankan op een netaansluiting van 3×80A, en die kan meegroeien met de vraag.
 
-Het project stelde vijf kritische succesfactoren op, en elke ontwerpkeuze daarna moest daaraan kunnen voldoen:
+Wij stelden vijf kritische succesfactoren op, en elke ontwerpkeuze daarna moest daaraan kunnen voldoen:
 
 | Kritische succesfactor | Waar het om vraagt |
 | --- | --- |
@@ -115,9 +115,9 @@ We zijn eerst de normdocumentatie doorgegaan, hebben daarna de walstroomkasten g
 <tbody>
 <tr><td>Geperforeerde profielen / Strut Channel<br />(25mm pitch)</td><td><span class="plus">+</span>flexibele plaatsing van onderdelen<br /><span class="plus">+</span>modulair uitbreidbaar<br /><span class="plus">+</span>standaard onderdelen, goed leverbaar</td><td><span class="minus">−</span>lastig af te dichten</td></tr>
 <tr><td>Profielsysteem</td><td><span class="plus">+</span>hoge stijfheid en mechanische sterkte<br /><span class="plus">+</span>standaard onderdelen, goed leverbaar<br /><span class="plus">+</span>modulair uitbreidbaar</td><td><span class="minus">−</span>beperkte afdichting</td></tr>
-<tr><td>Glasvezelversterkte kunststof profielen</td><td>—</td><td><span class="minus">−</span>korte levensduur<br /><span class="minus">−</span>beperkte betrouwbaarheid in de gebruiksomgeving</td></tr>
-<tr><td>Sandwichpaneel met tongue &amp; groove</td><td>—</td><td><span class="minus">−</span>beperkt uitbreidbaar<br /><span class="minus">−</span>onvoldoende afdichting</td></tr>
-<tr><td>Modular pipe &amp; rail</td><td>—</td><td><span class="minus">−</span>te veel knooppunten<br /><span class="minus">−</span>onvoldoende afdichting</td></tr>
+<tr><td>Glasvezelversterkte kunststof profielen</td><td>Geen</td><td><span class="minus">−</span>korte levensduur<br /><span class="minus">−</span>beperkte betrouwbaarheid in de gebruiksomgeving</td></tr>
+<tr><td>Sandwichpaneel met tongue &amp; groove</td><td>Geen</td><td><span class="minus">−</span>beperkt uitbreidbaar<br /><span class="minus">−</span>onvoldoende afdichting</td></tr>
+<tr><td>Modular pipe &amp; rail</td><td>Geen</td><td><span class="minus">−</span>te veel knooppunten<br /><span class="minus">−</span>onvoldoende afdichting</td></tr>
 <tr class="verdict"><td colspan="3"><strong>Keuze:</strong> geperforeerde profielen met 25mm pitch, met een zijkantafdichting en een dakkap voor de afdichting.</td></tr>
 </tbody>
 </table>
@@ -269,7 +269,7 @@ Eerst kregen we de RFID-lezer en de autorisatielogica op een breadboard aan de p
 
 De modulariteit is een deur die open blijft. De centrale unit doet de besturing en de aansluitpunten; is er meer capaciteit nodig, dan klikt er aan de zijkant een identiek gevormde accu-unit tegenaan. Verder kan hetzelfde frame warmteterugwinning, een 5G-mast, een drone-landingsplatform of een externe stroomingang dragen. Bovenop kan het standaard groendak plaatsmaken voor zonnepanelen, om de displays en sensoren op de kast van stroom te voorzien.
 
-# De echte kast
+# Resultaat
 
 <div class="process-scroll">
   <div class="process-track" data-copies="3" data-unique="5">
@@ -297,7 +297,7 @@ Opgeleverd zijn een schaalmodel (alle elektronica op de echte plek in een 3D-gep
 
 Het project sloot nooit helemaal aan op wat de opdrachtgever verwachtte. De eerste weken zijn opgegaan aan wachten op aanvullende informatie en gebruikersscenario's; toen eenmaal duidelijk werd dat zij een elektrotechnische berekening wilden en dat dit soort opdrachten buiten het industrieel ontwerpen valt, waren de twee richtingen al uit elkaar gelopen. Na overleg met beide coaches hebben we het project omgevormd tot onze eigen ontwerpvraag: een modulair uitbreidbare walstroomkast. Achteraf de juiste keuze, en vanaf dat punt sloot het project pas echt aan op onze leerdoelen.
 
-# Wat ik van dit project heb geleerd
+# Wat ik heb geleerd
 
 - <strong style="color:var(--accent)">Materiaalonderzoek telt pas als het een keuze wordt</strong>: 316, 316L en 2205 duplex naast elkaar, HDPE tegen GFRP, het moet allemaal uitkomen op "dus dit wordt het". Het onderzoek zelf is niet het lastige; de conclusie tot een keuze maken die je kunt verdedigen wel.
 - <strong style="color:var(--accent)">Normen zijn ontwerpinput, geen achtergrondinformatie</strong>: IP-waarden, IK10, C5-coating, 1 Ω aarding, montagehoogte. Die bepaalden hoe de kast eruit kon zien.

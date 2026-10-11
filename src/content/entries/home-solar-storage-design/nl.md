@@ -2,7 +2,7 @@
 title: "Circuitontwerp: zonnepaneelsysteem voor thuis"
 spineTitle: "HOME SOLAR PANEL CIRCUIT DESIGN"
 date: 2026-09-03
-description: "DIY off-grid zonne-opslag: 600 W draagbare panelen, 2×12V LiFePO4 in serie voor 24 V, 6-poorts MPPT met interne bus voor LED-verlichting en een zuivere sinus-omvormer."
+description: "DIY off-grid zonne-opslag: 600 W draagbare panelen, 2×12V LiFePO4 in serie voor 24 V, een MPPT-regelaar voor LED-verlichting en een zuivere sinus-omvormer."
 
 type: projects
 category: Elektrotechniek
@@ -28,9 +28,9 @@ lang: nl
 translationKey: home-solar-storage-design
 ---
 
-# Overzicht
+# Achtergrond
 
-Dit is een DIY-project: een zonne-opslagsysteem rond laagvermogen flexibele panelen. In de huidige vorm draait het op off-grid LED-verlichting. Als het systeem later groeit, of huishoudelijke apparaten met hoog verbruik moet voeden, worden de panelen vervangen door vaste dakpanelen.
+Ik bouw een zonne-opslagsysteem rond laagvermogen flexibele panelen. In de huidige vorm draait het op off-grid LED-verlichting. Als het systeem later groeit, of huishoudelijke apparaten met hoog verbruik moet voeden, worden de panelen vervangen door vaste dakpanelen.
 
 Het interessantste technische probleem hier is een spannings-matchingsregel: een accu kan alleen worden opgeladen als de werkspanning van het paneel ruim boven de accuspanning ligt. Die ene regel bepaalt vrijwel alles stroomafwaarts: paneelconfiguratie, accuspanning, keuze van de regelaar. Alles in dit ontwerp volgt daaruit.
 
@@ -58,9 +58,9 @@ Wat de markt betreft: 12 V-accu's domineren de Nederlandse camper- en botenmarkt
 
 ![Systeemarchitectuur-diagram](./solar-concept-design.png)
 
-De regelaar is een 6-poorts MPPT (PV / BAT / LOAD), dus de bus zit ingebouwd in de regelaar: het paneel gaat op PV, de accu bereikt de BAT-poorten via een 2P DC-automaat en de lasten hangen direct aan de LOAD-poorten; geen externe bus nodig. Op elk moment geldt: accustroom = laststroom − zonnestroom. De accu is het enige bidirectionele apparaat en vangt overschot of tekort automatisch op.
+De regelaar is één MPPT met drie klemgroepen: PV, BAT en LOAD. Het paneel gaat op PV, de accu bereikt BAT via een 2P DC-automaat, en de LED-verlichting hangt via een eigen schakelaar aan LOAD. Alles wat echt stroom trekt, de omvormer voorop, komt van de accu af. De accu is het enige bidirectionele apparaat in het systeem, dus op elk moment geldt: accustroom = laststroom − zonnestroom. Hij vangt het overschot of het tekort zelf op.
 
-De twee 12 V-accu's staan in **serie** voor 24 V: zo blijft de omvormertak in de 100 A-klasse (24 V × 100 A = 2400 W theoretisch). Parallelschakelen op 12 V zou 200 A vragen, meer dan de MPPT aankan. Elke accu heeft een ingebouwde BMS.
+De twee 12 V-accu's staan in **serie** voor 24 V: zo blijft de omvormertak in de 100 A-klasse (24 V × 100 A = 2400 W theoretisch). Parallelschakelen op 12 V zou voor hetzelfde vermogen 200 A vragen: dubbel zoveel koper in die tak en vier keer zoveel warmte. Elke accu heeft een ingebouwde BMS.
 
 ### Spanningsval-check: de omvormertak
 
@@ -81,7 +81,7 @@ De seriekeuze past ook bij het advies van de gids over grote accubanken. Die raa
 | ----------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Accu        | 2 × 12V 100Ah LiFePO4 in serie = 24 V (100 A BMS elk, ingebouwd) | Serie houdt de omvormertak in de 100 A-klasse (24V×100A=2400W); zelfde model & batch; controleer of de BMS serie ondersteunt |
 | Panelen     | 2 × 300 W semi-flex in serie                                     | Draagbaarheid eerst; serie is verplicht voor 20 V-panelen; dakpanelen zijn de latere upgrade                                 |
-| Regelaar    | 6-poorts MPPT (PV / BAT / LOAD)                                  | Laaduitgang ingebouwd, de bus zit in de regelaar; BAT-klemmen maximaal 16 mm²                                                |
+| Regelaar    | MPPT (PV / BAT / LOAD-klemmen)                                   | Eén unit, drie klemgroepen; BAT-klemmen maximaal 16 mm²                                                                     |
 | Omvormer    | Zuivere sinus-omvormer (24 V-ingang)                             | 2400 W theoretisch, kortstondig                                                                                              |
 | Beveiliging | DC-specifieke niet-gepolariseerde automaten + isolatieschakelaar | Automaten gedimensioneerd op kabelcapaciteit; alleen DC, AC-automaten kunnen DC-vlambogen niet doven                         |
 
@@ -118,7 +118,7 @@ De gids noemt nog een verliesmechanisme dat de rendementsketen niet laat zien: r
 De gids vat zekeringkeuze samen in vier criteria: stroomwaarde, spanningswaarde, onderbrekingsvermogen en snelheid. Twee daarvan zijn hier relevant.
 
 - Snelheid: DC-circuits met capacitieve lasten (een omvormer laadt bij inschakelen zijn ingangscondensatoren op) willen een trage (T) zekering; een snelle zekering trippt op de inschakelstroom.
-- Onderbrekingsvermogen: LiFePO4 levert veel hogere kortsluitstromen dan loodzuur, en de zekering moet die foutstroom kunnen onderbreken zonder zelf te barsten. Typische waarden: MEGA-zekeringen 2,5 kA bij 70 V DC, MRBF 2 kA bij 58 V, NH-meszekeringen 25 kA, Class T 200 kA. De 100 A DC-automaat op de MPPT-accuverbinding moet vóór ingebruikname hierop gecontroleerd worden. Voor lithiumsystemen noemt de gids minstens één zekering of automaat met voldoende onderbrekingsvermogen in de DC-lijn een verplichte veiligheidseis.
+- Onderbrekingsvermogen: LiFePO4 levert veel hogere kortsluitstromen dan loodzuur, en de zekering moet die foutstroom kunnen onderbreken zonder zelf te barsten. Typische waarden: MEGA-zekeringen 2,5 kA bij 70 V DC, MRBF 2 kA bij 58 V, NH-meszekeringen 25 kA, Class T 20 kA bij 125 V DC (de 200 kA die je vaak ziet is het AC-specificatie). De 100 A DC-automaat op de MPPT-accuverbinding moet vóór ingebruikname hierop gecontroleerd worden. Voor lithiumsystemen noemt de gids minstens één zekering of automaat met voldoende onderbrekingsvermogen in de DC-lijn een verplichte veiligheidseis.
 
 ## 06 Check tegen de Wiring Unlimited-gids
 
@@ -133,7 +133,7 @@ De gids vat zekeringkeuze samen in vier criteria: stroomwaarde, spanningswaarde,
 
 # Stuklijst (BOM)
 
-Inkoopstrategie: de zonnepanelen en de accu komen uit Nederlandse winkels (garantie- en transportlogica); al het andere, MPPT, omvormer, automaten, isolatieschakelaar, kabels, klemmen en toebehoren, via Taobao. Prijzen omgerekend met €1 = ¥7,81. De volledige specificatie met bedradingslijst staat in de projectmap; dit is de compacte versie.
+De zonnepanelen en de accu koop ik in Nederlandse winkels (garantie- en transportlogica); al het andere, MPPT, omvormer, automaten, isolatieschakelaar, kabels, klemmen en toebehoren, via Taobao. Prijzen omgerekend met €1 = ¥7,81. De volledige specificatie met bedradingslijst staat in de projectmap; dit is de compacte versie.
 
 | #   | Onderdeel                           | Specificatie                                                   | Aantal  | Richtprijs   | Bron            |
 | --- | ----------------------------------- | -------------------------------------------------------------- | ------- | ------------ | --------------- |
@@ -157,7 +157,7 @@ Budget ≈ €1000–1400 totaal. Bouwfases: (1) eerst onderdelen met lange leve
 
 # Huidige status
 
-Klaar: eisen, architectuur, beveiligingsschema, stuklijst (concept). Volgende: inkoop en bouw. De projectdocumentatie wordt naast deze pagina bijgehouden en groeit mee met de bouw.
+Het ontwerp is klaar: eisen, architectuur, het beveiligingsschema en een conceptstuklijst. Ik ben nu onderdelen aan het inkopen, er is dus nog niets gebouwd. Ik werk deze pagina bij zodra de bouw vordert.
 
 # Referenties
 
