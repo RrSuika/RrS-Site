@@ -123,6 +123,8 @@
 | 页脚致敬句不渲染（`c.footer.note` 为空 + 标记里真值判断） | ✓ |
 | Bilibili 行指向 `https://space.bilibili.com/353118047` | ✓ |
 
+⚠️ **上面这张表里有两行已经过时，别照着它验收**：① 「灯箱」那一行只查了状态（`aria-hidden`、标题、锁滚动），2026-10 才发现它**根本盖不到屏幕上**、而且真点击也打不开，判据见 §二十四；② 同表的「返回『← 回到工作室』」是顶栏那枚，§十七 删掉了它，§二十四 又把页脚那枚隐藏了——现在页面上没有任何离开 `/fan/` 的链接。
+
 ⚠️ **测量坑**：把"排会不会动"的采样放在灯箱测试**之后**，会读到完全静止的 transform（两次读数逐位相同）。放在页面刚加载完立刻测，稳定前进。原因没追到底（怀疑是灯箱 `body { position: fixed }` 期间/之后的状态影响取样窗口），但**页面本身没问题**——`fan-rows2.mjs` 那类即时探针每次都能读到前进的 inline 值。
 
 ## 七之二、四个模块与「不要产品海报」
@@ -720,7 +722,7 @@ else                        t.py = t.y - vn * GROUND_REST;    // 0.2：就地吃
 
 访客：「去掉粉丝页左上角的 与我合作。因为页尾已经重复了一次。」
 
-顶栏那个 `.fan-back` 删掉了（页脚那枚蓝色按钮留着，那才是主入口）。⚠️ **`.fan-top` 是 `justify-content: space-between`**：只剩语言切换一个子元素时它会跑到左边，所以补了一个空的 `<span aria-hidden="true">` 占位，语言切换仍然钉在右边。`.fan-back` 的两条 CSS 也一起删了（否则是死代码）。
+顶栏那个 `.fan-back` 删掉了（页脚那枚蓝色按钮留着，那才是主入口）。⚠️ 页脚那枚在 2026-10 也按访客要求隐藏了（`SHOW_FOOTER_BACK`），见 §二十四——现在这一页没有离开它的链接。⚠️ **`.fan-top` 是 `justify-content: space-between`**：只剩语言切换一个子元素时它会跑到左边，所以补了一个空的 `<span aria-hidden="true">` 占位，语言切换仍然钉在右边。`.fan-back` 的两条 CSS 也一起删了（否则是死代码）。
 
 ⚠️ `FanCopy.back` 这个文案字段现在没人用了（页脚用的是 `footer.back`，措辞也不同）。留着不影响，要清理就是「类型 + 三语」三处一起删。
 
@@ -1262,3 +1264,43 @@ const titleGap = (px) => `${(px / TITLE_GAP_BASE).toFixed(4)}em`;
 ⚠️ **变量宽度的车牌不会破坏循环**：`measurePeriod()` 读的是**排好版的两张卡之间**的距离（不是常数），track 上的 `ResizeObserver` 在封面改变布局时重测 —— 这正是桌面一直在走的代码路径。探针里那条 `period` 断言是这一点的证据。
 
 ⚠️ 写探针时的两个自伤（都已修正，记下来）：`period` 的期望值少算了一个 `gap`（`card[0] → card[n]` 跨 **n** 个 gap 而不是 n−1），以及**在模板字符串里给变量名加反引号** —— `docs/pitfalls.md §12.2` 记过同一条，这次是注释里的反引号把探针自己的模板字面量截断了。
+
+## 二十四、页脚的「Work with me」隐藏、画廊灯箱修好（2026-10）
+
+### 一、页脚的返回按钮隐藏（不是删掉）
+
+访客：「我希望把目前的 fan page 里去往 main page 的那个按钮，work with me 隐藏起来，访客无法点击到他。」
+
+页脚本来只有两件东西：一朵白云，和那枚蓝色 `← Work with me`（`c.footer.back` → `/art/`）。现在按钮在一行开关后面，markup、两语文案（`/nl/` 复用英文）、`.fan-btn` 的样式全部原样保留：
+
+```astro
+const SHOW_FOOTER_BACK = false;   // 翻成 true 就整枚回来，其余一个字都不用改
+…
+{SHOW_FOOTER_BACK && (
+  <a class="fan-btn fan-btn-blue" href={artHref}><span>{c.footer.back}</span>…</a>
+)}
+```
+
+⚠️ **不能用 `hidden` 属性或 `visibility` 藏。** `.fan-btn` 自己写了 `display: inline-flex`，作者声明的 display 压过 UA 的 `[hidden] { display: none }`——属性写上去按钮照样在那儿，只是「以为藏了」。`visibility: hidden` / `opacity: 0` 更不行：链接还在 Tab 序里、回车就能点开，而要求是「访客无法点击到他」。所以是**不渲染**（`false &&`，DOM 里根本没有这个节点）。
+
+⚠️ **这一隐藏把页面变成了死胡同，是明知并接受的结果。** 顶栏那枚 §十七 就删了（`FanCopy.back` 至今没人用），页脚这枚是**唯一**离开 `/fan/` 的链接；现在整页唯一的控件是右上角语言开关，出去靠浏览器后退。要放回来只翻 `SHOW_FOOTER_BACK`。
+
+实测（1440×950，`输入/_scratch/fan-foot-check.mjs`，`/fan/`、`/zh/fan/`、`/nl/fan/` 三页逐项）：页脚里 `a` **0** 个、`button` **0** 个、可聚焦元素 **0** 个、文本为空；白云仍是 **104×104**，页脚高 **214px**（40 + 104 + 70），没有留下空带；联系模块 4 行原样；`.fan-root` 内指向 `/art/` 的链接 **0** 条；页面异常 0。
+
+### 二、画廊灯箱：两个真 bug，此前一次都没真正打开过
+
+修页脚时顺手点了一下画廊的图，发现**点开什么都不出现**。两个独立原因叠在一起，而且「状态检查」两个都查不出来：
+
+**① 指针捕获把 `click` 抢走了。** `.row-view` 在 `pointerdown` 里就 `setPointerCapture()`。指针捕获会把之后的**所有指针事件连同派生的 `click`** 重定向到捕获元素，于是 `.plate` 自己的 click（唯一开灯箱的那条）永不触发。实测（真 CDP 按下）：`pointerup` 与 `click` 的 target 都是 `div.row-view`、`gotpointercapture` 也落在它身上，灯箱 `is-on` 始终 `false`。
+
+**修法**：捕获挪到**第一次横向位移超过 5px** 时——和 `.plate` 那条「拖了就不算点击」的判据同一个阈值（捕获前只剩几像素的窗口，拖动的手感不变）。实测行位移 `-20.24px → -230.24px` 照旧；纯点击不再被截走。
+
+**② 灯箱被 `.fan-root > *:not(...)` 压成了 `relative`。** 那条规则给每个直接子元素写 `position: relative`，而 `.fan-lightbox` 不在排除列表里。实测：computed `position: relative`、高 **22px**、停在文档 **y 3968**；`openLb()` 照样会锁 `body`（`position: fixed`），所以访客看到的是**页面被冻住、屏幕上什么都没有**——灯箱画在视口下方约 2887px 处。
+
+**修法**：把 `.fan-lightbox` 加进 `:not()` 排除列表。这条规则的优先级是**真的高**：编译出来是 `.fan-root[cid] > [cid]:not(.fan-modules, …, .fan-lightbox)`（**0-4-0**），而灯箱自己是 `.fan-lightbox[cid]`（**0-2-0**），所以它**排在后面也输**。排除就是把元素整条摘出去，`!important` 不解决根本（下次再加一个参数又会复发）。
+
+⚠️ **为什么 §七 的复验把它记成了 ✓**：那一行查的是 `aria-hidden`、标题同步、`body` 锁滚动——**全是状态，没有一条是几何**；而且程序化 `element.click()` 不经过指针捕获，刚好同时绕过 ① 和 ②。现在判据是两条硬的：`getComputedStyle(lb).position === "fixed"` **并且** `getBoundingClientRect()` 铺满视口。
+
+⚠️ **dev 里的新坑**：`vite-error-overlay` 是整屏的（Windows 上 watcher 偶发 `EBUSY` 就会拉起来），它会**吃掉所有合成点击**，探针于是得出「点了没反应」的假结论——第一次排查就被它骗过。`lb-verify.mjs` 现在先清掉它再点；生产页面没有这个元素。
+
+判据 `输入/_scratch/lb-verify.mjs`（en + zh 两条路由，**20/20 全绿**）：真点击打开、`position: fixed` / `z-index 9500` / **1440×950** 铺满视口、图 **1296×733** 居中、标题与卡片一致（`Ceobe` / `刻俄柏`）、`body` 锁住；关闭后 `aria-hidden` 回 `true`、滚动还原（**1066 vs 1067**、**1007 vs 1007**）；拖 **120px** 不开灯箱且整行位移；松手后再点仍能打开；页面异常 **0**。

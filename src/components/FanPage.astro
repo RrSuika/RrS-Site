@@ -289,6 +289,27 @@ const titleGap = (px: number) => `${(px / TITLE_GAP_BASE).toFixed(4)}em`;
 const enHref = getLocalizedPath("/fan/", "en");
 const zhHref = getLocalizedPath("/fan/", "zh");
 const artHref = getLocalizedPath("/art", language);
+
+/**
+ * The footer's one exit out of this page: the blue pill back to the studio
+ * (`/art/`), labelled 「Work with me」 (en) / 「与我合作」 (zh). The NL route serves
+ * the English copy on purpose (see `src/pages/nl/fan/index.astro`), so there is no
+ * third label.
+ *
+ * ⚠️ **Hidden on request (2026-10)**: 「把 fan page 里去往 main page 的那个 work
+ * with me 按钮隐藏起来，访客无法点击到他」. Nothing was deleted — the markup, the copy
+ * (`footer.back`, all three languages) and `.fan-btn`'s styles are all still
+ * here, so flipping this to `true` brings the button back and changes nothing
+ * else.
+ *
+ * ⚠️ Hiding it from the DOM, not with the `hidden` attribute or CSS: `.fan-btn`
+ * sets `display: inline-flex`, and an author declaration beats the UA's
+ * `[hidden] { display: none }` — the link would stay visible and clickable.
+ * ⚠️ It was the LAST link out of the page (the top bar's copy went in §十七 of
+ * `docs/fan-page.md`), so with this off the language switch is the page's only
+ * control. Browser Back is the way out.
+ */
+const SHOW_FOOTER_BACK = false;
 ---
 
 <Layout
@@ -700,12 +721,17 @@ const artHref = getLocalizedPath("/art", language);
           sentence to come out, and an empty string has to remove the line rather
           than leave its margin behind. */}
       {c.footer.note && <p class="foot-note">{c.footer.note}</p>}
-      <a class="fan-btn fan-btn-blue" href={artHref}>
-        <span>{c.footer.back}</span>
-        <svg viewBox="0 0 26 14" aria-hidden="true" focusable="false">
-          <path d="M0 7 H22 M16 1 L23 7 L16 13" />
-        </svg>
-      </a>
+      {/* ⚠️ Gated by `SHOW_FOOTER_BACK` (frontmatter) — off, so this link is not
+          rendered at all: nothing in the footer is focusable or clickable. The
+          markup stays here; flip that flag to bring the button back. */}
+      {SHOW_FOOTER_BACK && (
+        <a class="fan-btn fan-btn-blue" href={artHref}>
+          <span>{c.footer.back}</span>
+          <svg viewBox="0 0 26 14" aria-hidden="true" focusable="false">
+            <path d="M0 7 H22 M16 1 L23 7 L16 13" />
+          </svg>
+        </a>
+      )}
     </footer>
 
     {/* ── the sheep layer ──
@@ -796,20 +822,35 @@ const artHref = getLocalizedPath("/art", language);
       view.style.cursor = "grab";
     });
 
+    /* ⚠️ **Capture is taken on the first MOVE, never on pointerdown** (2026-10).
+       A pointer capture retargets every later pointer event *and the `click` derived
+       from it* to the capture element, so capturing on pointerdown turned every press
+       on a drawing into a `click` on `.row-view`: the plate's own click handler — the
+       one that opens the lightbox — never ran. Measured with a real CDP press on a
+       plate: `pointerup` and `click` both reported `div.row-view`, the lightbox stayed
+       shut, and `gotpointercapture` fired on the row. Taking capture once the gesture
+       has travelled past the same 5px the plate's click guard uses keeps the drag
+       alive (by then it genuinely is a drag) and lets a real click through to the
+       drawing. */
+    let dragCaptured = false;
     view.addEventListener("pointerdown", (e) => {
       row.dragging = true;
       row.dragX = e.clientX;
       row.dragPos = row.pos;
+      dragCaptured = false;
       view.style.cursor = "grabbing";
-      try {
-        view.setPointerCapture(e.pointerId);
-      } catch {
-        /* capture is optional */
-      }
     });
     view.addEventListener("pointermove", (e) => {
       if (!row.dragging) return;
       row.pos = row.dragPos + (row.dragX - e.clientX) * 1.4;
+      if (!dragCaptured && Math.abs(row.dragX - e.clientX) > 5) {
+        dragCaptured = true;
+        try {
+          view.setPointerCapture(e.pointerId);
+        } catch {
+          /* capture is optional */
+        }
+      }
     });
     const release = () => {
       if (!row.dragging) return;
@@ -2376,8 +2417,24 @@ const artHref = getLocalizedPath("/art", language);
      scrolls away and covers the content. `.fan-sky` is `position: absolute;
      z-index: -1` and would be forced to `relative`, which would push the hero's
      pink wash into the flow as a 1400px-tall block and shove the whole page
-     down. (The `isolation: isolate` note above explains the other half.) */
-  .fan-root > *:not(.fan-modules, .fan-rail, .sheep-layer, .fan-mosaic, .fan-sky) {
+     down. (The `isolation: isolate` note above explains the other half.)
+     ⚠️ `.fan-lightbox` is the SIXTH, and it is the one this rule silently broke
+     in production (2026-10): the overlay is `position: fixed; inset: 0;
+     z-index: 9500`, and without the exclusion it computed to `relative` — a
+     22px-tall block parked at the BOTTOM OF THE DOCUMENT (measured: document
+     y 3968 on a 1440×950 window). Clicking a gallery drawing therefore locked the
+     body (`position: fixed` scroll lock) and painted nothing on screen. The old
+     §七 verification passed because it only read `aria-hidden`, the caption and
+     the scroll lock; the judgement that counts is
+     `getComputedStyle(lb).position === "fixed"` AND the rect landing inside the
+     viewport.
+     ⚠️ The list must stay in `:not()`, and naming an element is the fix here — not
+     `!important`, and not moving the rule. The scoped selector compiles to
+     `.fan-root[cid] > [cid]:not(.fan-modules, …, .fan-lightbox)` (**0-4-0**), while
+     the overlay's own rule is `.fan-lightbox[cid]` (**0-2-0**), so this rule wins
+     even though it comes EARLIER in this file. An excluded element leaves the rule
+     completely; a cascade fight would only survive until the next argument. */
+  .fan-root > *:not(.fan-modules, .fan-rail, .sheep-layer, .fan-mosaic, .fan-sky, .fan-lightbox) {
     position: relative;
     z-index: 1;
   }
