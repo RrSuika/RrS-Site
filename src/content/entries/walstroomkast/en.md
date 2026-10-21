@@ -218,7 +218,7 @@ The materials were compared in two blocks: the sheet metal grade for the enclosu
 <tr><td>2205 duplex<br />(sheet metal + welding)</td><td><span class="plus">+</span>stronger than 316L<br /><span class="plus">+</span>excellent resistance to chloride environments<br /><span class="plus">+</span>suited to chloride concentrations above 1000 ppm or temperatures above 60 °C<br /><span class="plus">+</span>balanced ferrite and austenite fractions</td><td><span class="minus">−</span>harder to machine than austenitic stainless such as 316</td></tr>
 <tr class="verdict"><td colspan="3"><strong>Chosen:</strong> 316L. The port environment is high in chlorides, and 2205’s extra headroom comes with a price and machining penalty we could not justify.</td></tr>
 </tbody>
-</table> van roestvrij staal 304 versus 316 · Gids (2026) ／ AISI 316 vs 316L Stainless Steel, Difference of SS316 &amp; SS316L Properties Composition Yield Strength Density ／ Duplex roestvrij staal 2205 - Eigenschappen, Toepassingen &amp; Voordelen - LangHe Industry Co., Ltd. ／ 2205 Duplex vs. 316 Stainless Steel: Strength, Corrosion Guide - MWalloys ／ flashcards AK hoofdstuk 4 | Quizlet</p>
+</table>
 </div>
 <div class="tab-panel tab-image">
 <h4>Structural profiles</h4>
@@ -231,7 +231,7 @@ The materials were compared in two blocks: the sheet metal grade for the enclosu
 <tr><td>GFRP<br />(glass fiber reinforced polymer; pultrusion)</td><td><span class="plus">+</span>good UV stability and corrosion resistance<br /><span class="plus">+</span>high stiffness, so it works as a structural profile<br /><span class="plus">+</span>long service life</td><td><span class="minus">−</span>more expensive than HDPE and ASA<br /><span class="minus">−</span>harder to produce</td></tr>
 <tr class="verdict"><td colspan="3"><strong>Chosen:</strong> GFRP pultrusion. HDPE stays behind on long-term UV and creep even with a UV stabiliser, and ASA is not stiff enough to carry the structure. GFRP wins on weathering, corrosion resistance, tensile strength and long-term structural stability.</td></tr>
 </tbody>
-</table>: UV Stability &amp; Weather Resistance in Upcycled Projects ／ ABS &amp; ASA Extrusions - Condale Plastics ／ Glass Fiber Reinforced Polymer (GFRP) | Definition, Advantage ／ HDPE vs FRP Pipe：Strength, Lifespan, Density Comparative ／ Marine Application of Fiber Reinforced Composites: A Review</p>
+</table>
 </div>
 </div>
 
