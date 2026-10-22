@@ -1,0 +1,13 @@
+# Cloudflare Pages redirects (copied verbatim into dist/ at build time).
+# Format: <source> <destination> <status>
+#
+# Detail URLs are built from the entry's `type` (see src/utils/routes.ts), so
+# moving an entry between sections changes its URL. Every such move gets one
+# 301 per language here, otherwise the old URL (already indexed / shared) 404s.
+# Sources carry the trailing slash — the site's canonical form; CF Pages
+# 308-redirects slashless requests to it before this file is consulted.
+
+# 2026-10-22 — ai-assisted-personal-website moved from /projects to /lab
+/projects/ai-assisted-personal-website/    /lab/ai-assisted-personal-website/    301
+/zh/projects/ai-assisted-personal-website/ /zh/lab/ai-assisted-personal-website/ 301
+/nl/projects/ai-assisted-personal-website/ /nl/lab/ai-assisted-personal-website/ 301

@@ -4,7 +4,7 @@ spineTitle: "BUILD A PERSONAL WEBSITE"
 date: 2026-05-19
 dateLabel: "19 mei"
 description: "Leren hoe je met AI een persoonlijke website bouwt en live zet. Een verslag van de iteraties, de lessen en wat AI kan doen versus wat mensen moeten doen."
-type: projects
+type: lab
 category: "AI-samenwerking & webdesign"
 cover: cover.webp
 tags:

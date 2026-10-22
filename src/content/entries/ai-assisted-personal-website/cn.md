@@ -4,7 +4,7 @@ spineTitle: "个人网站构建"
 date: 2026-05-19
 dateLabel: "May 19"
 description: 学习通过 AI 搭建 + 部署个人网站。这里记录迭代过程和经验心得，以及 AI 能做什么、人必须负责什么。
-type: projects
+type: lab
 category: AI 协作与网站设计
 cover: cover.webp
 tags:

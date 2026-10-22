@@ -11,7 +11,7 @@
 > | 技术细则 | `docs/README.md` 有总表 | **只在动到那个模块时读**——磁带盒 `docs/cassette-shelf.md`、开场 `docs/site-intro.md`、主题切换 `docs/theme-switch.md`、背景 `docs/backgrounds.md`、设计决策 `docs/decisions.md`、技术债 `docs/tech-debt.md`、跨模块陷阱 `docs/pitfalls.md`、文风 `docs/writing-style.md`、版本历史 `docs/changelog.md` |
 > | 开发服务器 | `AGENTS.md` | 只讲 `astro dev --background` 的用法 |
 >
-> **当前状态**：v1.53（2026-10）。六个列表页（en/zh/nl × projects/lab）是 CSS 3D 磁带盒书架；首页暗色有黑洞视频 + 引力透镜星空；主题切换是整页拷贝的圆圈波；开场是机能仪表盘 + 信号色扫描退场；粉丝页 `/fan/` 是独立的粉色单页（**页脚「Work with me」已隐藏、画廊灯箱 2026-10 才修好**，见 `docs/fan-page.md §二十四`）。**v1.52 起手机端（320–430px）也在一遍一遍地量**：12 个主要页面全部无横向溢出，粉丝页画廊逐张断言「裁切 / 留空 / 拉伸」三项。**逐轮完整记录见 `docs/changelog.md`**（v1.15 起），本文件头不再堆版本日志。
+> **当前状态**：v1.54（2026-10）。六个列表页（en/zh/nl × projects/lab）是 CSS 3D 磁带盒书架；首页暗色有黑洞视频 + 引力透镜星空；主题切换是整页拷贝的圆圈波；开场是机能仪表盘 + 信号色扫描退场；粉丝页 `/fan/` 是独立的粉色单页（**页脚「Work with me」已隐藏、画廊灯箱 2026-10 才修好**，见 `docs/fan-page.md §二十四`）。**v1.52 起手机端（320–430px）也在一遍一遍地量**：12 个主要页面全部无横向溢出，粉丝页画廊逐张断言「裁切 / 留空 / 拉伸」三项。**逐轮完整记录见 `docs/changelog.md`**（v1.15 起），本文件头不再堆版本日志。
 >
 > **章节导航**：§1 概览 ｜ §2 目录结构 ｜ §3 路由 ｜ §4 内容管理 ｜ §5 组件与布局（§5.3 磁带盒名词表）｜ §6 样式与 token ｜ §7 功能与交互 ｜ §8 配置与部署 ｜ §9 设计决策（→ `docs/decisions.md`）｜ §10 技术债（→ `docs/tech-debt.md`）｜ §11 **快速索引：我要改什么 → 去哪** ｜ §12 AI 工作规则（14–23 见 `docs/writing-style.md`）
 >
@@ -160,7 +160,7 @@ const translation = findTranslation(entries, entry, "zh" | "en");
 - 定义：`src/content.config.ts`（55 行，全文件即 schema）。
 - Loader：`glob({ pattern: "**/*.md", base: "./src/content/entries" })`。
 - **URL slug = 条目文件夹名**（`entry.id` 形如 `{文件夹名}/en`，代码里 `entry.id.split("/")[0]` 取 slug）。
-- 每个条目文件夹 = `en.md` + `cn.md` + `nl.md` + 同目录图片。**25/25 个文件夹都有 en/zh/nl 三语言文件，无缺失。**
+- 每个条目文件夹 = `en.md` + `cn.md` + `nl.md` + 同目录图片。**29/29 个文件夹都有 en/zh/nl 三语言文件，无缺失。**
 
 ### 4.2 Schema 全部字段（`src/content.config.ts` 逐字为准）
 
@@ -169,7 +169,7 @@ const translation = findTranslation(entries, entry, "zh" | "en");
 | `title`          | string                                   | ✓    | 标题；列表卡片、详情 hero、JSON-LD、`<title>`                                                                                                                                                                               |
 | `date`           | `z.coerce.date()`                        | ✓    | 发布日期；排序、卡片/详情显示、sitemap lastmod、JSON-LD（`.toISOString()`）                                                                                                                                                 |
 | `description`    | string                                   | 否   | 摘要；卡片、详情 hero、`<meta description>`、JSON-LD                                                                                                                                                                        |
-| `cover`          | **string**（无 `image()` 校验）          | 否   | 封面图**裸文件名**（如 `cover.png`、`01-setup.png`），相对条目文件夹；由 `getProjectImage(slug, cover)` 解析。18 个条目有，5 个 note 没有（button-debounce、isolation-gpio、power-supply、signal-amplifier、signal-filter） |
+| `cover`          | **string**（无 `image()` 校验）          | 否   | 封面图**裸文件名**（如 `cover.png`、`01-setup.png`），相对条目文件夹；由 `getProjectImage(slug, cover)` 解析。24 个条目有，5 个 note 没有（button-debounce、isolation-gpio、power-supply、signal-amplifier、signal-filter） |
 | `type`           | enum `["projects","lab","note","art"]`   | ✓    | 决定列表页归属与详情 URL 段。**注意是 `projects` 不是 `work`**；`gallery` 不是 type 而是字段                                                                                                                                |
 | `category`       | string                                   | 否   | 细分分类；卡片底栏与详情 info 格                                                                                                                                                                                            |
 | `collaboration`  | string                                   | 否   | 非空即显示 ProjectCard 的 TEAM badge（`/TEAMWORK/` 或 `/协作/`）。当前仅 `zoem-bike-bakfiets` 有值 `team`                                                                                                                   |
@@ -180,14 +180,14 @@ const translation = findTranslation(entries, entry, "zh" | "en");
 | `lang`           | enum `["en","zh"]`                       | ✓    | 条目的语言，决定挂到哪个语言的路由/列表                                                                                                                                                                                     |
 | `translationKey` | string                                   | ✓    | en/cn 配对键（通常=文件夹名；**唯一例外** zoem-bike 文件夹用 `zoem-bike-cargo-box`）                                                                                                                                        |
 
-### 4.3 条目清单（25 个，按 type 统计）
+### 4.3 条目清单（29 个，按 type 统计）
 
 | type       | 数量 | 条目                                                                                                                                                                                                                                                                         |
 | ---------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lab`      | 12   | 3d-printing-abs-material-test、esp32-a4988-stepper-motor、esp32-ec11-encoder-oled、esp32-ec11-stepper-motor、esp32-inmp441-noise-monitor、esp32-multi-oled-encoder-hsv、esp32-rgbww-color-wheel、esp32-rgbww-fcob-comm、esp32-serial-test、esp32-wifi-led-brightness-control、studio-electrical-optimization、tinkercad-3ch-led-strip |
+| `lab`      | 14   | 3d-printing-abs-material-test、ai-assisted-personal-website、esp32-a4988-stepper-motor、esp32-ec11-encoder-oled、esp32-ec11-stepper-motor、esp32-inmp441-noise-monitor、esp32-multi-oled-encoder-hsv、esp32-rgbnw-light-motor-controller、esp32-rgbww-color-wheel、esp32-rgbww-fcob-comm、esp32-serial-test、esp32-wifi-led-brightness-control、studio-electrical-optimization、tinkercad-3ch-led-strip |
 | `note`     | 6    | button-debounce-pullup-pulldown、electronics-fundamentals-notes、isolation-gpio-driver-mosfet-bjt-relay-optocoupler、power-supply-ldo-buck-boost、signal-amplifier-opamp-comparator、signal-filter-rc-high-low-pass                                                          |
 | `art`      | 4    | fashion-design、food-art、illustrations、product-posters                                                                                                                                                                                                                     |
-| `projects` | 3    | body-armor-protective-vest、light-diffusion-test-platform、zoem-bike-bakfiets                                                                                                                                                                                                |
+| `projects` | 5    | body-armor-protective-vest、home-solar-storage-design、light-diffusion-test-platform、walstroomkast、zoem-bike-bakfiets                                                                                                                                                                                                |
 
 ### 4.4 en/cn 配对与 frontmatter 惯例
 
